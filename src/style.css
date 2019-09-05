@@ -1,0 +1,22 @@
+@import '~bootstrap/dist/css/bootstrap.css';
+@import '~bootstrap-vue/dist/bootstrap-vue.css';
+
+body {
+  background: sienna;
+}
+
+footer {
+  font-size: 70%;
+  padding-bottom: 8rem;
+  background: #321;
+  color: white;
+}
+
+#app {
+  transition: all 0.2s;
+}
+
+.gugak {
+  font-family: 'TteoiJeonggan';
+  word-break: keep-all;
+}
