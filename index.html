@@ -14,8 +14,8 @@
     <div id="keypanel" class='container-fluid'>
       <div class='row' v-if='mode=="rhythm"'>
         <b-form-radio-group v-model="rhythm[cursor]" buttons name="rhythms" size="lg" class='my-1 mx-auto gugak'>
-          <b-form-radio v-for="(item, i) in RHYTHM" :key='i' :value="item" :aria-label="item? item.label: '빈칸'">
-            <span aria-hidden>{{ item? item.text: "" }}</span>
+          <b-form-radio v-for="(item, i) in RHYTHM" :key='i' :value="item">
+            {{ item || '' }}
           </b-form-radio>
         </b-form-radio-group>
       </div>
@@ -25,6 +25,10 @@
         <b-btn class="m-1" @click='erase' aria-label='지우개'>
           <i class="fa fa-eraser"></i>
         </b-btn>
+
+        <sympad @write='padpress'></sympad>
+        <sigimpad v-if='sigim_show' @write='padpress'></sigimpad>
+        <b-btn v-else class='m-1 dropup' disabled><span class='dropdown-toggle'>시김새</span></b-btn>
 
         <b-button-group class="m-1">
           <b-btn @click='addrow' aria-label='새 행 추가'>
@@ -95,8 +99,8 @@
         </div>
 
         <b-list-group-item button variant='info' v-for='(tick, j) in rhythm' :key='j' class='gugak'
-          @click='move_rhythm(j)' :active='mode == "rhythm" && cursor == j' :aria-label='tick? tick.label: "빈칸"'>
-          <span aria-hidden>{{ tick? tick.text: "" }}</span>
+          @click='move_rhythm(j)' :active='mode == "rhythm" && cursor == j'>
+          {{ tick || "" }}
         </b-list-group-item>
       </b-list-group>
 
@@ -112,7 +116,7 @@
             <b-row align-v='center' class='myrow' v-for='(row, r) in cell' :key='r'
               :style='{fontSize: 1.5*Math.exp(-0.2*Math.max(cell.length, row.length))+"em", height: 100/cell.length + "%"}'>
               <b-col v-for='(col, c) in row' :key='c' :class='{cur: here(i,j,r,c)}' @click='move(i,j,r,c)'>
-                <span v-html="col && col.main? col.main.text: '&#8210;'" class='gugak'></span>
+                <span v-html="col && col.main? col.main.text: '-'" class='gugak'></span>
                 <span v-if='col && col.modifier' class='gugak modifier'>{{ col.modifier.text }}</span>
               </b-col>
             </b-row>

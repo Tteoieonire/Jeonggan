@@ -2,19 +2,13 @@ import Vue from 'vue'
 import BootstrapVue from 'bootstrap-vue'
 
 import keypad from './components/keypad.vue'
+import sigimpad from './components/sigimpad.vue'
+import sympad from './components/sympad.vue'
 import './index.css'
 
 Vue.use(BootstrapVue)
 
-const RHYTHM = [
-  null,
-  { text: 'Θ', label: '덩' },
-  { text: 'O', label: '쿵' },
-  { text: '|', label: '덕' },
-  { text: 'i', label: '기덕' },
-  { text: ':', label: '더러러러' },
-  { text: '.', label: '더' }
-]
+const RHYTHM = [null, '떵', '쿵', '덕', '따닥', '더러러러', '따']
 
 /**
 * User Input (Click) -> Custom Event(write)
@@ -48,7 +42,7 @@ var app = new Vue({
     */
   },
   methods: {
-    get (what) {
+    get(what) {
       // This one makes sure you DO get something valid.
       var el = this.gaks[this.cursor.gak]
       if (what === 'gak') return el
@@ -65,12 +59,12 @@ var app = new Vue({
       el = el[this.cursor.col]
       return el
     },
-    move (gak, cell, row, col) {
+    move(gak, cell, row, col) {
       this.trim()
       this.mode = 'input'
       this.cursor = { gak, cell, row, col }
     },
-    trim () {
+    trim() {
       if (this.mode !== 'input') return
 
       var el = this.get('cell')
@@ -79,7 +73,7 @@ var app = new Vue({
       if (el[0][0] && el[0][0].main) return
       this.$set(this.get('gak'), this.cursor.cell, undefined)
     },
-    here (gak, cell, row, col) {
+    here(gak, cell, row, col) {
       if (this.mode === 'rhythm') return false
       if (gak !== this.cursor.gak) return false
       if (cell !== this.cursor.cell) return false
@@ -87,15 +81,15 @@ var app = new Vue({
       if (row !== this.cursor.row) return false
       return (col === this.cursor.col)
     },
-    padpress (where, obj) {
+    padpress(where, obj) {
       var el = this.get()
       this.$set(el, where, obj)
     },
-    erase () {
+    erase() {
       var row = this.get('row')
       this.$set(row, this.cursor.col, undefined)
     },
-    addgak () {
+    addgak() {
       var gak = new Array(this.setting.measure)
       if (this.mode !== 'input') {
         this.gaks.push(gak)
@@ -103,7 +97,7 @@ var app = new Vue({
         this.gaks.splice(1 + this.cursor.gak, 0, gak)
       }
     },
-    delgak (i) {
+    delgak(i) {
       this.gaks.splice(i, 1)
       if (this.gaks.length === 0) {
         this.addgak()
@@ -114,13 +108,13 @@ var app = new Vue({
         this.$set(this.cursor, 'col', 0)
       }
     },
-    addrow () {
+    addrow() {
       var cell = this.get('cell')
       cell.splice(1 + this.cursor.row, 0, new Array(1))
       this.$set(this.cursor, 'row', 1 + this.cursor.row)
       this.$set(this.cursor, 'col', 0)
     },
-    delrow () {
+    delrow() {
       var cell = this.get('cell')
       if (cell.length === 1) {
         cell.splice(0, 1, new Array(1))
@@ -134,12 +128,12 @@ var app = new Vue({
         this.$set(this.cursor, 'col', this.get('row').length - 1)
       }
     },
-    addcol () {
+    addcol() {
       var row = this.get('row')
       row.splice(1 + this.cursor.col, 0, undefined)
       this.$set(this.cursor, 'col', 1 + this.cursor.col)
     },
-    delcol () {
+    delcol() {
       var row = this.get('row')
       if (row.length === 1) {
         row.splice(0, 1, undefined)
@@ -152,30 +146,30 @@ var app = new Vue({
     },
 
     // 장단
-    move_rhythm (i) {
+    move_rhythm(i) {
       this.trim()
       this.mode = 'rhythm'
       this.cursor = i
     }
   },
   computed: {
-    scale_sorted () {
+    scale_sorted() {
       console.log(this.setting.scale)
       return this.setting.scale.map(Number).sort((a, b) => a - b)
     },
-    sigim_show () {
+    sigim_show() {
       return this.get().main !== undefined
     }
   },
-  created () {
+  created() {
     this.addgak()
     this.move(0, 0, 0, 0)
-    this.padpress({ text: '&#22826;', pitch: 26 })
+    this.padpress('main', { text: '&#22826;', pitch: 26 })
 
     this.rhythm = new Array(this.setting.measure)
-    this.rhythm[0] = { text: 'Θ', label: '덩' }
+    this.rhythm[0] = '떵'
   },
   components: {
-    keypad
+    keypad, sigimpad, sympad
   }
 })

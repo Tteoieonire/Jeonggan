@@ -1,0 +1,10 @@
+@font-face {
+    font-family: 'TteoiJeonggan';
+    src: url('TteoiJeonggan.eot');
+    src: url('TteoiJeonggan.eot?#iefix') format('embedded-opentype'),
+        url('TteoiJeonggan.woff2') format('woff2'),
+        url('TteoiJeonggan.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
