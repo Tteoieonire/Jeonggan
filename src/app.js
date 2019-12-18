@@ -154,7 +154,6 @@ var app = new Vue({
   },
   computed: {
     scale_sorted() {
-      console.log(this.setting.scale)
       return this.setting.scale.map(Number).sort((a, b) => a - b)
     },
     sigim_show() {
