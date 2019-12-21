@@ -6,9 +6,9 @@
 // }
 
 class Chapter {
-  constructor(controller, config, cells) {
+  constructor(cursor, config, cells) {
     // for reconstruction
-    this.cursor = controller.cursor
+    this.cursor = cursor
     this.config = config
     this.cells = cells || []
   }
@@ -99,7 +99,7 @@ class Chapter {
     } else if (arr.length === 1) {
       return this.del(parentOf(what))
     } else {
-      if (idx === arr.length - 1) {
+      if (idx === arr.length - 1 && method !== 'unsafe') {
         this.set(what, idx - 1, -1)
       }
       return arr.splice(idx, 1)
@@ -133,12 +133,12 @@ class Chapter {
     const srcCol = this.cursor.col
     let destPos = this.cursor.row + delta
     this.trim()
-    if (!isOutOfRange(destPos, this.get('cell'))) {
+    if (inRange(destPos, this.get('cell'))) {
       this.set('row', destPos)
     } else {
       destPos = this.cursor.cell + delta
-      if (!isOutOfRange(destPos, this.cells)) {
-        this.focus(this.cursor, destPos, magnet)
+      if (inRange(destPos, this.cells)) {
+        this.set('cell', destPos, magnet)
       } // else ??
     }
     const destDivision = this.get('row').length
@@ -149,12 +149,12 @@ class Chapter {
   moveLeftRight(delta) {
     // left - right +
     let destPos = this.cursor.col + delta // ok...
-    if (!isOutOfRange(destPos, this.get('row'))) {
+    if (inRange(destPos, this.get('row'))) {
       this.set('col', destPos)
     } else {
       const magnet = delta > 0 ? 0 : -1
       destPos = this.cursor.cell - delta * this.measure
-      if (!isOutOfRange(destPos, this.cells)) {
+      if (inRange(destPos, this.cells)) {
         this.focus(destPos, magnet, magnet)
       } // else ??
     }
@@ -184,7 +184,7 @@ function moveToMostAligned(curPos, curDivision, destDivision) {
   return Math.floor(bgn * destDivision)
 }
 
-function isOutOfRange(idx, arr) {
+function inRange(idx, arr) {
   return idx >= 0 && idx < arr.length
 }
 

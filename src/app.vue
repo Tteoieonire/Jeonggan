@@ -54,12 +54,13 @@ export default {
     }
   },
   methods: {
-    update_sigim_show(){
-      this.sigim_show = (this.get('col').main == undefined)
+    update_sigim_show() {
+      // Need optimization for less call
+      this.sigim_show = this.music.get('col').main != undefined
     },
     move_rhythm(i) {
       this.music.trim()
-      this.cursor.move_rhythm(i)
+      this.cursor.move_rhythm(0, i)
     },
     move(chapter, cell, row, col) {
       this.music.trim()
@@ -72,7 +73,7 @@ export default {
     },
     erase() {
       if (this.cursor.blurred) return
-      this.music.get('chapter').del('col', 'keep')
+      this.music.del('col', 'keep')
       this.sigim_show = false
     },
     shapechange(what, delta) {
@@ -93,6 +94,9 @@ export default {
       //
     },
     keypressHandler(e) {
+      if (this.cursor.blurred) return
+      if (this.cursor.select_mode) return
+      if (this.cursor.rhythm_mode) return
       switch (e.code) {
         case 'ArrowUp':
           this.music.moveUpDown(-1)
@@ -108,10 +112,13 @@ export default {
           break
         /* Editing */
         case 'Space':
-          this.music.addcol()
+          this.music.add('col')
           break
         case 'Backspace':
           this.music.backspace()
+          break
+        case 'Delete':
+          this.music.del('col', 'keep')
           break
         case 'Enter':
         case 'NumpadEnter':
@@ -124,10 +131,14 @@ export default {
           }
           break
         case 'Slash':
-          this.octave -= 1
+          if (this.octave > 0) {
+            this.octave -= 1
+          }
           break
         case 'Semicolon':
-          this.octave += 1
+          if (this.octave < 4) {
+            this.octave += 1
+          }
           break
         case 'Comma':
           this.write('main', REST_OBJ)
@@ -161,6 +172,7 @@ export default {
             }
           }
       }
+      e.preventDefault()
     }
   },
   computed: {
@@ -177,7 +189,7 @@ export default {
     this.rhythm = new Array(this.setting.measure)
     this.rhythm[0] = RHYTHM_OBJ[1]
 
-    this.music = new Music(this)
+    this.music = new Music(this.cursor)
     this.music.addchapter({
       name: '초장',
       scale: this.scale_sorted,

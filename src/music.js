@@ -2,9 +2,8 @@ import Chapter from './chapter.js'
 
 class Music {
   // 내용은 신경x 형식만 관리!
-  constructor(controller, chapters) {
-    this.controller = controller
-    this.cursor = controller.cursor
+  constructor(cursor, chapters) {
+    this.cursor = cursor
     this.chapters = chapters || []
   }
 
@@ -35,19 +34,24 @@ class Music {
   }
 
   trim() {
+    if (this.cursor.blurred) return
     if (this.cursor.rhythm_mode) return
     this.get('chapter').trim()
   }
 
   /* Add & Delete */
   addchapter(config) {
+    let dest_chapter = this.chapters.length
+    if (!this.cursor.blurred) {
+      dest_chapter = 1 + this.cursor.chapter
+    }
     config = config || this.get('chapter').config
 
     const cells = new Array(config.measure)
-    const chapter = new Chapter(this.controller, config, cells)
+    const chapter = new Chapter(this.cursor, config, cells)
 
-    this.cursor.move(1 + this.cursor.chapter, 0, 0, 0)
-    this.chapters.splice(this.cursor.chapter, 0, chapter)
+    this.chapters.splice(dest_chapter, 0, chapter)
+    this.cursor.move(dest_chapter, 0, 0, 0)
   }
 
   delchapter(i) {
@@ -58,7 +62,7 @@ class Music {
     if (this.cursor.blurred) return
     if (this.cursor.chapter > i) {
       this.cursor.chapter -= 1
-    } else if (this.cursor === i) {
+    } else if (this.cursor.chapter === i) {
       this.set('chapter', i)
     }
   }
@@ -98,7 +102,8 @@ class Music {
 
   backspace() {
     // chapter-break는 문자 취급하자(...?)
-    this.del('col')
+    // row-break랑 cell-break도..??
+    this.del('col', 'unsafe')
 
     // 커서 처리
     this.trim()
@@ -134,10 +139,9 @@ class Music {
     }
 
     let row = this.get('row')
+    let cols_after = new Array(1)
     if (this.cursor.col + 1 < row.length) {
       cols_after = row.splice(this.cursor.col + 1)
-    } else {
-      cols_after = new Array(1)
     }
 
     cell.unshift(cols_after)

@@ -35,3 +35,5 @@ class Cursor { // exists only one...nothing but container
     this.col = undefined
   }
 }
+
+export default Cursor

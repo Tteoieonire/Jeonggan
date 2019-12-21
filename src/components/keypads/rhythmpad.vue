@@ -28,10 +28,10 @@ export default {
   },
   methods: {
     getLabel(item) {
-      return item ? item.label : '빈칸'
+      return item || '빈칸'
     },
     getText(item) {
-      return item ? item.text : ''
+      return item || ''
     },
     change(e) {
       this.$emit('input', e)

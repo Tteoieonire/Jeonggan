@@ -24,15 +24,15 @@
           v-for="(cell, j) in gak"
           button
           :key="j"
-          :active="this_cell(k, calc_cell(gak, i, j))"
-          @click="move(k, calc_cell(gak, i, j), 0, 0)"
+          :active="this_cell(k, calc_cell(gaks, i, j))"
+          @click="move(k, calc_cell(gaks, i, j), 0, 0)"
         >
           <cell
             v-if="cell"
-            :this_cell="this_cell(k, calc_cell(gak, i, j))"
+            :this_cell="this_cell(k, calc_cell(gaks, i, j))"
             :cursor="cursor"
             :cell="cell"
-            @move="(r, c) => move(k, calc_cell(gak, i, j), r, c)"
+            @move="(r, c) => move(k, calc_cell(gaks, i, j), r, c)"
           ></cell>
         </b-list-group-item>
       </b-list-group>
@@ -44,13 +44,13 @@
 import cell from './cell.vue'
 
 export default {
-  props: ['cursor', 'view'],
+  props: ['cursor', 'rhythm', 'view'],
   methods: {
     getGakLabel(i) {
       return i + 1 + '각'
     },
-    calc_cell(gak, i, j) {
-      return gak.length * i + j
+    calc_cell(gaks, i, j) {
+      return gaks[0].length * i + j
     },
     this_cell(k, j) {
       if (this.cursor.rhythm_mode) return false
