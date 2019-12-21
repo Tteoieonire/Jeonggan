@@ -172,12 +172,9 @@ const MODIFIER = [
   ]
 ]
 
+// Focusable??
 export default {
   props: ['type'],
-  data: () => ({
-    // Focusable??
-    SYMBOL: this.type === 'main' ? MAIN : MODIFIER
-  }),
   methods: {
     write(obj) {
       if (obj.pitch == null) obj = undefined
@@ -185,6 +182,9 @@ export default {
     }
   },
   computed: {
+    SYMBOL() {
+      return this.type === 'main' ? MAIN : MODIFIER
+    },
     label() {
       return this.type === 'main' ? '부호' : '시김새'
     }

@@ -47,7 +47,7 @@ class Music {
     }
     config = config || this.get('chapter').config
 
-    const cells = new Array(config.measure)
+    const cells = new Array(2)
     const chapter = new Chapter(this.cursor, config, cells)
 
     this.chapters.splice(dest_chapter, 0, chapter)

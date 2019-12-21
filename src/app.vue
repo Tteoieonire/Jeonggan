@@ -100,22 +100,28 @@ export default {
       switch (e.code) {
         case 'ArrowUp':
           this.music.moveUpDown(-1)
+          e.preventDefault()
           break
         case 'ArrowDown':
           this.music.moveUpDown(+1)
+          e.preventDefault()
           break
         case 'ArrowLeft':
           this.music.moveLeftRight(-1)
+          e.preventDefault()
           break
         case 'ArrowRight':
           this.music.moveLeftRight(+1)
+          e.preventDefault()
           break
         /* Editing */
         case 'Space':
           this.music.add('col')
+          e.preventDefault()
           break
         case 'Backspace':
           this.music.backspace()
+          e.preventDefault()
           break
         case 'Delete':
           this.music.del('col', 'keep')
@@ -129,6 +135,7 @@ export default {
           } else {
             this.music.cellbreak()
           }
+          e.preventDefault()
           break
         case 'Slash':
           if (this.octave > 0) {
@@ -159,9 +166,8 @@ export default {
             'KeyM'
           ]
           let idxPitch = pitch2code.indexOf(e.code)
-          if (idxPitch !== -1) {
+          if (idxPitch !== -1 && !hasModifierKey(e)) {
             this.write('main', YUL_OBJ[this.octave][idxPitch])
-            break
           }
 
           if (e.ctrlKey && e.code === 'KeyZ') {
@@ -172,7 +178,6 @@ export default {
             }
           }
       }
-      e.preventDefault()
     }
   },
   computed: {
@@ -206,6 +211,10 @@ export default {
     canvaspanel,
     configmodal
   }
+}
+
+function hasModifierKey(e) {
+  return e.ctrlKey || e.shiftKey || e.altKey || e.metaKey
 }
 </script>
 
