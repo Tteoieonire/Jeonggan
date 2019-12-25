@@ -1,4 +1,5 @@
 import Chapter from './chapter.js'
+import { wrappedIdx, inRange, moveToMostAligned } from './utils.js'
 
 class Music {
   // 내용은 신경x 형식만 관리!
@@ -92,12 +93,60 @@ class Music {
 
   moveUpDown(delta) {
     // up - down +
-    this.get('chapter').moveUpDown(delta) // move chapter?
+    try {
+      this.get('chapter').moveUpDown(delta)
+    } catch (e) {
+      if (!(e instanceof RangeError)) throw e
+
+      let destPos = this.cursor.chapter + delta
+      if (inRange(destPos, this.chapters)) {
+        const magnet = delta > 0 ? 0 : -1
+        this.set('chapter', destPos, magnet)
+      } // else do nothing
+    }
   }
 
   moveLeftRight(delta) {
     // left - right +
-    this.get('chapter').moveLeftRight(delta) // move chapter?
+    let chapter = this.get('chapter')
+    let config = chapter.config
+    try {
+      chapter.moveLeftRight(delta)
+    } catch (e) {
+      if (!(e instanceof RangeError)) throw e
+
+      // set chapter
+      let destPos = this.cursor.chapter - delta
+      if (!inRange(destPos, this.chapters)) return // do nothing
+
+      const srcY = (this.cursor.cell + config.padding) % config.measure
+      const srcRow = this.cursor.row
+      const srcDivision = this.get('cell').length
+      this.trim()
+      this.set('chapter', destPos)
+
+      // set cell
+      chapter = this.get('chapter')
+      config = chapter.config
+      if (delta < 0) {
+        destPos = srcY - config.padding
+      } else {
+        let tail = (chapter.cells.length + config.padding) % config.measure
+        destPos = chapter.cells.length - tail + srcY
+      }
+      if (destPos >= chapter.cells.length) {
+        destPos = chapter.cells.length - 1
+        this.set('cell', destPos, -1)
+        return
+      }
+      if (destPos < 0) destPos = 0
+      this.set('cell', destPos)
+
+      // set row
+      const destDivision = this.get('cell').length
+      destPos = moveToMostAligned(srcRow, srcDivision, destDivision)
+      this.set('row', destPos, delta > 0 ? 0 : -1)
+    }
   }
 
   backspace() {
@@ -106,7 +155,6 @@ class Music {
     this.del('col', 'unsafe')
 
     // 커서 처리
-    this.trim()
     if (this.cursor.col > 0) {
       this.set('col', this.cursor.col - 1, -1)
     } else if (this.cursor.row > 0) {
@@ -152,12 +200,6 @@ class Music {
   chapterbreak() {
     //
   }
-}
-
-function wrappedIdx(idx, total) {
-  idx %= total
-  if (idx < 0) idx += total
-  return idx
 }
 
 export default Music

@@ -1,13 +1,8 @@
-// class ChapterConfig {
-//     this.name = name || ''
-//     this.scale = scale
-//     this.measure = measure
-//     this.padding = padding // -1 for aligning to prev
-// }
+import { compileChapter } from './compiler.js'
+import { wrappedIdx, moveToMostAligned, inRange } from './utils.js'
 
 class Chapter {
   constructor(cursor, config, cells) {
-    // for reconstruction
     this.cursor = cursor
     this.config = config
     this.cells = cells || []
@@ -41,9 +36,9 @@ class Chapter {
   /* Operations */
   focus(cell, row, col) {
     cell = wrappedIdx(cell, this.cells.length)
-    this.cursor.move(this.cursor.chapter, cell, 0, 0)
+    this.cursor.cell = cell
     row = wrappedIdx(row, this.get('cell').length)
-    this.cursor.move(this.cursor.chapter, cell, row, 0)
+    this.cursor.row = row
     col = wrappedIdx(col, this.get('row').length)
     this.cursor.move(this.cursor.chapter, cell, row, col)
   }
@@ -97,7 +92,7 @@ class Chapter {
     if (method === 'keep') {
       return arr.splice(idx, 1, undefined)
     } else if (arr.length === 1) {
-      return this.del(parentOf(what))
+      return this.del(parentOf(what), method)
     } else {
       if (idx === arr.length - 1 && method !== 'unsafe') {
         this.set(what, idx - 1, -1)
@@ -139,7 +134,7 @@ class Chapter {
       destPos = this.cursor.cell + delta
       if (inRange(destPos, this.cells)) {
         this.set('cell', destPos, magnet)
-      } // else ??
+      } else throw RangeError('Out of chapter')
     }
     const destDivision = this.get('row').length
     destPos = moveToMostAligned(srcCol, srcDivision, destDivision)
@@ -148,16 +143,16 @@ class Chapter {
 
   moveLeftRight(delta) {
     // left - right +
-    let destPos = this.cursor.col + delta // ok...
+    let destPos = this.cursor.col + delta
     if (inRange(destPos, this.get('row'))) {
       this.set('col', destPos)
-    } else {
-      const magnet = delta > 0 ? 0 : -1
-      destPos = this.cursor.cell - delta * this.measure
-      if (inRange(destPos, this.cells)) {
-        this.focus(destPos, magnet, magnet)
-      } // else ??
+      return
     }
+    const magnet = delta > 0 ? 0 : -1
+    destPos = this.cursor.cell - delta * this.config.measure
+    if (inRange(destPos, this.cells)) {
+      this.focus(destPos, magnet, magnet)
+    } else throw RangeError('Out of chapter')
   }
 }
 
@@ -171,21 +166,6 @@ function childOf(what) {
   if (what === 'cell') return 'row'
   if (what === 'row') return 'col'
   throw 'what??'
-}
-
-function wrappedIdx(idx, total) {
-  idx %= total
-  if (idx < 0) idx += total
-  return idx
-}
-
-function moveToMostAligned(curPos, curDivision, destDivision) {
-  const bgn = curPos / curDivision
-  return Math.floor(bgn * destDivision)
-}
-
-function inRange(idx, arr) {
-  return idx >= 0 && idx < arr.length
 }
 
 export default Chapter
