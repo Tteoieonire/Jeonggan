@@ -155,34 +155,28 @@ export default {
       switch (e.code) {
         case 'ArrowUp':
           this.music.moveUpDown(-1)
-          e.preventDefault()
           break
         case 'ArrowDown':
           this.music.moveUpDown(+1)
-          e.preventDefault()
           break
         case 'ArrowLeft':
           this.music.moveLeftRight(-1)
-          e.preventDefault()
           break
         case 'ArrowRight':
           this.music.moveLeftRight(+1)
-          e.preventDefault()
           break
         /* Editing */
         case 'Space':
           this.music.add('col')
-          e.preventDefault()
           break
         case 'Backspace':
           this.music.backspace()
-          e.preventDefault()
           break
         case 'Minus':
         case 'NumpadSubtract':
         case 'Delete': // ?
           this.erase()
-          break
+          return
         case 'Enter':
         case 'NumpadEnter':
           if (e.ctrlKey) {
@@ -192,21 +186,20 @@ export default {
           } else {
             this.music.cellbreak()
           }
-          e.preventDefault()
           break
         case 'Slash':
           if (this.octave > 0) {
             this.octave -= 1
           }
-          break
+          return
         case 'Semicolon':
           if (this.octave < 4) {
             this.octave += 1
           }
-          break
+          return
         case 'Comma':
           this.write('main', REST_OBJ)
-          break
+          return
         default:
           const pitch2code = [
             'KeyG',
@@ -225,6 +218,7 @@ export default {
           let idxPitch = pitch2code.indexOf(e.code)
           if (idxPitch !== -1 && !hasModifierKey(e)) {
             this.write('main', YUL_OBJ[this.octave][idxPitch])
+            return
           }
 
           if (e.ctrlKey && e.code === 'KeyZ') {
@@ -234,7 +228,9 @@ export default {
               this.undo()
             }
           }
+          break
       }
+      e.preventDefault()
     }
   },
   computed: {
