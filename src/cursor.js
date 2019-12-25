@@ -36,6 +36,16 @@ class Cursor {
     this.row = undefined
     this.col = undefined
   }
+
+  startPlay() {
+    this.blurred = true
+    this.prevPos = [this.chapter, this.cell, this.row, this.col]
+  }
+
+  stopPlay() {
+    this.move(...this.prevPos)
+    this.prevPos = undefined
+  }
 }
 
 export default Cursor

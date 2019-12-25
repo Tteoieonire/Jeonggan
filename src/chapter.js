@@ -29,6 +29,18 @@ class Chapter {
     return gaks
   }
 
+  compile(elapsed = 0) {
+    let cells = this.cells
+    if (elapsed === 0) {
+      // first chapter to start
+      cells = cells.slice(this.cursor.cell)
+    }
+    let duration = (60 * cells.length) / this.config.tempo // s
+    let compiled = compileChapter(cells, elapsed, duration, this.config.scale) // lastPitch?
+    compiled.push(elapsed + duration) // also return total elapsed time
+    return compiled
+  }
+
   isEmpty() {
     return this.cells.every(cell => cell == undefined)
   }

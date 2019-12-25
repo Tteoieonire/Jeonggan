@@ -12,6 +12,20 @@ class Music {
     return this.chapters.map(chapter => chapter.view())
   }
 
+  compile() {
+    // cursor only cell based?
+    let bgn = this.cursor.blurred ? 0 : this.cursor.chapter
+    let compiled = this.chapters.slice(bgn).reduce(
+      function(acc, chapter) {
+        let elapsed = acc.pop()
+        return acc.concat(chapter.compile(elapsed))
+      },
+      [0]
+    )
+    compiled.pop()
+    return compiled
+  }
+
   /* Operations */
   get(what) {
     // ensure exist @ every focus & cache col?

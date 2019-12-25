@@ -1,13 +1,25 @@
 <template>
   <!-- 상단 메뉴바 -->
   <div class="container-fluid">
-    <b-button-group class="m-1 float-right">
-      <b-btn aria-label="실행 취소" v-show="false">
-        <i class="fa fa-undo"></i>
+    <b-button-group class="m-1">
+      <b-btn
+        v-if="playStatus && playStatus.playing"
+        @click="pause"
+        :disabled="rhythmMode"
+        aria-label="일시 정지"
+      >
+        <i class="fa fa-pause"></i>
       </b-btn>
-      <b-btn aria-label="연주" v-show="false">
+      <b-btn v-else @click="resume" :disabled="rhythmMode" aria-label="재생">
         <i class="fa fa-play"></i>
       </b-btn>
+      <b-btn @click="stop" :disabled="rhythmMode || !playStatus" aria-label="연주 정지">
+        <i class="fa fa-stop"></i>
+      </b-btn>
+    </b-button-group>
+
+    <b-button-group class="m-1 float-right">
+      <b-btn @click="addchapter" :disabled="rhythmMode">새 장 추가</b-btn>
 
       <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
         <template slot="button-content">
@@ -24,6 +36,20 @@
 
 <script>
 export default {
-  methods: {}
+  props: ['rhythmMode', 'playStatus'],
+  methods: {
+    addchapter() {
+      this.$emit('addchapter')
+    },
+    resume() {
+      this.$emit('play', 'resume')
+    },
+    pause() {
+      this.$emit('play', 'pause')
+    },
+    stop() {
+      this.$emit('play', 'stop')
+    }
+  }
 }
 </script>

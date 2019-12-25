@@ -12,7 +12,13 @@
       @octavechange="octavechange"
       id="keypanel"
     ></keypanel>
-    <menupanel id="menubar"></menupanel>
+    <menupanel
+      :rhythmMode="cursor.rhythmMode"
+      :playStatus="playStatus"
+      @addchapter="addchapter"
+      @play="play"
+      id="menubar"
+    ></menupanel>
     <canvaspanel
       :cursor="cursor"
       :rhythm="rhythm"
@@ -26,6 +32,8 @@
 </template>
 
 <script>
+import Soundfont from 'soundfont-player'
+
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
 import canvaspanel from './components/canvaspanel.vue'
@@ -51,6 +59,8 @@ export default {
       music: undefined,
       sigimShow: false,
       octave: 2,
+      audioContext: null,
+      playStatus: null // {playing: true/false, player}
     }
   },
   methods: {
@@ -90,6 +100,34 @@ export default {
     },
     octavechange(delta) {
       this.octave += delta
+    },
+    addchapter() {
+      this.music.addchapter()
+    },
+    play(command) {
+      /*
+      TODO:
+      - 시간에 맞춰 쓰던 커서 움직이기
+      */
+      if (command === 'stop') {
+        this.playStatus.player.stop()
+        this.playStatus = null
+        this.cursor.stopPlay()
+      } else if (command === 'pause') {
+        this.playStatus.playing = false
+        this.playStatus.player.stop()
+      } else if (this.playStatus) {
+        this.playStatus.playing = true
+        //this.playStatus.player.play()
+      } else {
+        let compiled = this.music.compile()
+        this.audioContext = this.audioContext || new AudioContext()
+        Soundfont.instrument(this.audioContext, 'cello').then(player => {
+          this.playStatus = { player, playing: true }
+          this.cursor.startPlay()
+          player.schedule(0, compiled)
+        })
+      }
     },
     undo() {
       //
@@ -140,8 +178,10 @@ export default {
           this.music.backspace()
           e.preventDefault()
           break
-        case 'Delete':
-          this.music.del('col', 'keep')
+        case 'Minus':
+        case 'NumpadSubtract':
+        case 'Delete': // ?
+          this.erase()
           break
         case 'Enter':
         case 'NumpadEnter':

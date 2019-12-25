@@ -5,6 +5,12 @@
       <b-form-input v-model="title" type="text"></b-form-input>
     </b-form-group>
 
+    <b-form-group label="빠르기:">
+      <b-input-group prepend="분당" append="정간">
+        <b-form-input v-model="tempo" type="number"></b-form-input>
+      </b-input-group>
+    </b-form-group>
+
     <b-form-group label="음계:">
       <b-form-checkbox-group buttons v-model="scale" name="yuls">
         <b-form-checkbox value="0" v-b-tooltip.hover title="황종">&#40643;</b-form-checkbox>
