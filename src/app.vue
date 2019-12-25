@@ -3,8 +3,8 @@
     <keypanel
       v-model="rhythm[cursor.cell]"
       :cursor="cursor"
-      :sigim_show="sigim_show"
-      :scale="scale_sorted"
+      :sigimShow="sigimShow"
+      :scale="scaleSorted"
       :octave="octave"
       @write="write"
       @erase="erase"
@@ -18,7 +18,7 @@
       :rhythm="rhythm"
       :view="view"
       @move="move"
-      @move_rhythm="move_rhythm"
+      @moveRhythm="moveRhythm"
       id="workspace"
     ></canvaspanel>
     <configmodal v-model="setting"></configmodal>
@@ -49,18 +49,22 @@ export default {
       cursor: undefined,
       rhythm: undefined,
       music: undefined,
+      sigimShow: false,
       octave: 2,
-      sigim_show: false
     }
   },
   methods: {
-    update_sigim_show() {
+    updateSigimShow() {
       // Need optimization for less call
-      this.sigim_show = this.music.get('col').main != undefined
+      const main = this.music.get('col').main
+      this.sigimShow =
+        main &&
+        main.pitch != null &&
+        (typeof main.pitch === 'number' || main.pitch.length === 1)
     },
-    move_rhythm(i) {
+    moveRhythm(i) {
       this.music.trim()
-      this.cursor.move_rhythm(0, i)
+      this.cursor.moveRhythm(0, i)
     },
     move(chapter, cell, row, col) {
       this.music.trim()
@@ -69,12 +73,12 @@ export default {
     write(where, obj) {
       if (this.cursor.blurred) return
       this.$set(this.music.get('col'), where, obj)
-      this.update_sigim_show()
+      this.updateSigimShow()
     },
     erase() {
       if (this.cursor.blurred) return
       this.music.del('col', 'keep')
-      this.sigim_show = false
+      this.sigimShow = false
     },
     shapechange(what, delta) {
       if (this.cursor.blurred) return
@@ -93,10 +97,23 @@ export default {
     redo() {
       //
     },
+    keypressRhythm(e) {
+      if (e.code === 'ArrowUp') {
+        if (this.cursor.cell > 0) {
+          this.cursor.cell -= 1
+        }
+        e.preventDefault()
+      } else if (e.code === 'ArrowDown') {
+        if (this.cursor.cell < this.rhythm.length - 1) {
+          this.cursor.cell += 1
+        }
+        e.preventDefault()
+      }
+    },
     keypressHandler(e) {
       if (this.cursor.blurred) return
       if (this.cursor.select_mode) return
-      if (this.cursor.rhythm_mode) return
+      if (this.cursor.rhythmMode) return this.keypressRhythm(e)
       switch (e.code) {
         case 'ArrowUp':
           this.music.moveUpDown(-1)
@@ -181,7 +198,7 @@ export default {
     }
   },
   computed: {
-    scale_sorted() {
+    scaleSorted() {
       return this.setting.scale.map(Number).sort((a, b) => a - b)
     },
     view() {
@@ -189,7 +206,7 @@ export default {
     }
   },
   created() {
-    this.cursor = new Cursor(this.update_sigim_show)
+    this.cursor = new Cursor(this.updateSigimShow)
 
     this.rhythm = new Array(this.setting.measure)
     this.rhythm[0] = RHYTHM_OBJ[1]
@@ -197,8 +214,10 @@ export default {
     this.music = new Music(this.cursor)
     this.music.addchapter({
       name: '초장',
-      scale: this.scale_sorted,
-      measure: this.setting.measure
+      scale: this.scaleSorted,
+      measure: this.setting.measure,
+      tempo: this.setting.tempo,
+      padding: 0 // -1 for align to prev
     })
     this.move(0, 0, 0, 0)
     this.write('main', YUL_OBJ[this.octave][0])

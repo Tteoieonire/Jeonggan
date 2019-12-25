@@ -1,10 +1,12 @@
-class Cursor { // exists only one...nothing but container
-  constructor(after_move) {
-    this.blurred = true
-    this.after_move = after_move
+class Cursor {
+  constructor(afterMove) {
+    this.blur()
+    this.afterMove = afterMove
+  }
 
-    this.select_mode = false
-    this.rhythm_mode = false
+  blur() {
+    this.blurred = true
+    this.rhythmMode = false
     this.chapter = undefined
     this.cell = undefined
     this.row = undefined
@@ -13,22 +15,22 @@ class Cursor { // exists only one...nothing but container
 
   move(chapter, cell, row, col) {
     this.blurred = false
+    this.rhythmMode = false
 
-    this.select_mode = false
-    this.rhythm_mode = false
+    // payload
     this.chapter = chapter
     this.cell = cell
     this.row = row
     this.col = col
 
-    this.after_move()
+    this.afterMove && this.afterMove()
   }
 
-  move_rhythm(chapter, cell) {
+  moveRhythm(chapter, cell) {
     this.blurred = false
+    this.rhythmMode = true
 
-    this.select_mode = false
-    this.rhythm_mode = true
+    // payload
     this.chapter = chapter // unused for now
     this.cell = cell
     this.row = undefined

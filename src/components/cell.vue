@@ -32,7 +32,7 @@ export default {
       }
     },
     getMain(col) {
-      return col && col.main ? col.main.text : '&#8210;'
+      return col && col.main ? col.main.text : '-'
     },
     move(r, c) {
       this.$emit('move', r, c)

@@ -1,7 +1,7 @@
 <template>
   <!-- 하단 키 패널 -->
   <div class="container-fluid" v-if="!cursor.blurred">
-    <div v-if="cursor.rhythm_mode" class="row">
+    <div v-if="cursor.rhythmMode" class="row">
       <rhythmpad :value="value" @input="write_rhythm"></rhythmpad>
     </div>
     <div v-else class="row">
@@ -11,7 +11,7 @@
       </b-btn>
 
       <sympad @write="write" type="main"></sympad>
-      <sympad v-if="sigim_show" @write="write" type="modifier"></sympad>
+      <sympad v-if="sigimShow" @write="write" type="modifier"></sympad>
       <b-btn v-else class="m-1 dropup" disabled>
         <span class="dropdown-toggle">시김새</span>
       </b-btn>
@@ -29,7 +29,7 @@ import sympad from './keypads/sympad.vue'
 import shapepad from './keypads/shapepad.vue'
 
 export default {
-  props: ['cursor', 'sigim_show', 'scale', 'value', 'octave'],
+  props: ['cursor', 'sigimShow', 'scale', 'value', 'octave'],
   methods: {
     write_rhythm(tick) {
       this.$emit('input', tick)

@@ -8,7 +8,7 @@
         :key="j"
         :active="this_tick(j)"
         :aria-label="tick || '빈칸'"
-        @click="move_rhythm(j)"
+        @click="moveRhythm(j)"
         class="gugak"
         variant="info"
         button
@@ -53,11 +53,11 @@ export default {
       return gaks[0].length * i + j
     },
     this_cell(k, j) {
-      if (this.cursor.rhythm_mode) return false
+      if (this.cursor.rhythmMode) return false
       return this.cursor.chapter === k && this.cursor.cell === j
     },
     this_tick(j) {
-      return this.cursor.rhythm_mode && this.cursor.cell === j
+      return this.cursor.rhythmMode && this.cursor.cell === j
     },
     move(chapter, cell, row, col) {
       this.$emit('move', chapter, cell, row, col)
@@ -65,8 +65,8 @@ export default {
     move_fallback(cell, k, c) {
       if (!cell) this.move(k, c, 0, 0)
     },
-    move_rhythm(j) {
-      this.$emit('move_rhythm', j)
+    moveRhythm(j) {
+      this.$emit('moveRhythm', j)
     }
   },
   components: {

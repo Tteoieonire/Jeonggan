@@ -35,7 +35,7 @@ class Music {
 
   trim() {
     if (this.cursor.blurred) return
-    if (this.cursor.rhythm_mode) return
+    if (this.cursor.rhythmMode) return
     this.get('chapter').trim()
   }
 
@@ -45,7 +45,7 @@ class Music {
     if (!this.cursor.blurred) {
       dest_chapter = 1 + this.cursor.chapter
     }
-    config = config || this.get('chapter').config
+    config = config || Object.assign({}, this.get('chapter').config)
 
     const cells = new Array(2)
     const chapter = new Chapter(this.cursor, config, cells)
