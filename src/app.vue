@@ -50,9 +50,10 @@ export default {
   data() {
     return {
       setting: {
-        title: '만파정식',
-        scale: ['0', '2', '4', '9', '7'], // use scale_sorted instead
-        measure: 12
+        title: '수연장지곡',
+        scale: ['0', '2', '5', '7', '9'], // use scaleSorted instead
+        measure: 6,
+        tempo: 60
       },
       cursor: undefined,
       rhythm: undefined,
@@ -122,7 +123,7 @@ export default {
       } else {
         let compiled = this.music.compile()
         this.audioContext = this.audioContext || new AudioContext()
-        Soundfont.instrument(this.audioContext, 'cello').then(player => {
+        Soundfont.instrument(this.audioContext, 'flute').then(player => {
           this.playStatus = { player, playing: true }
           this.cursor.startPlay()
           player.schedule(0, compiled)
