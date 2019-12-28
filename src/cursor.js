@@ -17,7 +17,6 @@ class Cursor {
   move(chapter, cell, row, col) {
     this.blurred = false
     this.rhythmMode = false
-    this.playMode = false
 
     // payload
     this.chapter = chapter
@@ -31,7 +30,6 @@ class Cursor {
   moveRhythm(chapter, cell) {
     this.blurred = false
     this.rhythmMode = true
-    this.playMode = false
 
     // payload
     this.chapter = chapter // unused for now
@@ -46,6 +44,7 @@ class Cursor {
   }
 
   stopPlay() {
+    this.playMode = false
     this.move(...this.prevPos)
     this.prevPos = undefined
   }

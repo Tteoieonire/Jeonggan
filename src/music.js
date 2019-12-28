@@ -30,8 +30,10 @@ class Music {
   }
 
   nextCol () {
-    if (this.get('chapter').nextCol()) return
+    if (this.get('chapter').nextCol()) return true
+    if (!inRange(1 + this.cursor.chapter, this.chapters)) return false
     this.set('chapter', 1 + this.cursor.chapter)
+    return true
   }
 
   /* Operations */

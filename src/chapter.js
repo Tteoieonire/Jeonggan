@@ -34,11 +34,10 @@ class Chapter {
     this.cursor = this.cursor.cloneGhost()
     if (time > 0) this.focus(0, 0, 0)
 
-    const msPerCell = 60000 / this.config.tempo
     let notes = []
     do {
       let cur = this.get('col')
-      let duration = msPerCell * this.calcColSize()
+      let duration = this.colDuration()
       if (cur.main && cur.main.pitch) {
         notes.push({
           time,
@@ -57,8 +56,9 @@ class Chapter {
     return notes
   }
 
-  calcColSize () {
-    return 1 / (this.get('cell').length * this.get('row').length)
+  colDuration () {
+    const fraction = this.get('cell').length * this.get('row').length
+    return (60000 / this.config.tempo) / fraction
   } 
 
   nextCol() {
