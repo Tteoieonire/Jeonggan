@@ -8,7 +8,7 @@
         :key="j"
         :active="this_tick(j)"
         :aria-label="tick || '빈칸'"
-        @click="moveRhythm(j)"
+        @focus="moveRhythm(j)"
         class="gugak"
         variant="info"
         button
@@ -25,7 +25,7 @@
           button
           :key="j"
           :active="this_cell(k, calc_cell(gaks, i, j))"
-          @click="move(k, calc_cell(gaks, i, j), 0, 0)"
+          @focus="move(k, calc_cell(gaks, i, j), 0, 0)"
         >
           <cell
             v-if="cell"
@@ -69,6 +69,9 @@ export default {
     moveRhythm(j) {
       if (this.cursor.playMode) return
       this.$emit('moveRhythm', j)
+    },
+    focus(){
+      console.log('focused')
     }
   },
   components: {

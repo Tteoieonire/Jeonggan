@@ -174,7 +174,7 @@ export default {
           if (this.octave > 0) {
             this.octave -= 1
           }
-          return
+          break
         case 'Semicolon':
           if (this.octave < 4) {
             this.octave += 1
@@ -210,8 +210,9 @@ export default {
             } else {
               this.undo()
             }
+            break
           }
-          break
+          return
       }
       e.preventDefault()
     }
@@ -245,7 +246,10 @@ export default {
     this.write('main', YUL_OBJ[this.octave][0])
 
     this.player = new Player(this.music)
-    document.addEventListener('keydown', this.keypressHandler)
+  },
+  mounted() {
+    document.getElementById('workspace').addEventListener('keydown', this.keypressHandler)
+    // TODO: change focus on aftermove as well
   },
   components: {
     keypanel,

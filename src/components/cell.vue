@@ -11,7 +11,8 @@
         v-for="(col, c) in row"
         :key="c"
         :class="{cur: this_col(r, c)}"
-        @click.stop="move(r, c)"
+        @focus.stop="move(r, c)"
+        tabindex="-1"
       >
         <span v-html="getMain(col)" class="gugak"></span>
         <span v-if="col && col.modifier" class="gugak modifier">{{ col.modifier.text }}</span>
