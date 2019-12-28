@@ -1,12 +1,13 @@
 class Cursor {
   constructor(afterMove) {
     this.blur()
+    this.rhythmMode = false
+    this.playMode = false
     this.afterMove = afterMove
   }
 
   blur() {
     this.blurred = true
-    this.rhythmMode = false
     this.chapter = undefined
     this.cell = undefined
     this.row = undefined
@@ -16,6 +17,7 @@ class Cursor {
   move(chapter, cell, row, col) {
     this.blurred = false
     this.rhythmMode = false
+    this.playMode = false
 
     // payload
     this.chapter = chapter
@@ -29,6 +31,7 @@ class Cursor {
   moveRhythm(chapter, cell) {
     this.blurred = false
     this.rhythmMode = true
+    this.playMode = false
 
     // payload
     this.chapter = chapter // unused for now
@@ -38,13 +41,26 @@ class Cursor {
   }
 
   startPlay() {
-    this.blurred = true
+    this.playMode = true
     this.prevPos = [this.chapter, this.cell, this.row, this.col]
   }
 
   stopPlay() {
     this.move(...this.prevPos)
     this.prevPos = undefined
+  }
+
+  cloneGhost() {
+    let ghost = new Cursor() // but no aftermove
+    ghost.blurred = this.blurred
+    ghost.rhythmMode = this.rhythmMode
+    ghost.playMode = this.playMode
+    ghost.chapter = this.chapter
+    ghost.cell = this.cell
+    ghost.row = this.row
+    ghost.col = this.col
+    ghost.prevPos = this.prevPos
+    return ghost
   }
 }
 

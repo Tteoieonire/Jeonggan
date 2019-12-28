@@ -1,4 +1,3 @@
-import { compileChapter } from './compiler.js'
 import { wrappedIdx, moveToMostAligned, inRange } from './utils.js'
 
 class Chapter {
@@ -29,16 +28,50 @@ class Chapter {
     return gaks
   }
 
-  compile(elapsed = 0) {
-    let cells = this.cells
-    if (elapsed === 0) {
-      // first chapter to start
-      cells = cells.slice(this.cursor.cell)
+  compile(time = 0) {
+    if (this.cells.length === 0) return [time]
+    const cursorBackup = this.cursor
+    this.cursor = this.cursor.cloneGhost()
+    if (time > 0) this.focus(0, 0, 0)
+
+    const msPerCell = 60000 / this.config.tempo
+    let notes = []
+    do {
+      let cur = this.get('col')
+      let duration = msPerCell * this.calcColSize()
+      if (cur.main && cur.main.pitch) {
+        notes.push({
+          time,
+          duration,
+          main: cur.main,
+          modifier: cur.modifier
+        })
+      } else if (notes.length > 0) {
+        notes[notes.length - 1].duration += duration
+      }
+      time += duration
+    } while (this.nextCol())
+
+    this.cursor = cursorBackup
+    notes.push(time)
+    return notes
+  }
+
+  calcColSize () {
+    return 1 / (this.get('cell').length * this.get('row').length)
+  } 
+
+  nextCol() {
+    let level = 'col'
+    while (level !== 'cells') {
+      let parent = this.get(parentOf(level))
+      if (inRange(1 + this.cursor[level], parent)) {
+        this.set(level, 1 + this.cursor[level])
+        return true
+      }
+      level = parentOf(level)
     }
-    let duration = (60 * cells.length) / this.config.tempo // s
-    let compiled = compileChapter(cells, elapsed, duration, this.config.scale) // lastPitch?
-    compiled.push(elapsed + duration) // also return total elapsed time
-    return compiled
+    return false
   }
 
   isEmpty() {
@@ -181,3 +214,17 @@ function childOf(what) {
 }
 
 export default Chapter
+
+/*
+  compile(time = 0) {
+    let cells = this.cells
+    if (time === 0) {
+      // first chapter to start
+      cells = cells.slice(this.cursor.cell)
+    }
+    let duration = (60 * cells.length) / this.config.tempo // s
+    let compiled = compileChapter(cells, time, duration, this.config.scale) // lastPitch?
+    compiled.push(time + duration) // also return total time time
+    return compiled
+  }
+ */

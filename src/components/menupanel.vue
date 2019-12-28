@@ -3,7 +3,7 @@
   <div class="container-fluid">
     <b-button-group class="m-1">
       <b-btn
-        v-if="playStatus && playStatus.playing"
+        v-if="playerMode === 'playing'"
         @click="pause"
         :disabled="rhythmMode"
         aria-label="일시 정지"
@@ -13,7 +13,7 @@
       <b-btn v-else @click="resume" :disabled="rhythmMode" aria-label="재생">
         <i class="fa fa-play"></i>
       </b-btn>
-      <b-btn @click="stop" :disabled="rhythmMode || !playStatus" aria-label="연주 정지">
+      <b-btn @click="stop" :disabled="rhythmMode || playerMode === 'stopped'" aria-label="연주 정지">
         <i class="fa fa-stop"></i>
       </b-btn>
     </b-button-group>
@@ -36,7 +36,7 @@
 
 <script>
 export default {
-  props: ['rhythmMode', 'playStatus'],
+  props: ['rhythmMode', 'playerMode'],
   methods: {
     addchapter() {
       this.$emit('addchapter')

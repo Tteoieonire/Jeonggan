@@ -60,12 +60,14 @@ export default {
       return this.cursor.rhythmMode && this.cursor.cell === j
     },
     move(chapter, cell, row, col) {
+      if (this.cursor.playMode) return
       this.$emit('move', chapter, cell, row, col)
     },
     move_fallback(cell, k, c) {
       if (!cell) this.move(k, c, 0, 0)
     },
     moveRhythm(j) {
+      if (this.cursor.playMode) return
       this.$emit('moveRhythm', j)
     }
   },

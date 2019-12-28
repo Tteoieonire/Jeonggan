@@ -1,6 +1,6 @@
 <template>
   <!-- 하단 키 패널 -->
-  <div class="container-fluid" v-if="!cursor.blurred">
+  <div class="container-fluid" v-if="!cursor.blurred && !cursor.playMode">
     <div v-if="cursor.rhythmMode" class="row">
       <rhythmpad :value="value" @input="write_rhythm"></rhythmpad>
     </div>

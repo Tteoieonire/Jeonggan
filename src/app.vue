@@ -14,7 +14,7 @@
     ></keypanel>
     <menupanel
       :rhythmMode="cursor.rhythmMode"
-      :playStatus="playStatus"
+      :playerMode="player.mode"
       @addchapter="addchapter"
       @play="play"
       id="menubar"
@@ -32,8 +32,6 @@
 </template>
 
 <script>
-import Soundfont from 'soundfont-player'
-
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
 import canvaspanel from './components/canvaspanel.vue'
@@ -41,6 +39,7 @@ import configmodal from './components/configmodal.vue'
 
 import Cursor from './cursor.js'
 import Music from './music.js'
+import Player from './player.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
 
 /**
@@ -60,8 +59,7 @@ export default {
       music: undefined,
       sigimShow: false,
       octave: 2,
-      audioContext: null,
-      playStatus: null // {playing: true/false, player}
+      player: null,
     }
   },
   methods: {
@@ -106,28 +104,12 @@ export default {
       this.music.addchapter()
     },
     play(command) {
-      /*
-      TODO:
-      - 시간에 맞춰 쓰던 커서 움직이기
-      */
       if (command === 'stop') {
-        this.playStatus.player.stop()
-        this.playStatus = null
-        this.cursor.stopPlay()
+        this.player.stop()
       } else if (command === 'pause') {
-        this.playStatus.playing = false
-        this.playStatus.player.stop()
-      } else if (this.playStatus) {
-        this.playStatus.playing = true
-        //this.playStatus.player.play()
+        this.player.pause()
       } else {
-        let compiled = this.music.compile()
-        this.audioContext = this.audioContext || new AudioContext()
-        Soundfont.instrument(this.audioContext, 'flute').then(player => {
-          this.playStatus = { player, playing: true }
-          this.cursor.startPlay()
-          player.schedule(0, compiled)
-        })
+        this.player.resume()
       }
     },
     undo() {
@@ -259,6 +241,7 @@ export default {
     this.move(0, 0, 0, 0)
     this.write('main', YUL_OBJ[this.octave][0])
 
+    this.player = new Player(this.music)
     document.addEventListener('keydown', this.keypressHandler)
   },
   components: {

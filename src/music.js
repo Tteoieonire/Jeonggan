@@ -1,4 +1,5 @@
 import Chapter from './chapter.js'
+import { render } from "./renderer.js"
 import { wrappedIdx, inRange, moveToMostAligned } from './utils.js'
 
 class Music {
@@ -12,18 +13,25 @@ class Music {
     return this.chapters.map(chapter => chapter.view())
   }
 
-  compile() {
-    // cursor only cell based?
+  render() {
     let bgn = this.cursor.blurred ? 0 : this.cursor.chapter
-    let compiled = this.chapters.slice(bgn).reduce(
+    let rendered = this.chapters.slice(bgn).reduce(
       function(acc, chapter) {
         let elapsed = acc.pop()
-        return acc.concat(chapter.compile(elapsed))
+        let compiled = chapter.compile(elapsed)
+        elapsed = compiled.pop()
+        let rendered = render(compiled, chapter.config.scale)
+        return acc.concat(rendered, [elapsed])
       },
       [0]
     )
-    compiled.pop()
-    return compiled
+    rendered.pop()
+    return rendered
+  }
+
+  nextCol () {
+    if (this.get('chapter').nextCol()) return
+    this.set('chapter', 1 + this.cursor.chapter)
   }
 
   /* Operations */
