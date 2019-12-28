@@ -5,7 +5,7 @@
       <rhythmpad :value="value" @input="write_rhythm"></rhythmpad>
     </div>
     <div v-else class="row">
-      <yulpad :scale="scale" :octave="octave" @write="write"></yulpad>
+      <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
       <b-btn @click="erase" aria-label="지우개" class="m-1">
         <i class="fa fa-eraser"></i>
       </b-btn>
@@ -42,6 +42,9 @@ export default {
     },
     shapechange(type, delta) {
       this.$emit('shapechange', type, delta)
+    },
+    octavechange(delta) {
+      this.$emit('octavechange', delta)
     }
   },
   components: {

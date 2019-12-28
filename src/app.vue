@@ -225,7 +225,10 @@ export default {
     }
   },
   created() {
-    this.cursor = new Cursor(this.updateSigimShow)
+    this.cursor = new Cursor(() => {
+      this.music.get('chapter').trimLast()
+      this.updateSigimShow()
+    })
 
     this.rhythm = new Array(this.setting.measure)
     this.rhythm[0] = RHYTHM_OBJ[1]

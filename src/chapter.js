@@ -56,10 +56,10 @@ class Chapter {
     return notes
   }
 
-  colDuration () {
+  colDuration() {
     const fraction = this.get('cell').length * this.get('row').length
-    return (60000 / this.config.tempo) / fraction
-  } 
+    return 60000 / this.config.tempo / fraction
+  }
 
   nextCol() {
     let level = 'col'
@@ -149,10 +149,23 @@ class Chapter {
   trim() {
     if (this.cursor.blurred) return
     const el = this.get('cell')
-    if (el.length > 1) return
-    if (el[0].length > 1) return
-    if (el[0][0] && el[0][0].main) return
+    if (!this.isEmptyCell(el)) return
     this.cells.splice(this.cursor.cell, 1, undefined)
+  }
+
+  isEmptyCell(cell) {
+    if (!cell) return true
+    if (cell.length > 1) return false
+    if (cell[0].length > 1) return false
+    if (cell[0][0] && cell[0][0].main) return false
+    return true
+  }
+
+  trimLast() {
+    for (var idx = this.cells.length-1; idx > this.cursor.cell; idx--) {
+      if (!this.isEmptyCell(this.cells[idx])) break
+    }
+    this.cells.splice(idx + 1, this.cells.length - 1 - idx, undefined)
   }
 
   /* Methods: desirably a sequence of valid ops */
