@@ -40,11 +40,13 @@ class Cursor {
 
   startPlay() {
     this.playMode = true
-    this.prevPos = [this.chapter, this.cell, this.row, this.col]
+    this.prevPos = [this.chapter, this.cell, this.row, this.col, this.afterMove]
+    this.afterMove = null
   }
 
   stopPlay() {
     this.playMode = false
+    this.afterMove = this.prevPos.pop()
     this.move(...this.prevPos)
     this.prevPos = undefined
   }
