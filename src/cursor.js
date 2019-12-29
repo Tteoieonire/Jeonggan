@@ -3,7 +3,7 @@ class Cursor {
     this.blur()
     this.rhythmMode = false
     this.playMode = false
-    this.afterMove = afterMove
+    this.eventlisteners = {} // before/after chapter/cell/col change
   }
 
   blur() {
@@ -14,45 +14,68 @@ class Cursor {
     this.col = undefined
   }
 
-  move(chapter, cell, row, col) {
+  checkChanges(newRhythmMode, newChapter, newCell, newRow, newCol) {
+    let changes = {}
+    changes.rhythmMode = this.blurred || this.rhythmMode !== newRhythmMode
+    changes.chapter = this.blurred || this.chapter !== newChapter
+    changes.cell =
+      changes.rhythmMode || changes.chapter || this.cell !== newCell
+    changes.row = changes.cell || this.row !== newRow
+    changes.col = changes.row || this.col !== newCol
+    return changes
+  }
+
+  on(change, f) {
+    this.eventlisteners[change] = f
+  }
+
+  dispatchEvents(changes, time = 'before') {
+    if (this.playMode) return
+    ;[ // bottom up
+      changes.col && time + 'ColChange',
+      changes.row && time + 'RowChange',
+      changes.cell && time + 'CellChange',
+      changes.chapter && time + 'ChapterChange',
+      changes.rhythmMode && time + 'RhythmModeChange'
+    ]
+      .map(event => this.eventlisteners[event])
+      .forEach(f => f && f())
+  }
+
+  _move(newRhythmMode, newChapter, newCell, newRow, newCol) {
+    const changes = this.checkChanges(...arguments)
+    this.dispatchEvents(changes, 'before')
+
     this.blurred = false
-    this.rhythmMode = false
+    this.rhythmMode = newRhythmMode
+    this.chapter = newChapter
+    this.cell = newCell
+    this.row = newRow
+    this.col = newCol
+    this.dispatchEvents(changes, 'after')
+  }
 
-    // payload
-    this.chapter = chapter
-    this.cell = cell
-    this.row = row
-    this.col = col
-
-    this.afterMove && this.afterMove()
+  move(chapter, cell, row, col) {
+    this._move(false, chapter, cell, row, col)
   }
 
   moveRhythm(chapter, cell) {
-    this.blurred = false
-    this.rhythmMode = true
-
-    // payload
-    this.chapter = chapter // unused for now
-    this.cell = cell
-    this.row = undefined
-    this.col = undefined
+    this._move(true, chapter, cell)
   }
 
-  startPlay() {
+  startPlay() { // trimLast(true)??
     this.playMode = true
-    this.prevPos = [this.chapter, this.cell, this.row, this.col, this.afterMove]
-    this.afterMove = null
+    this.prevPos = [this.chapter, this.cell, this.row, this.col]
   }
 
   stopPlay() {
     this.playMode = false
-    this.afterMove = this.prevPos.pop()
     this.move(...this.prevPos)
     this.prevPos = undefined
   }
 
   cloneGhost() {
-    let ghost = new Cursor() // but no aftermove
+    let ghost = new Cursor()
     ghost.blurred = this.blurred
     ghost.rhythmMode = this.rhythmMode
     ghost.playMode = this.playMode
@@ -60,7 +83,6 @@ class Cursor {
     ghost.cell = this.cell
     ghost.row = this.row
     ghost.col = this.col
-    ghost.prevPos = this.prevPos
     return ghost
   }
 }

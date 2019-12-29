@@ -1,15 +1,16 @@
 <template>
   <div>
     <keypanel
-      v-model="rhythm[cursor.cell]"
+      :tickIdx="tickIdx"
       :cursor="cursor"
       :sigimShow="sigimShow"
-      :scale="scaleSorted"
+      :config="config"
       :octave="octave"
       @write="write"
       @erase="erase"
       @shapechange="shapechange"
       @octavechange="octavechange"
+      @tickchange="tickchange"
       id="keypanel"
     ></keypanel>
     <menupanel
@@ -19,15 +20,9 @@
       @play="play"
       id="menubar"
     ></menupanel>
-    <canvaspanel
-      :cursor="cursor"
-      :rhythm="rhythm"
-      :view="view"
-      @move="move"
-      @moveRhythm="moveRhythm"
-      id="workspace"
-    ></canvaspanel>
-    <configmodal v-model="setting"></configmodal>
+    <canvaspanel :cursor="cursor" :view="view" @move="move" @moveRhythm="moveRhythm" id="workspace"></canvaspanel>
+    <configmodal :config="config" @configchange="configchange"></configmodal>
+    <exchangemodal :title="title" :music="music" @exchange="exchange"></exchangemodal>
   </div>
 </template>
 
@@ -36,47 +31,61 @@ import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
 import canvaspanel from './components/canvaspanel.vue'
 import configmodal from './components/configmodal.vue'
+import exchangemodal from './components/exchangemodal.vue'
 
 import Cursor from './cursor.js'
 import Music from './music.js'
+import Chapter from './chapter.js'
 import Player from './player.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
 
 /**
  * Controller
  */
+const INIT_TITLE = '수연장지곡'
+const INIT_CONFIG = {
+  name: '초장',
+  tempo: 60,
+  measure: 6,
+  rhythm: ['떵', null, '따닥', '쿵', '더러러러', '따'],
+  scale: [0, 2, 5, 7, 9],
+  padding: 0 //?
+}
+
 export default {
   data() {
     return {
-      setting: {
-        title: '수연장지곡',
-        scale: ['0', '2', '5', '7', '9'], // use scaleSorted instead
-        measure: 6,
-        tempo: 60
-      },
+      title: INIT_TITLE,
       cursor: undefined,
-      rhythm: undefined,
       music: undefined,
-      sigimShow: false,
+      config: undefined, // need update
+      sigimShow: false, // need update
       octave: 2,
-      player: null,
+      tickIdx: 0,
+      player: null
     }
   },
   methods: {
     updateSigimShow() {
-      // Need optimization for less call
+      if (this.cursor.blurred || this.cursor.rhythmMode) return
       const main = this.music.get('col').main
       this.sigimShow =
         main &&
-        main.pitch != null &&
+        main.pitch &&
         (typeof main.pitch === 'number' || main.pitch.length === 1)
     },
-    moveRhythm(i) {
-      this.music.trim()
-      this.cursor.moveRhythm(0, i)
+    updateChapter() {
+      if (this.cursor.blurred) return
+      this.config = this.music.get('chapter').config // shallow copy
+      console.log(this.config)
+    },
+    moveRhythm(chapter, cell) {
+      this.cursor.moveRhythm(chapter, cell)
+      this.$nextTick(() => {
+        this.tickIdx = RHYTHM_OBJ.indexOf(this.config.rhythm[cell])
+      })
     },
     move(chapter, cell, row, col) {
-      this.music.trim()
       this.cursor.move(chapter, cell, row, col)
     },
     write(where, obj) {
@@ -100,6 +109,14 @@ export default {
     octavechange(delta) {
       this.octave += delta
     },
+    tickchange(tickIdx) {
+      this.tickIdx = tickIdx
+      this.config.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
+    },
+    configchange(config) {
+      this.config = config
+      this.music.get('chapter').config = config
+    },
     addchapter() {
       this.music.addchapter()
     },
@@ -112,6 +129,15 @@ export default {
         this.player.resume()
       }
     },
+    exchange(title, chapters){
+      this.cursor.blur()
+      this.title = title
+      this.music.chapters = chapters.map(config => {
+        const chapter = new Chapter(this.cursor, config, config.content)
+        delete config.content
+        return chapter
+      })
+    },
     undo() {
       //
     },
@@ -121,15 +147,22 @@ export default {
     keypressRhythm(e) {
       if (e.code === 'ArrowUp') {
         if (this.cursor.cell > 0) {
-          this.cursor.cell -= 1
+          this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
         }
-        e.preventDefault()
       } else if (e.code === 'ArrowDown') {
-        if (this.cursor.cell < this.rhythm.length - 1) {
-          this.cursor.cell += 1
+        if (this.cursor.cell < this.config.measure - 1) {
+          this.moveRhythm(this.cursor.chapter, this.cursor.cell + 1)
         }
-        e.preventDefault()
-      }
+      } else if (e.code === 'ArrowLeft') {
+        if (this.tickIdx > 0) {
+          this.tickchange(this.tickIdx - 1)
+        }
+      } else if (e.code === 'ArrowRight') {
+        if (this.cursor.cell < RHYTHM_OBJ.length - 1) {
+          this.tickchange(this.tickIdx + 1)
+        }
+      } else return
+      e.preventDefault()
     },
     keypressHandler(e) {
       if (this.cursor.blurred) return
@@ -218,44 +251,38 @@ export default {
     }
   },
   computed: {
-    scaleSorted() {
-      return this.setting.scale.map(Number).sort((a, b) => a - b)
-    },
     view() {
       return this.music.view()
     }
   },
   created() {
-    this.cursor = new Cursor(() => {
-      this.music.get('chapter').trimLast()
-      this.updateSigimShow()
-    })
-
-    this.rhythm = new Array(this.setting.measure)
-    this.rhythm[0] = RHYTHM_OBJ[1]
-
+    this.cursor = new Cursor()
     this.music = new Music(this.cursor)
-    this.music.addchapter({
-      name: '초장',
-      scale: this.scaleSorted,
-      measure: this.setting.measure,
-      tempo: this.setting.tempo,
-      padding: 0 // -1 for align to prev
-    })
+    this.music.addchapter(INIT_CONFIG)
+
+    this.cursor.on('afterColChange', this.updateSigimShow) // focus as well
+    this.cursor.on('afterCellChange', () => this.music.trimLast())
+    this.cursor.on('afterChapterChange', this.updateChapter)
+    this.cursor.on('beforeCellChange', () => this.music.trim())
+    this.cursor.on('beforeChapterChange', () => this.music.trimChapter())
+
     this.move(0, 0, 0, 0)
     this.write('main', YUL_OBJ[this.octave][0])
+    this.updateChapter()
 
     this.player = new Player(this.music)
   },
   mounted() {
-    document.getElementById('workspace').addEventListener('keydown', this.keypressHandler)
-    // TODO: change focus on aftermove as well
+    document
+      .getElementById('workspace')
+      .addEventListener('keydown', this.keypressHandler)
   },
   components: {
     keypanel,
     menupanel,
     canvaspanel,
-    configmodal
+    configmodal,
+    exchangemodal
   }
 }
 

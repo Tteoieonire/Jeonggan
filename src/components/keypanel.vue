@@ -2,7 +2,7 @@
   <!-- 하단 키 패널 -->
   <div class="container-fluid" v-if="!cursor.blurred && !cursor.playMode">
     <div v-if="cursor.rhythmMode" class="row">
-      <rhythmpad :value="value" @input="write_rhythm"></rhythmpad>
+      <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">
       <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
@@ -29,11 +29,11 @@ import sympad from './keypads/sympad.vue'
 import shapepad from './keypads/shapepad.vue'
 
 export default {
-  props: ['cursor', 'sigimShow', 'scale', 'value', 'octave'],
+  props: ['tickIdx', 'cursor', 'sigimShow', 'config', 'octave'],
+  data() {
+    return { scale: (this.config && this.config.scale) || [] }
+  },
   methods: {
-    write_rhythm(tick) {
-      this.$emit('input', tick)
-    },
     write(where, obj) {
       this.$emit('write', where, obj)
     },
@@ -45,6 +45,9 @@ export default {
     },
     octavechange(delta) {
       this.$emit('octavechange', delta)
+    },
+    tickchange(tickIdx) {
+      this.$emit('tickchange', tickIdx)
     }
   },
   components: {

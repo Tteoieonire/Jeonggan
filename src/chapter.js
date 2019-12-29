@@ -6,16 +6,6 @@ class Chapter {
     this.config = config
     this.cells = cells || []
   }
-  /* all arrays, never length 0
-  * 장 = [정간, ...]
-  * 정간 = [행, ...] | undefined
-  * 행 = [분박, ...]
-  * 분박 = {main, modifier} | >>undefined<<
-    - main, modifier = {text, pitch}
-    - pitch null -> 쉼표
-    - pitch 0 이상 정수 -> 음
-    - pitch 문자열 -> 상대
-  */
 
   view(lastPos) {
     const measure = this.config.measure
@@ -25,7 +15,7 @@ class Chapter {
       let sliced = this.cells.slice(i * measure, (i + 1) * measure)
       gaks.push(sliced)
     }
-    return gaks
+    return { gaks, config: this.config }
   }
 
   compile(time = 0) {
@@ -35,17 +25,21 @@ class Chapter {
     if (time > 0) this.focus(0, 0, 0)
 
     let notes = []
+    let ongoing = false
     do {
       let cur = this.get('col')
       let duration = this.colDuration()
-      if (cur.main && cur.main.pitch) {
-        notes.push({
-          time,
-          duration,
-          main: cur.main,
-          modifier: cur.modifier
-        })
-      } else if (notes.length > 0) {
+      if (cur.main) {
+        ongoing = !!cur.main.pitch // no ongoing if rest
+        if (ongoing) {
+          notes.push({
+            time,
+            duration,
+            main: cur.main,
+            modifier: cur.modifier
+          })
+        }
+      } else if (ongoing) {
         notes[notes.length - 1].duration += duration
       }
       time += duration
@@ -81,16 +75,15 @@ class Chapter {
   /* Operations */
   focus(cell, row, col) {
     cell = wrappedIdx(cell, this.cells.length)
-    this.cursor.cell = cell
+    this.cursor.move(this.cursor.chapter, cell, 0, 0)
     row = wrappedIdx(row, this.get('cell').length)
-    this.cursor.row = row
+    this.cursor.move(this.cursor.chapter, cell, row, 0)
     col = wrappedIdx(col, this.get('row').length)
     this.cursor.move(this.cursor.chapter, cell, row, col)
   }
 
   get(what) {
-    // ensure exist @ every focus & cache col?
-    // This one makes sure you DO get something valid.
+    // This makes sure you DO get something valid.
     let el = this.cells
     if (what === 'cells') return el
 
@@ -148,6 +141,7 @@ class Chapter {
 
   trim() {
     if (this.cursor.blurred) return
+    if (this.cursor.rhythmMode) return
     const el = this.get('cell')
     if (!this.isEmptyCell(el)) return
     this.cells.splice(this.cursor.cell, 1, undefined)
@@ -161,11 +155,13 @@ class Chapter {
     return true
   }
 
-  trimLast() {
-    for (var idx = this.cells.length-1; idx > this.cursor.cell; idx--) {
+  trimLast(cruel = false) {
+    if (this.cursor.rhythmMode) return
+    for (var idx = this.cells.length - 1; idx > this.cursor.cell; idx--) {
       if (!this.isEmptyCell(this.cells[idx])) break
     }
-    this.cells.splice(idx + 1, this.cells.length - 1 - idx, undefined)
+    this.cells.splice(idx + 1, this.cells.length - 1 - idx)
+    if (!cruel) this.cells.push(undefined)
   }
 
   /* Methods: desirably a sequence of valid ops */

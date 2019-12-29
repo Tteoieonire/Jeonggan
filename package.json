@@ -7,11 +7,12 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
-    "vue": "^2.5.3",
     "bootstrap": "^4.0.0-beta.2",
     "bootstrap-vue": "^1.2.0",
     "popper.js": "^1.12.9",
-    "soundfont-player": "^0.11.0"
+    "soundfont-player": "^0.11.0",
+    "vue": "^2.5.3",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

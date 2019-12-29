@@ -1,6 +1,6 @@
 <template>
   <b-form-radio-group
-    :checked="value"
+    :checked="tickIdx"
     @change="change"
     buttons
     name="rhythms"
@@ -10,7 +10,7 @@
     <b-form-radio
       v-for="(item, i) in RHYTHM_OBJ"
       :key="i"
-      :value="item"
+      :value="i"
       :aria-label="getLabel(item)"
     >
       <span aria-hidden>{{ getText(item) }}</span>
@@ -19,10 +19,9 @@
 </template>
   
 <script>
-// 되긴 될까?? event가 다르지 않을까?
 import { RHYTHM_OBJ } from '../../constants.js'
 export default {
-  props: ['value'],
+  props: ['tickIdx'],
   data() {
     return { RHYTHM_OBJ }
   },
@@ -34,7 +33,7 @@ export default {
       return item || ''
     },
     change(e) {
-      this.$emit('input', e)
+      this.$emit('tickchange', e)
     }
   }
 }

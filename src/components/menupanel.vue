@@ -26,9 +26,9 @@
           <i class="fa fa-ellipsis-v"></i>
         </template>
 
-        <b-dropdown-item-button v-show="false">저장</b-dropdown-item-button>
-        <b-dropdown-item-button v-show="false">내려받기</b-dropdown-item-button>
-        <b-dropdown-item-button v-b-modal.setting>곡 설정</b-dropdown-item-button>
+        <b-dropdown-item-button v-b-modal.exchange>불러오기</b-dropdown-item-button>
+        <b-dropdown-item-button v-b-modal.exchange>내보내기</b-dropdown-item-button>
+        <b-dropdown-item-button v-b-modal.config>곡 설정</b-dropdown-item-button>
       </b-dropdown>
     </b-button-group>
   </div>

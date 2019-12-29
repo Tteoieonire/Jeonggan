@@ -5,12 +5,11 @@
 
       <b-btn
         v-for="(yul, i) in yuls"
-        v-html="yul.text"
         :key="i"
         :title="yul.label"
         @click="note(i)"
         v-b-tooltip.hover
-      ></b-btn>
+      >{{yul.text}}</b-btn>
 
       <b-btn :disabled="octave>=4" @click="raise" variant="outline-primary" aria-label="옥타브 올림">氵</b-btn>
     </b-button-group>

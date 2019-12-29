@@ -1,5 +1,5 @@
 import Chapter from './chapter.js'
-import { render } from "./renderer.js"
+import { render } from './renderer.js'
 import { wrappedIdx, inRange, moveToMostAligned } from './utils.js'
 
 class Music {
@@ -29,7 +29,7 @@ class Music {
     return rendered
   }
 
-  nextCol () {
+  nextCol() {
     if (this.get('chapter').nextCol()) return true
     if (!inRange(1 + this.cursor.chapter, this.chapters)) return false
     this.set('chapter', 1 + this.cursor.chapter)
@@ -59,9 +59,18 @@ class Music {
   }
 
   trim() {
-    if (this.cursor.blurred) return
-    if (this.cursor.rhythmMode) return
     this.get('chapter').trim()
+  }
+
+  trimLast(cruel) {
+    this.get('chapter').trimLast(cruel)
+  }
+
+  trimChapter() {
+    // if (this.get('chapter').isEmpty()) {
+    //   this.del('chapter') // what TODO
+    // } else
+    this.trimLast(true)
   }
 
   /* Add & Delete */
@@ -70,7 +79,17 @@ class Music {
     if (!this.cursor.blurred) {
       dest_chapter = 1 + this.cursor.chapter
     }
-    config = config || Object.assign({}, this.get('chapter').config)
+    if (!config) {
+      config = this.get('chapter').config
+      config = {
+        name: '새 장',
+        tempo: config.tempo,
+        measure: config.measure,
+        rhythm: null,
+        scale: config.scale.slice(),
+        padding: 0 // -1?
+      }
+    }
 
     const cells = new Array(2)
     const chapter = new Chapter(this.cursor, config, cells)
@@ -109,12 +128,6 @@ class Music {
   }
 
   /* keyboard move */
-  trimChapter() {
-    if (this.get('chapter').isEmpty()) {
-      this.del('chapter')
-    }
-  }
-
   moveUpDown(delta) {
     // up - down +
     try {
@@ -122,11 +135,11 @@ class Music {
     } catch (e) {
       if (!(e instanceof RangeError)) throw e
 
-      let destPos = this.cursor.chapter + delta
-      if (inRange(destPos, this.chapters)) {
-        const magnet = delta > 0 ? 0 : -1
-        this.set('chapter', destPos, magnet)
-      } // else do nothing
+      // let destPos = this.cursor.chapter + delta
+      // if (inRange(destPos, this.chapters)) {
+      //   const magnet = delta > 0 ? 0 : -1
+      //   this.set('chapter', destPos, magnet)
+      // } // else do nothing
     }
   }
 
@@ -146,8 +159,8 @@ class Music {
       const srcY = (this.cursor.cell + config.padding) % config.measure
       const srcRow = this.cursor.row
       const srcDivision = this.get('cell').length
-      this.trim()
-      this.set('chapter', destPos)
+      this.set('chapter', destPos, -1) // TODO: adds an extra cell at the end!
+      // also TODO: sometimes I lose focus and get stuck
 
       // set cell
       chapter = this.get('chapter')
@@ -186,7 +199,6 @@ class Music {
     } else if (this.cursor.cell > 0) {
       this.set('cell', this.cursor.cell - 1, -1)
     } else if (this.cursor.chapter > 0) {
-      this.trimChapter()
       this.set('chapter', this.cursor.chapter - 1, -1)
     }
   }
