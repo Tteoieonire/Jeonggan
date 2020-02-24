@@ -59,10 +59,12 @@ class Music {
   }
 
   trim() {
+    if (this.cursor.blurred) return
     this.get('chapter').trim()
   }
 
   trimLast(cruel) {
+    if (this.cursor.blurred) return
     this.get('chapter').trimLast(cruel)
   }
 

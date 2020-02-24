@@ -11,8 +11,7 @@
     "bootstrap-vue": "^1.2.0",
     "popper.js": "^1.12.9",
     "soundfont-player": "^0.11.0",
-    "vue": "^2.5.3",
-    "yamljs": "^0.3.0"
+    "vue": "^2.5.3"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

@@ -21,7 +21,7 @@
       id="menubar"
     ></menupanel>
     <canvaspanel :cursor="cursor" :view="view" @move="move" @moveRhythm="moveRhythm" id="workspace"></canvaspanel>
-    <configmodal :config="config" @configchange="configchange"></configmodal>
+    <configmodal v-if="config" :config="config" @configchange="configchange"></configmodal>
     <exchangemodal :title="title" :music="music" @exchange="exchange"></exchangemodal>
   </div>
 </template>
@@ -77,7 +77,6 @@ export default {
     updateChapter() {
       if (this.cursor.blurred) return
       this.config = this.music.get('chapter').config // shallow copy
-      console.log(this.config)
     },
     moveRhythm(chapter, cell) {
       this.cursor.moveRhythm(chapter, cell)
@@ -129,14 +128,15 @@ export default {
         this.player.resume()
       }
     },
-    exchange(title, chapters){
+    exchange(title, chapters) {
+      // this.cursor.move(0, 0, 0, 0)
       this.cursor.blur()
       this.title = title
       this.music.chapters = chapters.map(config => {
         const chapter = new Chapter(this.cursor, config, config.content)
-        delete config.content
         return chapter
       })
+      this.cursor.move(0, 0, 0, 0)
     },
     undo() {
       //
@@ -146,21 +146,17 @@ export default {
     },
     keypressRhythm(e) {
       if (e.code === 'ArrowUp') {
-        if (this.cursor.cell > 0) {
-          this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
-        }
+        if (this.cursor.cell === 0) this.cursor.cell = this.config.measure
+        this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
       } else if (e.code === 'ArrowDown') {
-        if (this.cursor.cell < this.config.measure - 1) {
-          this.moveRhythm(this.cursor.chapter, this.cursor.cell + 1)
-        }
+        if (this.cursor.cell === this.config.measure - 1) this.cursor.cell = -1
+        this.moveRhythm(this.cursor.chapter, this.cursor.cell + 1)
       } else if (e.code === 'ArrowLeft') {
-        if (this.tickIdx > 0) {
-          this.tickchange(this.tickIdx - 1)
-        }
+        if (this.tickIdx === 0) this.tickIdx = RHYTHM_OBJ.length
+        this.tickchange(this.tickIdx - 1)
       } else if (e.code === 'ArrowRight') {
-        if (this.cursor.cell < RHYTHM_OBJ.length - 1) {
-          this.tickchange(this.tickIdx + 1)
-        }
+        if (this.tickIdx === RHYTHM_OBJ.length - 1) this.tickIdx = -1
+        this.tickchange(this.tickIdx + 1)
       } else return
       e.preventDefault()
     },

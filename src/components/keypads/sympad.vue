@@ -202,6 +202,7 @@ const MODIFIER = [
   ]
 ]
 
+export { MAIN, MODIFIER }
 // Focusable??
 export default {
   props: ['type'],

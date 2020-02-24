@@ -1,6 +1,6 @@
 <template>
   <!-- 곡 설정 창 -->
-  <b-modal id="config" title="장 설정" @ok="confirm">
+  <b-modal id="config" title="장 설정" @ok="confirm" @show="reset">
     <b-form-group label="장 이름:">
       <b-form-input v-model="name" type="text"></b-form-input>
     </b-form-group>
@@ -11,16 +11,21 @@
       </b-input-group>
     </b-form-group>
 
+    <b-form-group label="각 길이:">
+      <b-input-group append="칸">
+        <b-form-input v-model="measure" type="number"></b-form-input>
+      </b-input-group>
+    </b-form-group>
+
     <b-form-group label="음계:">
-      <b-form-checkbox-group v-for="(row, r) in yuls" :key="r" buttons v-model="scale" name="yuls">
+      <b-form-checkbox-group buttons v-for="(row, r) in yuls" :key="r" v-model="scale" name="yuls">
         <b-form-checkbox
           v-for="(yul, i) in row"
           :key="yul.label"
-          :value="i + r * 6"
+          :value="i + 6 * r"
           :title="yul.label"
-          v-html="yul.text"
           v-b-tooltip.hover
-        ></b-form-checkbox>
+        >{{yul.text}}</b-form-checkbox>
       </b-form-checkbox-group>
     </b-form-group>
   </b-modal>
@@ -35,11 +40,11 @@ export default {
   props: ['config'],
   data() {
     return {
-      name: this.config && this.config.name,
-      tempo: this.config && this.config.tempo,
-      measure: this.config && this.config.measure,
-      scale: this.config && this.config.scale.slice(),
-      padding: this.config && this.config.padding,
+      name: '',
+      tempo: 0,
+      measure: 0,
+      padding: 0,
+      scale: [],
       yuls: YULS
     }
   },
@@ -52,10 +57,25 @@ export default {
         tempo: this.tempo,
         measure: this.measure,
         padding: this.padding,
-        scale: this.scale.sort(),
-        rhythm: rhythm // change length accordingly
+        scale: this.scale.map(Number).sort((a, b) => a - b),
+        rhythm: rhythm
       })
+    },
+    reset() {
+      this.name = this.config.name
+      this.tempo = +this.config.tempo
+      this.measure = +this.config.measure
+      this.padding = +this.config.padding
+      this.scale = this.config.scale.slice()
     }
+  },
+  watch: {
+    config() {
+      this.reset()
+    }
+  },
+  created() {
+    this.reset()
   }
 }
 </script>

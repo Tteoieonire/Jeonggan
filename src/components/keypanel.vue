@@ -5,7 +5,7 @@
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">
-      <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
+      <yulpad :scale="config.scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
       <b-btn @click="erase" aria-label="지우개" class="m-1">
         <i class="fa fa-eraser"></i>
       </b-btn>
@@ -30,9 +30,6 @@ import shapepad from './keypads/shapepad.vue'
 
 export default {
   props: ['tickIdx', 'cursor', 'sigimShow', 'config', 'octave'],
-  data() {
-    return { scale: (this.config && this.config.scale) || [] }
-  },
   methods: {
     write(where, obj) {
       this.$emit('write', where, obj)

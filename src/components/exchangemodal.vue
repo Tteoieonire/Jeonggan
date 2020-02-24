@@ -1,11 +1,7 @@
 <template>
-  <!-- 곡 설정 창 -->
-  <b-modal id="exchange" title="불러오기/내보내기" @ok="send">
-    <b-form-textarea
-      v-model="yaml"
-      :rows="rows"
-      :max-rows="rows"
-    ></b-form-textarea>
+  <b-modal id="exchange" title="불러오기/내보내기" @ok="send" @show="reset">
+    <p>이 창의 내용을 복사하세요. 복사해둔 내용을 다시 이 창에 붙여넣고 OK 버튼을 누르면 작성한 정간보를 불러올 수 있습니다.</p>
+    <b-form-textarea v-model="code" :rows="rows" :max-rows="rows"></b-form-textarea>
   </b-modal>
 </template>
 
@@ -17,16 +13,27 @@ export default {
   data() {
     return {
       rows: 15,
-      yaml: serializeMusic(this.title, this.music)
+      code: ''
     }
   },
   methods: {
     send() {
-      const data = deserializeMusic(this.yaml)
-      console.log(data)
-      debugger
+      const data = deserializeMusic(this.code)
       this.$emit('exchange', data.title, data.chapters)
+    },
+    reset() {
+      this.code = this.yaml
     }
+  },
+  computed: {
+    yaml() {
+      const code = serializeMusic(this.title, this.music)
+      this.code = code
+      return code
+    }
+  },
+  created() {
+    this.code = this.yaml
   }
 }
 </script>
