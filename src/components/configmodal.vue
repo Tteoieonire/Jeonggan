@@ -1,6 +1,6 @@
 <template>
   <!-- 곡 설정 창 -->
-  <b-modal id="config" title="장 설정" @ok="confirm" @show="reset">
+  <b-modal id="configmodal" title="장 설정" @ok="confirm" @show="reset">
     <b-form-group label="장 이름:">
       <b-form-input v-model="name" type="text"></b-form-input>
     </b-form-group>
@@ -27,6 +27,10 @@
           v-b-tooltip.hover
         >{{yul.text}}</b-form-checkbox>
       </b-form-checkbox-group>
+    </b-form-group>
+
+    <b-form-group label="장 관리:">
+      <b-btn variant="danger" @click="deletechapter">삭제</b-btn>
     </b-form-group>
   </b-modal>
 </template>
@@ -62,11 +66,16 @@ export default {
       })
     },
     reset() {
+      if (!this.config) return
       this.name = this.config.name
       this.tempo = +this.config.tempo
       this.measure = +this.config.measure
       this.padding = +this.config.padding
       this.scale = this.config.scale.slice()
+    },
+    deletechapter() {
+      this.$emit('deletechapter')
+      this.$root.$emit('bv::hide::modal', 'configmodal')
     }
   },
   watch: {

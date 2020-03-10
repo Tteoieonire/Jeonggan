@@ -5,7 +5,7 @@
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">
-      <yulpad :scale="config.scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
+      <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
       <b-btn @click="erase" aria-label="지우개" class="m-1">
         <i class="fa fa-eraser"></i>
       </b-btn>
@@ -29,7 +29,7 @@ import sympad from './keypads/sympad.vue'
 import shapepad from './keypads/shapepad.vue'
 
 export default {
-  props: ['tickIdx', 'cursor', 'sigimShow', 'config', 'octave'],
+  props: ['tickIdx', 'cursor', 'sigimShow', 'scale', 'octave'],
   methods: {
     write(where, obj) {
       this.$emit('write', where, obj)

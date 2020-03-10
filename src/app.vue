@@ -4,7 +4,7 @@
       :tickIdx="tickIdx"
       :cursor="cursor"
       :sigimShow="sigimShow"
-      :config="config"
+      :scale="scale"
       :octave="octave"
       @write="write"
       @erase="erase"
@@ -20,8 +20,20 @@
       @play="play"
       id="menubar"
     ></menupanel>
-    <canvaspanel :cursor="cursor" :view="view" @move="move" @moveRhythm="moveRhythm" id="workspace"></canvaspanel>
-    <configmodal v-if="config" :config="config" @configchange="configchange"></configmodal>
+    <canvaspanel
+      :cursor="cursor"
+      :view="view"
+      @move="move"
+      @moveRhythm="moveRhythm"
+      @openconfig="openconfig"
+      id="workspace"
+    ></canvaspanel>
+    <configmodal
+      v-if="configchapter"
+      :config="configchapter.config"
+      @configchange="configchange"
+      @deletechapter="deletechapter"
+    ></configmodal>
     <exchangemodal :title="title" :music="music" @exchange="exchange"></exchangemodal>
   </div>
 </template>
@@ -58,8 +70,10 @@ export default {
       title: INIT_TITLE,
       cursor: undefined,
       music: undefined,
-      config: undefined, // need update
+      scale: undefined, //need update
+      rhythm: undefined, // need update
       sigimShow: false, // need update
+      configchapter: undefined, // what??
       octave: 2,
       tickIdx: 0,
       player: null
@@ -76,12 +90,14 @@ export default {
     },
     updateChapter() {
       if (this.cursor.blurred) return
-      this.config = this.music.get('chapter').config // shallow copy
+      let config = this.music.get('chapter').config
+      this.rhythm = config && config.rhythm
+      this.scale = config && config.scale
     },
     moveRhythm(chapter, cell) {
       this.cursor.moveRhythm(chapter, cell)
       this.$nextTick(() => {
-        this.tickIdx = RHYTHM_OBJ.indexOf(this.config.rhythm[cell])
+        this.tickIdx = RHYTHM_OBJ.indexOf(this.rhythm[cell])
       })
     },
     move(chapter, cell, row, col) {
@@ -110,14 +126,22 @@ export default {
     },
     tickchange(tickIdx) {
       this.tickIdx = tickIdx
-      this.config.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
+      this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
+    },
+    openconfig(chapter) {
+      this.configchapter = this.music.chapters[chapter]
     },
     configchange(config) {
-      this.config = config
-      this.music.get('chapter').config = config
+      this.rhythm = config.rhythm
+      this.scale = config.scale
+      this.$set(this.configchapter, 'config', config)
     },
     addchapter() {
       this.music.addchapter()
+    },
+    deletechapter() {
+      const chapter = this.music.chapters.indexOf(this.configchapter)
+      if (chapter >= 0) this.music.delchapter(chapter)
     },
     play(command) {
       if (command === 'stop') {
@@ -145,11 +169,12 @@ export default {
       //
     },
     keypressRhythm(e) {
+      let measure = this.rhythm.length
       if (e.code === 'ArrowUp') {
-        if (this.cursor.cell === 0) this.cursor.cell = this.config.measure
+        if (this.cursor.cell === 0) this.cursor.cell = measure
         this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
       } else if (e.code === 'ArrowDown') {
-        if (this.cursor.cell === this.config.measure - 1) this.cursor.cell = -1
+        if (this.cursor.cell === measure - 1) this.cursor.cell = -1
         this.moveRhythm(this.cursor.chapter, this.cursor.cell + 1)
       } else if (e.code === 'ArrowLeft') {
         if (this.tickIdx === 0) this.tickIdx = RHYTHM_OBJ.length

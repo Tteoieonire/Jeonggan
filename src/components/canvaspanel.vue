@@ -1,9 +1,16 @@
 <template>
   <div>
-    <div v-for="(chapter, k) in view" :key="k">
+    <div v-for="(chapter, k) in view" :key="k" class="chapter">
+      <div class="margin">
+        <div>
+          <b-btn variant="link" @click="openconfig(k)" v-b-modal.configmodal>
+            <i class="fa fa-wrench" title="장 설정"></i>
+          </b-btn>
+        </div>
+        <span class="title">{{ chapter.config.name }}</span>
+      </div>
       <!-- 장단 -->
       <b-list-group v-if="chapter.config.rhythm" class="gak rhythm" aria-label="장단 각">
-        <!--div class="befgak"></div-->
         <b-list-group-item
           v-for="(tick, j) in chapter.config.rhythm"
           :key="j"
@@ -13,9 +20,7 @@
           class="gugak"
           variant="info"
           button
-        >
-          {{ tick || '' }}
-        </b-list-group-item>
+        >{{ tick || '' }}</b-list-group-item>
       </b-list-group>
 
       <!-- 일반 각 -->
@@ -69,6 +74,9 @@ export default {
     moveRhythm(chapter, cell) {
       if (this.cursor.playMode) return
       this.$emit('moveRhythm', chapter, cell)
+    },
+    openconfig(chapter) {
+      this.$emit('openconfig', chapter)
     }
   },
   components: {
@@ -78,6 +86,23 @@ export default {
 </script>
 
 <style>
+.chapter {
+  float: right;
+}
+
+.margin {
+  height: 7rem;
+  text-align: right;
+}
+
+.title {
+  margin-right: 0.5rem;
+  height: 4rem;
+  text-align: left;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
 .gak {
   float: right;
   width: 3rem;
@@ -87,11 +112,6 @@ export default {
 .gak > * {
   height: 3.5rem;
   padding: 0;
-}
-
-.befgak {
-  height: 2rem;
-  margin-bottom: 0.5rem;
 }
 
 .rhythm {

@@ -101,14 +101,18 @@ class Music {
   }
 
   delchapter(i) {
+    const curchapter = this.cursor.chapter
+    if (curchapter === i) {
+      this.cursor.blur()
+    }
     let deleted = this.chapters.splice(i, 1)
     if (this.chapters.length === 0) {
-      this.addchapter(deleted.config)
+      this.addchapter(deleted[0].config)
     }
-    if (this.cursor.blurred) return
-    if (this.cursor.chapter > i) {
+    if (curchapter > i) {
       this.cursor.chapter -= 1
-    } else if (this.cursor.chapter === i) {
+    } else if (curchapter === i) {
+      if (i >= this.chapters.length) i--
       this.set('chapter', i)
     }
   }
