@@ -10,7 +10,7 @@
       <b-col
         v-for="(col, c) in row"
         :key="c"
-        :class="{cur: this_col(r, c)}"
+        :class="{cur: thisCol(r, c)}"
         @click.stop="move(r, c)"
       >
         <span class="gugak">{{getMain(col)}}</span>
@@ -22,7 +22,7 @@
 
 <script>
 export default {
-  props: ['this_cell', 'cursor', 'cell'],
+  props: ['thisCell', 'cursor', 'cell'],
   methods: {
     getRowStyle(row) {
       const longest = Math.max(this.cell.length, row.length)
@@ -37,8 +37,8 @@ export default {
     move(r, c) {
       this.$emit('move', r, c)
     },
-    this_col(r, c) {
-      if (!this.this_cell) return false
+    thisCol(r, c) {
+      if (!this.thisCell) return false
       return this.cursor.row === r && this.cursor.col === c
     }
   }

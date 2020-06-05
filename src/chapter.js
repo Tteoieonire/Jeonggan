@@ -1,5 +1,6 @@
 import { wrappedIdx, moveToMostAligned, inRange } from './utils.js'
 
+
 class Chapter {
   constructor(cursor, config, cells) {
     this.cursor = cursor
@@ -7,15 +8,32 @@ class Chapter {
     this.cells = cells || []
   }
 
-  view(lastPos) {
+  view(chapterIndex, lastPos) {
     const measure = this.config.measure
     const numGaks = Math.ceil(this.cells.length / measure)
     let gaks = []
+    if (this.config.rhythm) {
+      gaks.push({
+        rhythm: true,
+        content: this.config.rhythm,
+        chapterIndex: chapterIndex,
+        isFirst: true,
+        title: this.config.name
+      })
+    }
     for (let i = 0; i < numGaks; i++) {
       let sliced = this.cells.slice(i * measure, (i + 1) * measure)
-      gaks.push(sliced)
+      gaks.push({
+        rhythm: false,
+        content: sliced,
+        chapterIndex: chapterIndex,
+        gakIndex: i,
+        measure: measure,
+        isFirst: (!this.config.rhythm && i === 0),
+        title: this.config.name
+      })
     }
-    return { gaks, config: this.config }
+    return gaks
   }
 
   compile(time = 0) {

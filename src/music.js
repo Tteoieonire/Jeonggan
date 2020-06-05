@@ -10,7 +10,9 @@ class Music {
   }
 
   view() {
-    return this.chapters.map(chapter => chapter.view())
+    const maxMeasure = Math.max(...this.chapters.map(chapter => chapter.config.measure))
+    const gaks = [].concat(...this.chapters.map((chapter, i) => chapter.view(i)))
+    return {gaks, maxMeasure}
   }
 
   render() {

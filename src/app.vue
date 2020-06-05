@@ -95,12 +95,14 @@ export default {
       this.scale = config && config.scale
     },
     moveRhythm(chapter, cell) {
+      if (this.cursor.playMode) return
       this.cursor.moveRhythm(chapter, cell)
       this.$nextTick(() => {
         this.tickIdx = RHYTHM_OBJ.indexOf(this.rhythm[cell])
       })
     },
     move(chapter, cell, row, col) {
+      if (this.cursor.playMode) return
       this.cursor.move(chapter, cell, row, col)
     },
     write(where, obj) {
