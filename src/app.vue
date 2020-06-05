@@ -1,5 +1,12 @@
 <template>
   <div>
+    <menupanel
+      :rhythmMode="cursor.rhythmMode"
+      :playerMode="player.mode"
+      @addchapter="addchapter"
+      @play="play"
+      id="menubar"
+    ></menupanel>
     <keypanel
       :tickIdx="tickIdx"
       :cursor="cursor"
@@ -13,13 +20,6 @@
       @tickchange="tickchange"
       id="keypanel"
     ></keypanel>
-    <menupanel
-      :rhythmMode="cursor.rhythmMode"
-      :playerMode="player.mode"
-      @addchapter="addchapter"
-      @play="play"
-      id="menubar"
-    ></menupanel>
     <canvaspanel
       :cursor="cursor"
       :view="view"
@@ -50,6 +50,7 @@ import Music from './music.js'
 import Chapter from './chapter.js'
 import Player from './player.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
+import {querySymbol} from './components/keypads/sympad.vue'
 
 /**
  * Controller
@@ -76,6 +77,8 @@ export default {
       configchapter: undefined, // what??
       octave: 2,
       tickIdx: 0,
+      digitinput: '',
+      digitgrace: false,
       player: null
     }
   },
@@ -155,7 +158,6 @@ export default {
       }
     },
     exchange(title, chapters) {
-      // this.cursor.move(0, 0, 0, 0)
       this.cursor.blur()
       this.title = title
       this.music.chapters = chapters.map(config => {
@@ -169,6 +171,15 @@ export default {
     },
     redo() {
       //
+    },
+    keypressNumber(n, shiftKey) {
+      const where = shiftKey? 'modifier': 'main'
+      if (shiftKey !== this.digitgrace) {
+        this.digitinput = ''
+        this.digitgrace = shiftKey
+      }
+      this.digitinput += n
+      this.write(where, querySymbol(where, this.digitinput))
     },
     keypressRhythm(e) {
       let measure = this.rhythm.length
@@ -213,6 +224,13 @@ export default {
           break
         case 'Minus':
         case 'NumpadSubtract':
+          if (e.shiftKey) {
+            this.digitinput = ''
+            this.write('modifier', undefined)
+          } else {
+            this.erase()
+          }
+          return
         case 'Delete': // ?
           this.erase()
           return
@@ -239,7 +257,31 @@ export default {
         case 'Comma':
           this.write('main', REST_OBJ)
           return
+        case 'KeyH':
+          if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+          if (!this.sigimShow) return
+          this.write('modifier', {
+            pitch: '434',
+            text: 'H',
+            label: '앞뒤 4, 제 음의 앞뒤로 제 음의 한 음 위'
+          })
+          break
+        case 'KeyI':
+          if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+          if (!this.sigimShow) return
+          this.write('modifier', {
+            pitch: '232',
+            text: 'I',
+            label: '앞뒤 2, 제 음의 앞뒤로 제 음의 한 음 아래'
+          })
+          break
         default:
+          const prefix = e.code.slice(0, -1)
+          if (prefix === 'Digit' || prefix === 'Numpad') {
+            this.keypressNumber(e.code.slice(-1), e.shiftKey)
+            break
+          }
+
           const pitch2code = [
             'KeyG',
             'KeyE',
@@ -283,7 +325,10 @@ export default {
     this.music = new Music(this.cursor)
     this.music.addchapter(INIT_CONFIG)
 
-    this.cursor.on('afterColChange', this.updateSigimShow) // focus as well
+    this.cursor.on('afterColChange', () => {
+      this.updateSigimShow()
+      this.digitinput = ''
+    }) // focus as well
     this.cursor.on('afterCellChange', () => this.music.trimLast())
     this.cursor.on('afterChapterChange', this.updateChapter)
     this.cursor.on('beforeCellChange', () => this.music.trim())

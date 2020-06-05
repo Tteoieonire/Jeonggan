@@ -1,6 +1,6 @@
 <template>
-  <b-button-toolbar key-nav aria-label="율명 또는 쉼표 입력">
-    <b-button-group class="m-1">
+  <div>
+    <b-button-group class="m-1" aria-label="율명 입력">
       <b-btn :disabled="octave<=0" @click="lower" variant="outline-primary" aria-label="옥타브 내림">亻</b-btn>
 
       <b-btn
@@ -17,7 +17,7 @@
     <b-button-group class="mx-1 my-1">
       <b-btn @click="rest" aria-label="쉼표">△</b-btn>
     </b-button-group>
-  </b-button-toolbar>
+  </div>
 </template>
 
 <script>

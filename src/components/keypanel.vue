@@ -1,6 +1,6 @@
 <template>
   <!-- 하단 키 패널 -->
-  <div class="container-fluid" v-if="!cursor.blurred && !cursor.playMode">
+  <b-btn-toolbar key-nav class="container-fluid" v-if="!cursor.blurred && !cursor.playMode">
     <div v-if="cursor.rhythmMode" class="row">
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
@@ -19,7 +19,7 @@
       <shapepad for="row" @shapechange="shapechange"></shapepad>
       <shapepad for="col" @shapechange="shapechange"></shapepad>
     </div>
-  </div>
+  </b-btn-toolbar>
 </template>
 
 <script>

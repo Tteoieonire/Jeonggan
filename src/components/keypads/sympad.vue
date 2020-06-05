@@ -13,6 +13,14 @@
 </template>
 
 <script>
+function makeLabel(pitch) {
+  const table = ['제 음의 세 음 아래', '제 음의 두 음 아래', '제 음의 한 음 아래', '제 음', '제 음의 한 음 위', '제 음의 두 음 위', '제 음의 세 음 위']
+  pitch = pitch.split('')
+  const digit = pitch.join(', ')
+  const readout = pitch.map(n => table[n]).join(', ')
+  return digit + ', ' + readout
+}
+
 const MAIN = [
   [{ text: '\u303B', label: '같은 음 반복', pitch: '3' }],
   [
@@ -169,7 +177,7 @@ const MODIFIER = [
       label: '앞뒤 2, 제 음의 앞뒤로 제 음의 한 음 아래'
     },
     {
-      pitch: '323',
+      pitch: '434',
       text: 'H',
       label: '앞뒤 4, 제 음의 앞뒤로 제 음의 한 음 위'
     }
@@ -203,6 +211,24 @@ const MODIFIER = [
 ]
 
 export { MAIN, MODIFIER }
+export function querySymbol(where, pitch) {
+  let text = pitch
+  if (where === 'main') {
+    if (pitch === '3') return MAIN[0][0]
+  } else {
+    // TODO: "313":[6,3],"323":[6,1],"343":[6,0],"353":[6,2], // =?
+    const HASH = {"43":[1,0],"53":[1,1],"63":[1,2],"23":[2,0],"13":[2,1],"03":[2,2],"343":[3,0],"353":[3,1],"323":[3,2],"313":[3,3],"143":[4,0],"243":[4,1],"3243":[4,2],"24243":[4,3],"243243":[4,4],"I":[5,0],"H":[5,1]}
+    const reply = HASH[pitch]
+    if (reply) return MODIFIER[reply[0]][reply[1]]
+    text = "𝆔" + pitch
+  }
+  return {
+    text: text,
+    pitch: pitch,
+    label: makeLabel(pitch)
+  }
+}
+
 // Focusable??
 export default {
   props: ['type'],

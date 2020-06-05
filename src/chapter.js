@@ -241,17 +241,3 @@ function childOf(what) {
 }
 
 export default Chapter
-
-/*
-  compile(time = 0) {
-    let cells = this.cells
-    if (time === 0) {
-      // first chapter to start
-      cells = cells.slice(this.cursor.cell)
-    }
-    let duration = (60 * cells.length) / this.config.tempo // s
-    let compiled = compileChapter(cells, time, duration, this.config.scale) // lastPitch?
-    compiled.push(time + duration) // also return total time time
-    return compiled
-  }
- */

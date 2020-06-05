@@ -1,6 +1,6 @@
 <template>
   <!-- 상단 메뉴바 -->
-  <div class="container-fluid">
+  <b-btn-toolbar key-nav style='width:100%;display:block;'>
     <b-button-group class="m-1">
       <b-btn
         v-if="playerMode === 'playing'"
@@ -29,7 +29,7 @@
         <b-dropdown-item-button v-b-modal.exchange>불러오기/내보내기</b-dropdown-item-button>
       </b-dropdown>
     </b-button-group>
-  </div>
+  </b-btn-toolbar>
 </template>
 
 <script>
