@@ -10,9 +10,13 @@ class Music {
   }
 
   view() {
-    const maxMeasure = Math.max(...this.chapters.map(chapter => chapter.config.measure))
-    const gaks = [].concat(...this.chapters.map((chapter, i) => chapter.view(i)))
-    return {gaks, maxMeasure}
+    const maxMeasure = Math.max(
+      ...this.chapters.map(chapter => chapter.config.measure)
+    )
+    const gaks = [].concat(
+      ...this.chapters.map((chapter, i) => chapter.view(i))
+    )
+    return { gaks, maxMeasure }
   }
 
   render() {
@@ -78,20 +82,18 @@ class Music {
   }
 
   /* Add & Delete */
-  addchapter(config) {
+  addchapter(chapter) {
     let dest_chapter = this.chapters.length
     if (!this.cursor.blurred) {
       dest_chapter = 1 + this.cursor.chapter
     }
-    if (!config) {
-      config = _clone(this.get('chapter').config)
+    if (!chapter) {
+      let config = _clone(this.get('chapter').config)
       config.name = '새 장'
       config.rhythm = null
       config.padding = 0 // -1?
+      chapter = new Chapter(this.cursor, config)
     }
-
-    const cells = new Array(2)
-    const chapter = new Chapter(this.cursor, config, cells)
 
     this.chapters.splice(dest_chapter, 0, chapter)
     this.cursor.move(dest_chapter, 0, 0, 0)
@@ -99,12 +101,13 @@ class Music {
 
   delchapter(i) {
     const curchapter = this.cursor.chapter
-    if (curchapter === i) {
-      this.cursor.blur()
-    }
+    if (i === undefined) i = curchapter
+    if (curchapter === i) this.cursor.blur()
+
     let deleted = this.chapters.splice(i, 1)[0]
     if (this.chapters.length === 0) {
-      this.addchapter(_clone(deleted.config))
+      let newchapter = new Chapter(this.cursor, _clone(deleted.config))
+      this.addchapter(newchapter)
     }
     if (curchapter > i) {
       this.cursor.chapter -= 1
@@ -115,11 +118,11 @@ class Music {
     return deleted
   }
 
-  add(what) {
+  add(what, obj) {
     if (what === 'chapter') {
       this.addchapter()
     } else {
-      this.get('chapter').add(what)
+      this.get('chapter').add(what, obj)
     }
   }
 

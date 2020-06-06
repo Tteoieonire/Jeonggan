@@ -5,7 +5,7 @@ class Chapter {
   constructor(cursor, config, cells) {
     this.cursor = cursor
     this.config = config
-    this.cells = cells || []
+    this.cells = cells || new Array(2)
   }
 
   view(chapterIndex, lastPos) {
@@ -134,10 +134,10 @@ class Chapter {
     }
   }
 
-  add(what) {
+  add(what, obj) {
     const arr = this.get(parentOf(what))
     const destPos = 1 + this.cursor[what]
-    arr.splice(destPos, 0, undefined)
+    arr.splice(destPos, 0, obj)
     this.set(what, destPos)
   }
 

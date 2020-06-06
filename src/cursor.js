@@ -85,6 +85,16 @@ class Cursor {
     ghost.col = this.col
     return ghost
   }
+
+  loadFrom(other) {
+    this.blurred = other.blurred
+    this.rhythmMode = other.rhythmMode
+    this.playMode = other.playMode
+    this.chapter = other.chapter
+    this.cell = other.cell
+    this.row = other.row
+    this.col = other.col
+  }
 }
 
 export default Cursor

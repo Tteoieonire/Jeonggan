@@ -82,7 +82,7 @@ export default {
       ime: new IME(querySymbol),
       player: null,
       undoHistory: [],
-      undoTravel: -1
+      undoTravel: 0
     }
   },
   methods: {
@@ -114,16 +114,29 @@ export default {
     write(where, obj, resetIME = true) {
       if (this.cursor.blurred) return
       const el = this.music.get('col')
-      this.record('write', { where: where, old: el[where], new: obj })
-      this.$set(el, where, obj)
-      this.updateSigimShow()
+      this.doWithBackup(
+        () => {
+          const old = el[where]
+          this.$set(el, where, obj)
+          this.updateSigimShow()
+          return old
+        },
+        old => {
+          this.$set(el, where, old) // TODO: 과연 el이 유효할까?
+          this.updateSigimShow()
+        }
+      )
       if (resetIME) this.ime.reset()
     },
     erase() {
       if (this.cursor.blurred) return
-      let old = this.music.del('col', 'keep')
-      this.record('del', { what: 'col', method: keep, old: old })
-      this.sigimShow = false
+      this.doWithBackup(
+        () => {
+          let old = this.music.del('col', 'keep')
+          this.sigimShow = false
+        },
+        old => this.music.get('row').splice(this.cursor.col, 1, old)
+      )
       this.ime.reset()
     },
     writeIME(key, shiftKey) {
@@ -134,21 +147,33 @@ export default {
     shapechange(what, delta) {
       if (this.cursor.blurred) return
       if (delta === +1) {
-        this.music.add(what)
-        this.record('add', what)
+        this.doWithBackup(
+          () => this.music.add(what),
+          _ => this.music.del(what)
+        )
       } else {
-        let old = this.music.del(what)
-        this.record('del', { what: what, old: old })
+        this.doWithBackup(
+          () => this.music.del(what),
+          old => this.music.add(what, old)
+        )
       }
     },
     octavechange(delta) {
       this.octave += delta
     },
     tickchange(tickIdx) {
-      this.tickIdx = tickIdx
-      let newtick = RHYTHM_OBJ[tickIdx]
-      let old = this.rhythm.splice(this.cursor.cell, 1, newtick)[0]
-      this.record('tickchange', { old: old, new: newtick })
+      this.doWithBackup(
+        () => {
+          let oldtick = this.tickIdx
+          this.tickIdx = tickIdx
+          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
+          return oldtick
+        },
+        oldtick => {
+          this.tickIdx = oldtick
+          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[oldtick])
+        }
+      )
     },
     openconfig(chapter) {
       this.configchapter = this.music.chapters[chapter]
@@ -159,14 +184,22 @@ export default {
       this.$set(this.configchapter, 'config', config)
     },
     addchapter() {
-      this.music.addchapter()
-      this.record('add', 'chapter')
+      this.doWithBackup(
+        () => this.music.addchapter(),
+        _ => this.music.delchapter()
+      )
     },
     deletechapter() {
       const chapter = this.music.chapters.indexOf(this.configchapter)
       if (chapter === -1) return
-      let old = this.music.delchapter(chapter)
-      this.record('delchapter', { index: chapter, old: old })
+      this.doWithBackup(
+        () => this.music.delchapter(chapter),
+        old => {
+          this.move(chapter, 0, 0, 0)
+          this.music.addchapter(old)
+          // restore cursor
+        }
+      )
     },
     play(command) {
       if (command === 'stop') {
@@ -187,42 +220,44 @@ export default {
       this.cursor.move(0, 0, 0, 0)
       this.undoHistory = []
     },
-    record(op, data) {
-      // TODO: check ime history when I change behavior
+    doWithBackup(redo, undo) {
+      /** redo: a function that does the (re)-operation.
+              takes zero args and returns data needed for `undo`
+          undo: a function that reverses the operation.
+              takes one arg which is return value of `redo`
+              and returns nothing
+       */
+      this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
+      const oldCursor = this.cursor.clone()
+      const data = redo()
+      const newCursor = this.cursor.clone()
       this.undoHistory.push({
-        op,
+        undo,
+        redo,
         data,
-        cursor: this.cursor.clone()
+        oldCursor,
+        newCursor
       })
-      if (this.undoHistory.length > MAX_HISTORY) {
-        this.undoHistory.shift()
-      }
+      this.undoTravel += 1
     },
     undo() {
       // TODO: for now I assume all ops are recorded
+      this.ime.reset() // and this is part of it
       if (this.undoTravel === 0) return
-      if (this.undoTravel < 0) {
-        this.undoTravel = this.undoHistory.length
-      }
       this.undoTravel -= 1
-      let op = this.undoTravel[this.undoTravel]
-      switch (op.op) {
-        case 'add':
-          break
-        case 'del':
-          break
-        case 'delchapter':
-          break
-        case 'bksp':
-          break
-        case 'tickchange':
-          break
-        case 'write':
-          break
-      }
+      let op = this.undoHistory[this.undoTravel]
+      this.cursor.loadFrom(op.newCursor)
+      op.undo(op.data)
+      // assert this.cursor is at op.oldCursor
     },
     redo() {
-      //
+      this.ime.reset() // but this must be evidence that redo isn't possible anymore
+      if (this.undoTravel >= this.undoHistory.length) return
+      let op = this.undoHistory[this.undoTravel]
+      this.cursor.loadFrom(op.oldCursor)
+      op.redo() // assert return value == op.data
+      // assert this.cursor is at op.newCursor
+      this.undoTravel += 1
     },
     keypressRhythm(e) {
       let measure = this.rhythm.length
@@ -260,8 +295,10 @@ export default {
           break
         /* Editing */
         case 'Space':
-          this.music.add('col')
-          this.record('add', 'col')
+          this.doWithBackup(
+            () => this.music.add('col'),
+            _ => this.music.del('col')
+          )
           break
         case 'Backspace':
           if (this.ime.isComposing()) {
@@ -269,9 +306,18 @@ export default {
             let obj = this.ime.backspace()
             this.write(where, obj, false)
           } else {
-            let oldCursor = this.cursor.clone()
-            let old = this.music.backspace()
-            this.record('bksp', { old, oldCursor })
+            let tobreak = null
+            if (this.cursor.col > 0) tobreak = 'col'
+            else if (this.cursor.row > 0) tobreak = 'row'
+            else if (this.cursor.cell > 0) tobreak = 'cell'
+            else if (this.cursor.chapter > 0) tobreak = 'chapter'
+            this.doWithBackup(
+              () => this.music.backspace(),
+              old => {
+                console.log('how to undo backspace? I got', old)
+                //
+              }
+            )
           }
           break
         case 'Minus':
@@ -288,14 +334,20 @@ export default {
         case 'Enter':
         case 'NumpadEnter':
           if (e.ctrlKey) {
-            this.music.chapterbreak()
-            this.record('chapterbreak')
+            this.doWithBackup(
+              () => this.music.chapterbreak(),
+              _ => this.music.backspace()
+            )
           } else if (e.shiftKey) {
-            this.music.rowbreak()
-            this.record('rowbreak')
+            this.doWithBackup(
+              () => this.music.rowbreak(),
+              _ => this.music.backspace()
+            )
           } else {
-            this.music.cellbreak()
-            this.record('cellbreak')
+            this.doWithBackup(
+              () => this.music.cellbreak(),
+              _ => this.music.backspace()
+            )
           }
           break
         case 'Slash':
@@ -367,7 +419,7 @@ export default {
   created() {
     this.cursor = new Cursor()
     this.music = new Music(this.cursor)
-    this.music.addchapter(INIT_CONFIG)
+    this.music.addchapter(new Chapter(this.cursor, INIT_CONFIG))
 
     this.cursor.on('afterColChange', () => {
       this.updateSigimShow()
