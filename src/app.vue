@@ -49,8 +49,9 @@ import Cursor from './cursor.js'
 import Music from './music.js'
 import Chapter from './chapter.js'
 import Player from './player.js'
+import IME from './ime.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
-import {querySymbol} from './components/keypads/sympad.vue'
+import { querySymbol } from './components/keypads/sympad.vue'
 
 /**
  * Controller
@@ -77,8 +78,7 @@ export default {
       configchapter: undefined, // what??
       octave: 2,
       tickIdx: 0,
-      digitinput: '',
-      digitgrace: false,
+      ime: new IME(querySymbol),
       player: null
     }
   },
@@ -108,15 +108,22 @@ export default {
       if (this.cursor.playMode) return
       this.cursor.move(chapter, cell, row, col)
     },
-    write(where, obj) {
+    write(where, obj, resetIME = true) {
       if (this.cursor.blurred) return
       this.$set(this.music.get('col'), where, obj)
       this.updateSigimShow()
+      if (resetIME) this.ime.reset()
     },
     erase() {
       if (this.cursor.blurred) return
       this.music.del('col', 'keep')
       this.sigimShow = false
+      this.ime.reset()
+    },
+    writeIME(key, shiftKey) {
+      const where = shiftKey ? 'modifier' : 'main'
+      const obj = this.ime.update(key, shiftKey)
+      this.write(where, obj, false)
     },
     shapechange(what, delta) {
       if (this.cursor.blurred) return
@@ -172,15 +179,6 @@ export default {
     redo() {
       //
     },
-    keypressNumber(n, shiftKey) {
-      const where = shiftKey? 'modifier': 'main'
-      if (shiftKey !== this.digitgrace) {
-        this.digitinput = ''
-        this.digitgrace = shiftKey
-      }
-      this.digitinput += n
-      this.write(where, querySymbol(where, this.digitinput))
-    },
     keypressRhythm(e) {
       let measure = this.rhythm.length
       if (e.code === 'ArrowUp') {
@@ -220,14 +218,19 @@ export default {
           this.music.add('col')
           break
         case 'Backspace':
-          this.music.backspace()
+          if (this.ime.isComposing()) {
+            let where = this.ime.grace? 'modifier': 'main'
+            let obj = this.ime.backspace()
+            this.write(where, obj, false)
+          } else {
+            this.music.backspace()
+          }
           break
         case 'Minus':
         case 'NumpadSubtract':
           if (e.shiftKey) {
-            this.digitinput = ''
             this.write('modifier', undefined)
-          } else {
+          } else if (!hasModifierKey(e)) {
             this.erase()
           }
           return
@@ -257,28 +260,18 @@ export default {
         case 'Comma':
           this.write('main', REST_OBJ)
           return
+        case 'Backquote':
+        case 'Equal':
         case 'KeyH':
-          if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
-          if (!this.sigimShow) return
-          this.write('modifier', {
-            pitch: '434',
-            text: 'H',
-            label: '앞뒤 4, 제 음의 앞뒤로 제 음의 한 음 위'
-          })
-          break
         case 'KeyI':
           if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
           if (!this.sigimShow) return
-          this.write('modifier', {
-            pitch: '232',
-            text: 'I',
-            label: '앞뒤 2, 제 음의 앞뒤로 제 음의 한 음 아래'
-          })
+          this.writeIME(e.code, true)
           break
         default:
           const prefix = e.code.slice(0, -1)
           if (prefix === 'Digit' || prefix === 'Numpad') {
-            this.keypressNumber(e.code.slice(-1), e.shiftKey)
+            this.writeIME(e.code.slice(-1), e.shiftKey)
             break
           }
 
@@ -327,7 +320,7 @@ export default {
 
     this.cursor.on('afterColChange', () => {
       this.updateSigimShow()
-      this.digitinput = ''
+      this.ime.reset()
     }) // focus as well
     this.cursor.on('afterCellChange', () => this.music.trimLast())
     this.cursor.on('afterChapterChange', this.updateChapter)

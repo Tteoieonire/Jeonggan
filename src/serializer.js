@@ -53,7 +53,7 @@ function serializeChapter(chapter) {
 
 function serializeMusic(title, music) {
   return (
-    '---\n-\n' +
+    '-\n' +
     INDENT +
     title +
     '\n-\n' +
