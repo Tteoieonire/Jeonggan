@@ -74,7 +74,7 @@ class Cursor {
     this.prevPos = undefined
   }
 
-  cloneGhost() {
+  clone() {
     let ghost = new Cursor()
     ghost.blurred = this.blurred
     ghost.rhythmMode = this.rhythmMode

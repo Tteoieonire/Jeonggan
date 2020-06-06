@@ -65,6 +65,7 @@ const INIT_CONFIG = {
   scale: [0, 2, 5, 7, 9],
   padding: 0 //?
 }
+const MAX_HISTORY = 30
 
 export default {
   data() {
@@ -79,7 +80,9 @@ export default {
       octave: 2,
       tickIdx: 0,
       ime: new IME(querySymbol),
-      player: null
+      player: null,
+      undoHistory: [],
+      undoTravel: -1
     }
   },
   methods: {
@@ -110,13 +113,16 @@ export default {
     },
     write(where, obj, resetIME = true) {
       if (this.cursor.blurred) return
-      this.$set(this.music.get('col'), where, obj)
+      const el = this.music.get('col')
+      this.record('write', { where: where, old: el[where], new: obj })
+      this.$set(el, where, obj)
       this.updateSigimShow()
       if (resetIME) this.ime.reset()
     },
     erase() {
       if (this.cursor.blurred) return
-      this.music.del('col', 'keep')
+      let old = this.music.del('col', 'keep')
+      this.record('del', { what: 'col', method: keep, old: old })
       this.sigimShow = false
       this.ime.reset()
     },
@@ -129,8 +135,10 @@ export default {
       if (this.cursor.blurred) return
       if (delta === +1) {
         this.music.add(what)
+        this.record('add', what)
       } else {
-        this.music.del(what)
+        let old = this.music.del(what)
+        this.record('del', { what: what, old: old })
       }
     },
     octavechange(delta) {
@@ -138,7 +146,9 @@ export default {
     },
     tickchange(tickIdx) {
       this.tickIdx = tickIdx
-      this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
+      let newtick = RHYTHM_OBJ[tickIdx]
+      let old = this.rhythm.splice(this.cursor.cell, 1, newtick)[0]
+      this.record('tickchange', { old: old, new: newtick })
     },
     openconfig(chapter) {
       this.configchapter = this.music.chapters[chapter]
@@ -150,10 +160,13 @@ export default {
     },
     addchapter() {
       this.music.addchapter()
+      this.record('add', 'chapter')
     },
     deletechapter() {
       const chapter = this.music.chapters.indexOf(this.configchapter)
-      if (chapter >= 0) this.music.delchapter(chapter)
+      if (chapter === -1) return
+      let old = this.music.delchapter(chapter)
+      this.record('delchapter', { index: chapter, old: old })
     },
     play(command) {
       if (command === 'stop') {
@@ -172,9 +185,41 @@ export default {
         return chapter
       })
       this.cursor.move(0, 0, 0, 0)
+      this.undoHistory = []
+    },
+    record(op, data) {
+      // TODO: check ime history when I change behavior
+      this.undoHistory.push({
+        op,
+        data,
+        cursor: this.cursor.clone()
+      })
+      if (this.undoHistory.length > MAX_HISTORY) {
+        this.undoHistory.shift()
+      }
     },
     undo() {
-      //
+      // TODO: for now I assume all ops are recorded
+      if (this.undoTravel === 0) return
+      if (this.undoTravel < 0) {
+        this.undoTravel = this.undoHistory.length
+      }
+      this.undoTravel -= 1
+      let op = this.undoTravel[this.undoTravel]
+      switch (op.op) {
+        case 'add':
+          break
+        case 'del':
+          break
+        case 'delchapter':
+          break
+        case 'bksp':
+          break
+        case 'tickchange':
+          break
+        case 'write':
+          break
+      }
     },
     redo() {
       //
@@ -216,14 +261,17 @@ export default {
         /* Editing */
         case 'Space':
           this.music.add('col')
+          this.record('add', 'col')
           break
         case 'Backspace':
           if (this.ime.isComposing()) {
-            let where = this.ime.grace? 'modifier': 'main'
+            let where = this.ime.grace ? 'modifier' : 'main'
             let obj = this.ime.backspace()
             this.write(where, obj, false)
           } else {
-            this.music.backspace()
+            let oldCursor = this.cursor.clone()
+            let old = this.music.backspace()
+            this.record('bksp', { old, oldCursor })
           }
           break
         case 'Minus':
@@ -241,10 +289,13 @@ export default {
         case 'NumpadEnter':
           if (e.ctrlKey) {
             this.music.chapterbreak()
+            this.record('chapterbreak')
           } else if (e.shiftKey) {
             this.music.rowbreak()
+            this.record('rowbreak')
           } else {
             this.music.cellbreak()
+            this.record('cellbreak')
           }
           break
         case 'Slash':

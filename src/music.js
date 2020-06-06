@@ -84,15 +84,10 @@ class Music {
       dest_chapter = 1 + this.cursor.chapter
     }
     if (!config) {
-      config = this.get('chapter').config
-      config = {
-        name: '새 장',
-        tempo: config.tempo,
-        measure: config.measure,
-        rhythm: null,
-        scale: config.scale.slice(),
-        padding: 0 // -1?
-      }
+      config = _clone(this.get('chapter').config)
+      config.name = '새 장'
+      config.rhythm = null
+      config.padding = 0 // -1?
     }
 
     const cells = new Array(2)
@@ -107,9 +102,9 @@ class Music {
     if (curchapter === i) {
       this.cursor.blur()
     }
-    let deleted = this.chapters.splice(i, 1)
+    let deleted = this.chapters.splice(i, 1)[0]
     if (this.chapters.length === 0) {
-      this.addchapter(deleted[0].config)
+      this.addchapter(_clone(deleted.config))
     }
     if (curchapter > i) {
       this.cursor.chapter -= 1
@@ -117,6 +112,7 @@ class Music {
       if (i >= this.chapters.length) i--
       this.set('chapter', i)
     }
+    return deleted
   }
 
   add(what) {
@@ -129,9 +125,9 @@ class Music {
 
   del(what, method = '') {
     if (what === 'chapter') {
-      this.delchapter(this.cursor.chapter)
+      return this.delchapter(this.cursor.chapter)
     } else {
-      this.get('chapter').del(what, method)
+      return this.get('chapter').del(what, method)
     }
   }
 
@@ -197,7 +193,7 @@ class Music {
   backspace() {
     // chapter-break는 문자 취급하자(...?)
     // row-break랑 cell-break도..??
-    this.del('col', 'unsafe')
+    let old = this.del('col', 'unsafe')
 
     // 커서 처리
     if (this.cursor.col > 0) {
@@ -209,6 +205,7 @@ class Music {
     } else if (this.cursor.chapter > 0) {
       this.set('chapter', this.cursor.chapter - 1, -1)
     }
+    return old
   }
 
   rowbreak() {
@@ -244,6 +241,10 @@ class Music {
   chapterbreak() {
     //
   }
+}
+
+function _clone(obj) {
+  return JSON.parse(JSON.stringify(obj))
 }
 
 export default Music

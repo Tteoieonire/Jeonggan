@@ -39,7 +39,7 @@ class Chapter {
   compile(time = 0) {
     if (this.cells.length === 0) return [time]
     const cursorBackup = this.cursor
-    this.cursor = this.cursor.cloneGhost()
+    this.cursor = this.cursor.clone()
     if (time > 0) this.focus(0, 0, 0)
 
     let notes = []
@@ -146,14 +146,14 @@ class Chapter {
     const arr = this.get(parentOf(what))
     const idx = this.cursor[what]
     if (method === 'keep') {
-      return arr.splice(idx, 1, undefined)
+      return arr.splice(idx, 1, undefined)[0]
     } else if (arr.length === 1) {
       return this.del(parentOf(what), method)
     } else {
       if (idx === arr.length - 1 && method !== 'unsafe') {
         this.set(what, idx - 1, -1)
       }
-      return arr.splice(idx, 1)
+      return arr.splice(idx, 1)[0]
     }
   }
 
