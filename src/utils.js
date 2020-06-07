@@ -1,5 +1,3 @@
-const CURSOR_AFTER = false
-
 function wrappedIdx(idx, total) {
   idx %= total
   if (idx < 0) idx += total
@@ -15,4 +13,4 @@ function inRange(idx, arr) {
   return idx >= 0 && idx < arr.length
 }
 
-export { CURSOR_AFTER, wrappedIdx, moveToMostAligned, inRange }
+export { wrappedIdx, moveToMostAligned, inRange }

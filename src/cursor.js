@@ -83,17 +83,17 @@ class Cursor {
     ghost.cell = this.cell
     ghost.row = this.row
     ghost.col = this.col
+    ghost.prevPos = this.prevPos
     return ghost
   }
 
   loadFrom(other) {
-    this.blurred = other.blurred
-    this.rhythmMode = other.rhythmMode
-    this.playMode = other.playMode
-    this.chapter = other.chapter
-    this.cell = other.cell
-    this.row = other.row
-    this.col = other.col
+    if (other.blurred) this.blur()
+    if (other.playMode) {
+      this.playMode = other.playMode
+      this.prevPos = other.prevPos
+    }
+    this._move(other.rhythmMode, other.chapter, other.cell, other.row, other.col)
   }
 }
 

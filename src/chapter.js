@@ -1,6 +1,5 @@
 import { wrappedIdx, moveToMostAligned, inRange } from './utils.js'
 
-
 class Chapter {
   constructor(cursor, config, cells) {
     this.cursor = cursor
@@ -29,7 +28,7 @@ class Chapter {
         chapterIndex: chapterIndex,
         gakIndex: i,
         measure: measure,
-        isFirst: (!this.config.rhythm && i === 0),
+        isFirst: !this.config.rhythm && i === 0,
         title: this.config.name
       })
     }
@@ -135,9 +134,8 @@ class Chapter {
   }
 
   add(what, obj) {
-    const arr = this.get(parentOf(what))
     const destPos = 1 + this.cursor[what]
-    arr.splice(destPos, 0, obj)
+    this.get(parentOf(what)).splice(destPos, 0, obj)
     this.set(what, destPos)
   }
 
@@ -161,37 +159,28 @@ class Chapter {
     if (this.cursor.blurred) return
     if (this.cursor.rhythmMode) return
     const el = this.get('cell')
-    if (!this.isEmptyCell(el)) return
+    if (!isEmptyCell(el)) return
     this.cells.splice(this.cursor.cell, 1, undefined)
-  }
-
-  isEmptyCell(cell) {
-    if (!cell) return true
-    if (cell.length > 1) return false
-    if (cell[0].length > 1) return false
-    if (cell[0][0] && cell[0][0].main) return false
-    return true
   }
 
   trimLast(cruel = false) {
     if (this.cursor.rhythmMode) return
     for (var idx = this.cells.length - 1; idx > this.cursor.cell; idx--) {
-      if (!this.isEmptyCell(this.cells[idx])) break
+      if (!isEmptyCell(this.cells[idx])) break
     }
     this.cells.splice(idx + 1, this.cells.length - 1 - idx)
     if (!cruel) this.cells.push(undefined)
   }
 
-  /* Methods: desirably a sequence of valid ops */
-  del_keep(what) {
-    const cell = this.get(parentOf(what))
-    if (cell.length === 1) {
-      this.del(what, 'keep')
-    } else {
-      this.del(what)
-    }
+  mergeLater(what) {
+    const preyPos = this.cursor[what] + 1
+    const parent = this.get(parentOf(what))
+    if (preyPos >= parent.length) return
+    const childs = parent.splice(preyPos, 1)[0]
+    this.get(what).push(...childs)
   }
 
+  /* Methods: desirably a sequence of valid ops */
   moveUpDown(delta) {
     // up - down +
     const magnet = delta > 0 ? 0 : -1
@@ -226,6 +215,14 @@ class Chapter {
       this.focus(destPos, magnet, magnet)
     } else throw RangeError('Out of chapter')
   }
+}
+
+function isEmptyCell(cell) {
+  if (!cell) return true
+  if (cell.length > 1) return false
+  if (cell[0].length > 1) return false
+  if (cell[0][0] && cell[0][0].main) return false
+  return true
 }
 
 function parentOf(what) {

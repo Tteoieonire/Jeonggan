@@ -120,7 +120,7 @@ class Music {
 
   add(what, obj) {
     if (what === 'chapter') {
-      this.addchapter()
+      this.addchapter(obj)
     } else {
       this.get('chapter').add(what, obj)
     }
@@ -193,56 +193,81 @@ class Music {
     }
   }
 
-  backspace() {
-    // chapter-break는 문자 취급하자(...?)
-    // row-break랑 cell-break도..??
-    let old = this.del('col', 'unsafe')
+  mergeLater(what) {
+    if (what === 'chapter') {
+      let deleted = this.chapters.splice(this.cursor.chapter + 1, 1)[0]
+      this.get('chapter').cells.push(...deleted.cells)
+      return deleted.config
+    } else {
+      this.get('chapter').mergeLater(what)
+    }
+  }
 
-    // 커서 처리
+  backspace() {
+    /** Returns a function for undo. */
+    if (this.get('col').main) {
+      let old = this.del('col', 'keep')
+      return () => this.add('col', old)
+    }
+    this.del('col', 'unsafe')
+
     if (this.cursor.col > 0) {
       this.set('col', this.cursor.col - 1, -1)
-    } else if (this.cursor.row > 0) {
-      this.set('row', this.cursor.row - 1, -1)
-    } else if (this.cursor.cell > 0) {
-      this.set('cell', this.cursor.cell - 1, -1)
-    } else if (this.cursor.chapter > 0) {
-      this.set('chapter', this.cursor.chapter - 1, -1)
+      return () => this.add('col')
     }
-    return old
+    
+    if (this.cursor.row > 0) {
+      this.set('row', this.cursor.row - 1, -1)
+      this.mergeLater('row')
+      return () => this.rowbreak()
+    }
+    
+    if (this.cursor.cell > 0) {
+      this.set('cell', this.cursor.cell - 1, -1)
+      this.mergeLater('cell')
+      this.mergeLater('row')
+      return () => this.cellbreak()
+    }
+    
+    if (this.cursor.chapter > 0) {
+      this.set('chapter', this.cursor.chapter - 1, -1)
+      const deletedConfig = this.mergeLater('chapter')
+      this.mergeLater('cell')
+      this.mergeLater('row')
+      return () => this.chapterbreak(deletedConfig)
+    }
   }
 
   rowbreak() {
-    let row = this.get('row')
-    if (this.cursor.col + 1 < row.length) {
-      row = row.splice(this.cursor.col + 1)
-    } else {
-      row = new Array(1)
-    }
-    this.get('cell').splice(1 + this.cursor.row, 0, row)
-    this.set('row', 1 + this.cursor.row)
+    let newrow = this.get('row').splice(this.cursor.col + 1)
+    newrow.unshift(undefined)
+    this.add('row', newrow)
   }
 
   cellbreak() {
-    let cell = this.get('cell')
-    if (this.cursor.row + 1 < cell.length) {
-      cell = cell.splice(this.cursor.row + 1)
-    } else {
-      cell = []
-    }
+    let newrow = this.get('row').splice(this.cursor.col + 1)
+    newrow.unshift(undefined)
 
-    let row = this.get('row')
-    let cols_after = new Array(1)
-    if (this.cursor.col + 1 < row.length) {
-      cols_after = row.splice(this.cursor.col + 1)
-    }
+    let newcell = this.get('cell').splice(this.cursor.row + 1)
+    newcell.unshift(newrow)
 
-    cell.unshift(cols_after)
-    this.get('cells').splice(1 + this.cursor.cell, 0, cell)
-    this.set('cell', 1 + this.cursor.cell)
+    this.add('cell', newcell)
   }
 
-  chapterbreak() {
-    //
+  chapterbreak(config) {
+    let newrow = this.get('row').splice(this.cursor.col + 1)
+    newrow.unshift(undefined)
+
+    let newcell = this.get('cell').splice(this.cursor.row + 1)
+    newcell.unshift(newrow)
+
+    let chapter = this.get('chapter')
+    let newcells = chapter.cells.splice(this.cursor.cell + 1)
+    cellsAfter.unshift(newcell)
+
+    if (!config) config = _clone(chapter.config)
+    let newchapter = new Chapter(this.cursor, config, newcells)
+    this.add('chapter', newchapter)
   }
 }
 

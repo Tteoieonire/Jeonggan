@@ -122,7 +122,7 @@ export default {
           return old
         },
         old => {
-          this.$set(el, where, old) // TODO: 과연 el이 유효할까?
+          this.$set(el, where, old)
           this.updateSigimShow()
         }
       )
@@ -140,6 +140,7 @@ export default {
       this.ime.reset()
     },
     writeIME(key, shiftKey) {
+      if (shiftKey && !this.sigimShow) return
       const where = shiftKey ? 'modifier' : 'main'
       const obj = this.ime.update(key, shiftKey)
       this.write(where, obj, false)
@@ -149,11 +150,18 @@ export default {
       if (delta === +1) {
         this.doWithBackup(
           () => this.music.add(what),
-          _ => this.music.del(what)
+          _ => {
+            this.music.del(what)
+            this.updateSigimShow()
+          }
         )
       } else {
         this.doWithBackup(
-          () => this.music.del(what),
+          () => {
+            const old = this.music.del(what)
+            this.updateSigimShow()
+            return old
+          },
           old => this.music.add(what, old)
         )
       }
@@ -248,7 +256,7 @@ export default {
       let op = this.undoHistory[this.undoTravel]
       this.cursor.loadFrom(op.newCursor)
       op.undo(op.data)
-      // assert this.cursor is at op.oldCursor
+      this.cursor.loadFrom(op.oldCursor)
     },
     redo() {
       this.ime.reset() // but this must be evidence that redo isn't possible anymore
@@ -256,12 +264,14 @@ export default {
       let op = this.undoHistory[this.undoTravel]
       this.cursor.loadFrom(op.oldCursor)
       op.redo() // assert return value == op.data
-      // assert this.cursor is at op.newCursor
+      this.cursor.loadFrom(op.newCursor)
       this.undoTravel += 1
     },
     keypressRhythm(e) {
       let measure = this.rhythm.length
-      if (e.code === 'ArrowUp') {
+      if (e.code === 'Backspace' || e.code === 'Delete') {
+        this.tickchange(0)
+      } else if (e.code === 'ArrowUp') {
         if (this.cursor.cell === 0) this.cursor.cell = measure
         this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
       } else if (e.code === 'ArrowDown') {
@@ -297,7 +307,7 @@ export default {
         case 'Space':
           this.doWithBackup(
             () => this.music.add('col'),
-            _ => this.music.del('col')
+            _ => this.music.backspace()
           )
           break
         case 'Backspace':
@@ -306,17 +316,9 @@ export default {
             let obj = this.ime.backspace()
             this.write(where, obj, false)
           } else {
-            let tobreak = null
-            if (this.cursor.col > 0) tobreak = 'col'
-            else if (this.cursor.row > 0) tobreak = 'row'
-            else if (this.cursor.cell > 0) tobreak = 'cell'
-            else if (this.cursor.chapter > 0) tobreak = 'chapter'
             this.doWithBackup(
               () => this.music.backspace(),
-              old => {
-                console.log('how to undo backspace? I got', old)
-                //
-              }
+              f => f()
             )
           }
           break

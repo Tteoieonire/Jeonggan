@@ -54,8 +54,11 @@ export default {
   },
   methods: {
     confirm() {
-      const rhythm = this.config.rhythm && this.config.rhythm.slice()
-      if (rhythm) rhythm.length = this.measure
+      let rhythm = this.config.rhythm && this.config.rhythm.slice()
+      if (rhythm) {
+        rhythm.length = this.measure
+        rhythm = JSON.parse(JSON.stringify(rhythm))
+      }
       this.$emit('configchange', {
         name: this.name,
         tempo: this.tempo,
