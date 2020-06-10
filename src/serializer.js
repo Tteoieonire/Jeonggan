@@ -2,7 +2,7 @@
  * Serializer
  */
 
-import { YUL_OBJ } from './constants.js'
+import { YUL_OBJ, REST_OBJ } from './constants.js'
 import { MAIN, MODIFIER } from './components/keypads/sympad.vue'
 
 const INDENT = '  '
@@ -79,7 +79,7 @@ function recursiveLookup(node, query) {
 
 function deserializeCol(col) {
   col = col.trim().split(':')
-  let main = recursiveLookup(YUL_OBJ, col[0]) || recursiveLookup(MAIN, col[0])
+  let main = (col[0] === '△' && REST_OBJ) || recursiveLookup(YUL_OBJ, col[0]) || recursiveLookup(MAIN, col[0])
   let modifier = recursiveLookup(MODIFIER, col[1])
   return { main, modifier }
 }

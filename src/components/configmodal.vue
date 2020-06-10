@@ -36,6 +36,7 @@
 </template>
 
 <script>
+import { clone } from '../utils.js'
 import { YUL_OBJ } from '../constants.js'
 
 const YULS = [YUL_OBJ[2].slice(0, 6), YUL_OBJ[2].slice(6, 12)]
@@ -57,7 +58,7 @@ export default {
       let rhythm = this.config.rhythm && this.config.rhythm.slice()
       if (rhythm) {
         rhythm.length = this.measure
-        rhythm = JSON.parse(JSON.stringify(rhythm))
+        rhythm = clone(rhythm)
       }
       this.$emit('configchange', {
         name: this.name,

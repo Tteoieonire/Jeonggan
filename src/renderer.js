@@ -86,7 +86,7 @@ function allotGrace (pitches, time, duration, trailing = 0) {
     duration /= (numNotes + 1)
     results = pitches.map((note, idx) => ({
       note,
-      duration: duration * (idx === idxMain ? 1 : 2)
+      duration: duration * (idx === idxMain ? 2 : 1)
     }))
   }
   results.reduce(function (acc, cur) {

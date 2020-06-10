@@ -3,8 +3,15 @@
     <menupanel
       :rhythmMode="cursor.rhythmMode"
       :playerMode="player.mode"
+      :undoable="undoable"
+      :redoable="redoable"
       @addchapter="addchapter"
       @play="play"
+      @init="init"
+      @open="open"
+      @save="save"
+      @undo="undo"
+      @redo="redo"
       id="menubar"
     ></menupanel>
     <keypanel
@@ -45,6 +52,7 @@ import canvaspanel from './components/canvaspanel.vue'
 import configmodal from './components/configmodal.vue'
 import exchangemodal from './components/exchangemodal.vue'
 
+import { serializeMusic, deserializeMusic } from './serializer.js'
 import Cursor from './cursor.js'
 import Music from './music.js'
 import Chapter from './chapter.js'
@@ -65,7 +73,7 @@ const INIT_CONFIG = {
   scale: [0, 2, 5, 7, 9],
   padding: 0 //?
 }
-const MAX_HISTORY = 30
+const MAX_HISTORY = 100
 
 export default {
   data() {
@@ -86,6 +94,20 @@ export default {
     }
   },
   methods: {
+    init() {
+      this.cursor = new Cursor()
+      this.music = new Music(this.cursor)
+      this.music.addchapter(new Chapter(this.cursor, INIT_CONFIG))
+
+      this.move(0, 0, 0, 0)
+      this.write('main', YUL_OBJ[this.octave][0])
+      this.updateChapter()
+    },
+    open() {
+      //
+    },
+    save() {
+    },
     updateSigimShow() {
       if (this.cursor.blurred || this.cursor.rhythmMode) return
       const main = this.music.get('col').main
@@ -113,16 +135,16 @@ export default {
     },
     write(where, obj, resetIME = true) {
       if (this.cursor.blurred) return
-      const el = this.music.get('col')
       this.doWithBackup(
         () => {
+          const el = this.music.get('col')
           const old = el[where]
           this.$set(el, where, obj)
           this.updateSigimShow()
           return old
         },
         old => {
-          this.$set(el, where, old)
+          this.$set(this.music.get('col'), where, old)
           this.updateSigimShow()
         }
       )
@@ -132,8 +154,8 @@ export default {
       if (this.cursor.blurred) return
       this.doWithBackup(
         () => {
-          let old = this.music.del('col', 'keep')
           this.sigimShow = false
+          return this.music.del('col', 'keep')
         },
         old => this.music.get('row').splice(this.cursor.col, 1, old)
       )
@@ -167,7 +189,21 @@ export default {
       }
     },
     octavechange(delta) {
-      this.octave += delta
+      if (this.octave + delta < 0 || this.octave + delta > 4) return
+      const el = !this.cursor.blurred && this.music.get('col')
+      const old = el && el.main
+      if (old && typeof old.pitch === 'number') {
+        this.doWithBackup(
+          () => {
+            this.octave += delta
+            this.$set(el, 'main', YUL_OBJ[this.octave][old.pitch % 12])
+          },
+          _ => {
+            this.octave -= delta
+            this.$set(el, 'main', old)
+          }
+        )
+      } else this.octave += delta
     },
     tickchange(tickIdx) {
       this.doWithBackup(
@@ -194,7 +230,7 @@ export default {
     addchapter() {
       this.doWithBackup(
         () => this.music.addchapter(),
-        _ => this.music.delchapter()
+        _ => this.music.delchapter() // TODO: maybe this is not it?
       )
     },
     deletechapter() {
@@ -315,6 +351,8 @@ export default {
             let where = this.ime.grace ? 'modifier' : 'main'
             let obj = this.ime.backspace()
             this.write(where, obj, false)
+          } else if (this.music.get('col').main) {
+            this.erase()
           } else {
             this.doWithBackup(
               () => this.music.backspace(),
@@ -331,7 +369,14 @@ export default {
           }
           return
         case 'Delete': // ?
-          this.erase()
+          if (this.music.get('col').main) {
+            this.erase()
+          } else {
+            this.doWithBackup(
+              () => this.music.deletekey(),
+              f => f()
+            )
+          }
           return
         case 'Enter':
         case 'NumpadEnter':
@@ -353,14 +398,10 @@ export default {
           }
           break
         case 'Slash':
-          if (this.octave > 0) {
-            this.octave -= 1
-          }
+          this.octavechange(-1)
           break
         case 'Semicolon':
-          if (this.octave < 4) {
-            this.octave += 1
-          }
+          this.octavechange(+1)
           return
         case 'Comma':
           this.write('main', REST_OBJ)
@@ -401,11 +442,8 @@ export default {
           }
 
           if (e.ctrlKey && e.code === 'KeyZ') {
-            if (e.shiftKey) {
-              this.redo()
-            } else {
-              this.undo()
-            }
+            if (e.shiftKey) this.redo()
+            else this.undo()
             break
           }
           return
@@ -416,12 +454,16 @@ export default {
   computed: {
     view() {
       return this.music.view()
+    },
+    undoable() {
+      return this.undoTravel > 0
+    },
+    redoable() {
+      return this.undoTravel < this.undoHistory.length
     }
   },
   created() {
-    this.cursor = new Cursor()
-    this.music = new Music(this.cursor)
-    this.music.addchapter(new Chapter(this.cursor, INIT_CONFIG))
+    this.init()
 
     this.cursor.on('afterColChange', () => {
       this.updateSigimShow()
@@ -431,10 +473,6 @@ export default {
     this.cursor.on('afterChapterChange', this.updateChapter)
     this.cursor.on('beforeCellChange', () => this.music.trim())
     this.cursor.on('beforeChapterChange', () => this.music.trimChapter())
-
-    this.move(0, 0, 0, 0)
-    this.write('main', YUL_OBJ[this.octave][0])
-    this.updateChapter()
 
     this.player = new Player(this.music)
   },

@@ -13,4 +13,8 @@ function inRange(idx, arr) {
   return idx >= 0 && idx < arr.length
 }
 
-export { wrappedIdx, moveToMostAligned, inRange }
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj))
+}
+
+export { wrappedIdx, moveToMostAligned, inRange, clone }

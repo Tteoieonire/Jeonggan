@@ -1,6 +1,6 @@
 import Chapter from './chapter.js'
 import { render } from './renderer.js'
-import { wrappedIdx, inRange, moveToMostAligned } from './utils.js'
+import { wrappedIdx, inRange, moveToMostAligned, clone } from './utils.js'
 
 class Music {
   // 내용은 신경x 형식만 관리!
@@ -35,10 +35,11 @@ class Music {
     return rendered
   }
 
-  nextCol() {
-    if (this.get('chapter').nextCol()) return true
-    if (!inRange(1 + this.cursor.chapter, this.chapters)) return false
-    this.set('chapter', 1 + this.cursor.chapter)
+  stepCol(delta = +1) {
+    if (this.get('chapter').stepCol(delta)) return true
+    let destChapter = this.cursor.chapter + delta
+    if (!inRange(destChapter, this.chapters)) return false
+    this.set('chapter', destChapter, delta > 0 ? 0 : -1)
     return true
   }
 
@@ -83,20 +84,16 @@ class Music {
 
   /* Add & Delete */
   addchapter(chapter) {
-    let dest_chapter = this.chapters.length
+    let destChapter = this.chapters.length
     if (!this.cursor.blurred) {
-      dest_chapter = 1 + this.cursor.chapter
+      destChapter = 1 + this.cursor.chapter
     }
     if (!chapter) {
-      let config = _clone(this.get('chapter').config)
-      config.name = '새 장'
-      config.rhythm = null
-      config.padding = 0 // -1?
-      chapter = new Chapter(this.cursor, config)
+      chapter = new Chapter(this.cursor, newConfigFrom(this.get('chapter').config))
     }
 
-    this.chapters.splice(dest_chapter, 0, chapter)
-    this.cursor.move(dest_chapter, 0, 0, 0)
+    this.chapters.splice(destChapter, 0, chapter)
+    this.cursor.move(destChapter, 0, 0, 0)
   }
 
   delchapter(i) {
@@ -205,48 +202,88 @@ class Music {
 
   backspace() {
     /** Returns a function for undo. */
-    if (this.get('col').main) {
-      let old = this.del('col', 'keep')
-      return () => this.add('col', old)
-    }
-    this.del('col', 'unsafe')
-
     if (this.cursor.col > 0) {
+      this.del('col', 'unsafe')
       this.set('col', this.cursor.col - 1, -1)
       return () => this.add('col')
     }
-    
+
     if (this.cursor.row > 0) {
+      this.del('col', 'unsafe')
       this.set('row', this.cursor.row - 1, -1)
       this.mergeLater('row')
       return () => this.rowbreak()
     }
-    
+
     if (this.cursor.cell > 0) {
+      this.del('col', 'unsafe')
       this.set('cell', this.cursor.cell - 1, -1)
       this.mergeLater('cell')
-      this.mergeLater('row')
       return () => this.cellbreak()
     }
-    
+
     if (this.cursor.chapter > 0) {
+      this.del('col', 'unsafe')
       this.set('chapter', this.cursor.chapter - 1, -1)
       const deletedConfig = this.mergeLater('chapter')
-      this.mergeLater('cell')
-      this.mergeLater('row')
       return () => this.chapterbreak(deletedConfig)
     }
   }
+  deletekey() {
+    /** Returns a function for undo. */
+    if (this.get('col').main) {
+      let old = this.del('col', 'keep')
+      return () => this.add('col', old)
+    }
 
-  rowbreak() {
+    if (inRange(this.cursor.col + 1, this.get('row'))) {
+      this.del('col')
+      return () => {
+        console.log(0)
+        this.get('row').splice(this.cursor.col, 0, undefined)
+      }
+    }
+
+    if (inRange(this.cursor.row + 1, this.get('cell'))) {
+      this.mergeLater('row')
+      this.del('col')
+      return () => {
+        console.log(1)
+        this.get('row').splice(this.cursor.col, 0, undefined)
+        this.rowbreak(false)
+      }
+    }
+
+    if (inRange(this.cursor.cell + 1, this.get('cells'))) {
+      this.mergeLater('cell')
+      this.del('col')
+      return () => {
+        console.log(2)
+        this.get('row').splice(this.cursor.col, 0, undefined)
+        this.cellbreak(false)
+      }
+    }
+
+    if (inRange(this.cursor.chapter + 1, this.chapters)) {
+      const deletedConfig = this.mergeLater('chapter')
+      this.del('col')
+      return () => {
+        console.log(3)
+        this.get('row').splice(this.cursor.col, 0, undefined)
+        this.chapterbreak(deletedConfig, false)
+      }
+    }
+  }
+
+  rowbreak(prepend = true) {
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
+    if (prepend) newrow.unshift(undefined)
     this.add('row', newrow)
   }
 
-  cellbreak() {
+  cellbreak(prepend = true) {
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
+    if (prepend) newrow.unshift(undefined)
 
     let newcell = this.get('cell').splice(this.cursor.row + 1)
     newcell.unshift(newrow)
@@ -254,25 +291,29 @@ class Music {
     this.add('cell', newcell)
   }
 
-  chapterbreak(config) {
+  chapterbreak(config, prepend = true) {
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
+    if (prepend) newrow.unshift(undefined)
 
     let newcell = this.get('cell').splice(this.cursor.row + 1)
     newcell.unshift(newrow)
 
     let chapter = this.get('chapter')
     let newcells = chapter.cells.splice(this.cursor.cell + 1)
-    cellsAfter.unshift(newcell)
+    newcells.unshift(newcell)
 
-    if (!config) config = _clone(chapter.config)
+    if (!config) config = newConfigFrom(chapter.config)
     let newchapter = new Chapter(this.cursor, config, newcells)
     this.add('chapter', newchapter)
   }
 }
 
-function _clone(obj) {
-  return JSON.parse(JSON.stringify(obj))
+function newConfigFrom(config) {
+  config = clone(config)
+  config.name = '새 장'
+  config.rhythm = null
+  config.padding = 0 // -1?
+  return config
 }
 
 export default Music

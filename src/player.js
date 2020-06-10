@@ -13,7 +13,9 @@ class Player {
 
   load() {
     // TODO: 太 -[ㄴ] | 黃 에서 ㄴ에 커서를 두고 연주하면 먹통이 됨
-    const data = convertMidi(this.music.render())
+    const rendered = this.music.render()
+    console.log(rendered)
+    const data = convertMidi(rendered)
     this.midi.replayer = { getData: () => data }
   }
 
@@ -49,7 +51,7 @@ class Player {
     const duration = this.music.get('chapter').colDuration()
     const delay = getNow() - this.time
     this.timerID = setTimeout(
-      () => this.music.nextCol() && this.schedule(),
+      () => this.music.stepCol()? this.schedule(): this.stop(),
       duration > delay ? duration - delay : 0
     )
     this.time += duration

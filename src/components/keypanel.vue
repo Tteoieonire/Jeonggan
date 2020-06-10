@@ -7,7 +7,7 @@
     <div v-else class="row">
       <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
       <b-btn @click="erase" aria-label="지우개" class="m-1">
-        <i class="fa fa-eraser"></i>
+        <i class="fas fa-eraser"></i>
       </b-btn>
 
       <sympad @write="write" type="main"></sympad>

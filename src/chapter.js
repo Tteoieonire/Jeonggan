@@ -60,7 +60,7 @@ class Chapter {
         notes[notes.length - 1].duration += duration
       }
       time += duration
-    } while (this.nextCol())
+    } while (this.stepCol())
 
     this.cursor = cursorBackup
     notes.push(time)
@@ -72,12 +72,13 @@ class Chapter {
     return 60000 / this.config.tempo / fraction
   }
 
-  nextCol() {
+  stepCol(delta = +1) {
     let level = 'col'
     while (level !== 'cells') {
       let parent = this.get(parentOf(level))
-      if (inRange(1 + this.cursor[level], parent)) {
-        this.set(level, 1 + this.cursor[level])
+      let destPos = this.cursor[level] + delta
+      if (inRange(destPos, parent)) {
+        this.set(level, destPos, delta > 0? 0: -1)
         return true
       }
       level = parentOf(level)
@@ -175,9 +176,9 @@ class Chapter {
   mergeLater(what) {
     const preyPos = this.cursor[what] + 1
     const parent = this.get(parentOf(what))
-    if (preyPos >= parent.length) return
+    if (!inRange(preyPos, parent)) return
     const childs = parent.splice(preyPos, 1)[0]
-    this.get(what).push(...childs)
+    if (childs) this.get(what).push(...childs)
   }
 
   /* Methods: desirably a sequence of valid ops */

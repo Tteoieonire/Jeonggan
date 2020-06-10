@@ -3,7 +3,7 @@
     <div class="margin">
       <div v-if="gak.isFirst">
         <b-btn variant="link" @click="openconfig" v-b-modal.configmodal>
-          <i class="fa fa-wrench" :title="title + ' 설정'"></i>
+          <i class="fas fa-wrench" :title="title + ' 설정'"></i>
         </b-btn>
         <span class="title">{{ gak.title }}</span>
       </div>
