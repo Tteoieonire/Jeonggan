@@ -46,13 +46,14 @@
 </template>
 
 <script>
+import { saveAs } from 'file-saver'
+
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
 import canvaspanel from './components/canvaspanel.vue'
 import configmodal from './components/configmodal.vue'
 import exchangemodal from './components/exchangemodal.vue'
 
-import { serializeMusic, deserializeMusic } from './serializer.js'
 import Cursor from './cursor.js'
 import Music from './music.js'
 import Chapter from './chapter.js'
@@ -60,6 +61,7 @@ import Player from './player.js'
 import IME from './ime.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
 import { querySymbol } from './components/keypads/sympad.vue'
+import { serializeMusic, deserializeMusic } from './serializer.js'
 
 /**
  * Controller
@@ -102,11 +104,6 @@ export default {
       this.move(0, 0, 0, 0)
       this.write('main', YUL_OBJ[this.octave][0])
       this.updateChapter()
-    },
-    open() {
-      //
-    },
-    save() {
     },
     updateSigimShow() {
       if (this.cursor.blurred || this.cursor.rhythmMode) return
@@ -263,6 +260,22 @@ export default {
       })
       this.cursor.move(0, 0, 0, 0)
       this.undoHistory = []
+    },
+    open(file) {
+      // TODO: maybe warn user?
+      const reader = new FileReader()
+      reader.addEventListener('load', e => {
+        const result = e.target.result
+        const data = deserializeMusic(result) // TODO: handle error
+        this.exchange(data.title, data.chapters)
+      })
+      reader.readAsText(file);
+    },
+    save() {
+      const data = serializeMusic(this.title, this.music)
+      const blob = new Blob([data], {type: 'text/x-yaml'})
+      let filename = this.title.replace('\\s+', '-').replace('\\W+', '') + '.yml'
+      saveAs(blob, filename)
     },
     doWithBackup(redo, undo) {
       /** redo: a function that does the (re)-operation.

@@ -7,7 +7,9 @@
       </b-btn>
       <b-btn @click="open" aria-label="열기">
         <i class="fas fa-folder-open"></i>
+        <input ref='uploadButton' type="file" accept='.yml,.yaml' style="display:none">
       </b-btn>
+
       <b-btn @click="save" aria-label="저장">
         <i class="fas fa-save"></i>
       </b-btn>
@@ -73,7 +75,11 @@ export default {
       this.$emit('init')
     },
     open() {
-      this.$emit('open')
+      this.$refs['uploadButton'].click()
+    },
+    onfile(e) {
+      const file = e.target.files[0]
+      this.$emit('open', file)
     },
     save() {
       this.$emit('save')
@@ -84,6 +90,9 @@ export default {
     redo() {
       this.$emit('redo')
     }
+  },
+  mounted() {
+    this.$refs['uploadButton'].addEventListener('change', this.onfile)
   }
 }
 </script>
