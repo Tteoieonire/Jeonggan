@@ -3,7 +3,7 @@
     <b-container>
       <b-row role="group" v-for="(group, i) in SYMBOL" :key="i">
         <b-col class="p-0" v-for="(obj, j) in group" :key="j">
-          <b-dropdown-item-btn class="gugak px-2" @click="write(obj)" :aria-label="obj.label">
+          <b-dropdown-item-btn class="gugak sympad-item" @click="write(obj)" :aria-label="obj.label">
             <span aria-hidden="true">{{ obj.text }}</span>
           </b-dropdown-item-btn>
         </b-col>
@@ -11,6 +11,14 @@
     </b-container>
   </b-dropdown>
 </template>
+
+<style>
+.sympad-item * {
+  padding: 0.2rem 0;
+  text-align: center;
+}
+
+</style>
 
 <script>
 function makeLabel(pitch) {

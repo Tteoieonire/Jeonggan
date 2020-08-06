@@ -95,6 +95,16 @@ class Cursor {
     }
     this._move(other.rhythmMode, other.chapter, other.cell, other.row, other.col)
   }
+
+  log() {
+    console.log('blurred', this.blurred)
+    console.log('rhythmMode', this.rhythmMode)
+    console.log('playMode', this.playMode)
+    console.log('chapter', this.chapter)
+    console.log('cell', this.cell)
+    console.log('row', this.row)
+    console.log('col', this.col)
+  }
 }
 
 export default Cursor

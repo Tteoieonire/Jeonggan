@@ -7,13 +7,19 @@
 
     <b-form-group label="빠르기:">
       <b-input-group prepend="분당" append="정간">
-        <b-form-input v-model="tempo" type="number"></b-form-input>
+        <b-form-input v-model="tempo" type="number" min="0"></b-form-input>
       </b-input-group>
     </b-form-group>
 
     <b-form-group label="각 길이:">
       <b-input-group append="칸">
-        <b-form-input v-model="measure" type="number"></b-form-input>
+        <b-form-input v-model="measure" type="number" min="0"></b-form-input>
+      </b-input-group>
+    </b-form-group>
+
+    <b-form-group label="첫 정간 위치:">
+      <b-input-group append="칸 띄우기">
+        <b-form-input v-model="padding" type="number" min="0" :max="measure-1"></b-form-input>
       </b-input-group>
     </b-form-group>
 

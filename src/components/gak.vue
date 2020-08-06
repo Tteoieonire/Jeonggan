@@ -24,14 +24,12 @@
     </b-list-group>
 
     <!-- 일반 각 -->
-    <b-list-group v-else class="gak" :aria-label="label">
+    <b-list-group v-else class="gak" :aria-label="label" :style="{paddingTop: padding}">
       <b-list-group-item
         v-for="(cell, i) in gak.content"
-        button
         :key="i"
         :active="thisCell(i, false)"
         @click="move(i, 0, 0)"
-        tabindex="-1"
       >
         <cell
           v-if="cell"
@@ -85,6 +83,9 @@ export default {
     },
     height() {
       return 7 + 3.5 * this.maxMeasure + 'rem'
+    },
+    padding() {
+      return (this.gak.padding || 0) * 3.5 + 'rem'
     }
   },
   components: {

@@ -76,9 +76,6 @@ class Music {
   }
 
   trimChapter() {
-    // if (this.get('chapter').isEmpty()) {
-    //   this.del('chapter') // what TODO
-    // } else
     this.trimLast(true)
   }
 
@@ -103,7 +100,7 @@ class Music {
 
     let deleted = this.chapters.splice(i, 1)[0]
     if (this.chapters.length === 0) {
-      let newchapter = new Chapter(this.cursor, _clone(deleted.config))
+      let newchapter = new Chapter(this.cursor, clone(deleted.config))
       this.addchapter(newchapter)
     }
     if (curchapter > i) {
@@ -115,20 +112,24 @@ class Music {
     return deleted
   }
 
-  add(what, obj) {
+  add(what, obj, position) {
     if (what === 'chapter') {
       this.addchapter(obj)
     } else {
-      this.get('chapter').add(what, obj)
+      this.get('chapter').add(what, obj, position)
     }
   }
 
-  del(what, method = '') {
+  del(what) {
     if (what === 'chapter') {
       return this.delchapter(this.cursor.chapter)
     } else {
-      return this.get('chapter').del(what, method)
+      return this.get('chapter').del(what)
     }
+  }
+
+  erase() {
+    this.get('chapter').erase()
   }
 
   /* keyboard move */
@@ -163,8 +164,7 @@ class Music {
       const srcY = (this.cursor.cell + config.padding) % config.measure
       const srcRow = this.cursor.row
       const srcDivision = this.get('cell').length
-      this.set('chapter', destPos, -1) // TODO: adds an extra cell at the end!
-      // also TODO: sometimes I lose focus and get stuck
+      this.set('chapter', destPos, delta > 0? -1: 0) // TODO: adds an extra cell at the end!
 
       // set cell
       chapter = this.get('chapter')
@@ -191,99 +191,59 @@ class Music {
   }
 
   mergeLater(what) {
+    const chapter = this.get('chapter')
     if (what === 'chapter') {
       let deleted = this.chapters.splice(this.cursor.chapter + 1, 1)[0]
-      this.get('chapter').cells.push(...deleted.cells)
+      chapter.cells.push(...deleted.cells)
+      chapter.mergeLater('cell')
       return deleted.config
     } else {
-      this.get('chapter').mergeLater(what)
+      chapter.mergeLater(what)
     }
   }
 
   backspace() {
     /** Returns a function for undo. */
-    if (this.cursor.col > 0) {
-      this.del('col', 'unsafe')
-      this.set('col', this.cursor.col - 1, -1)
-      return () => this.add('col')
+    const chapter = this.get('chapter')
+    const delim = chapter.getDelimiter(-1)
+    if (!delim) throw 'Function `backspace` encountered non-empty col'
+    this.stepCol(-1)
+    const old = this.mergeLater(delim)
+    this.get('row').splice(this.cursor.col + 1, 1)
+    if (delim === 'chapter') {
+      return () => this.chapterbreak(old, 'after')
     }
-
-    if (this.cursor.row > 0) {
-      this.del('col', 'unsafe')
-      this.set('row', this.cursor.row - 1, -1)
-      this.mergeLater('row')
-      return () => this.rowbreak()
-    }
-
-    if (this.cursor.cell > 0) {
-      this.del('col', 'unsafe')
-      this.set('cell', this.cursor.cell - 1, -1)
-      this.mergeLater('cell')
-      return () => this.cellbreak()
-    }
-
-    if (this.cursor.chapter > 0) {
-      this.del('col', 'unsafe')
-      this.set('chapter', this.cursor.chapter - 1, -1)
-      const deletedConfig = this.mergeLater('chapter')
-      return () => this.chapterbreak(deletedConfig)
-    }
+    return () => this[delim + 'break']('after')
   }
+
   deletekey() {
     /** Returns a function for undo. */
-    if (this.get('col').main) {
-      let old = this.del('col', 'keep')
-      return () => this.add('col', old)
+    const chapter = this.get('chapter')
+    const delim = chapter.getDelimiter(+1)
+    if (!delim) throw 'Function `deletekey` encountered non-empty col'
+    const old = this.mergeLater(delim)
+    this.get('row').splice(this.cursor.col, 1)
+    if (delim === 'chapter') {
+      return () => this.chapterbreak(old, 'before')
     }
-
-    if (inRange(this.cursor.col + 1, this.get('row'))) {
-      this.del('col')
-      return () => {
-        console.log(0)
-        this.get('row').splice(this.cursor.col, 0, undefined)
-      }
-    }
-
-    if (inRange(this.cursor.row + 1, this.get('cell'))) {
-      this.mergeLater('row')
-      this.del('col')
-      return () => {
-        console.log(1)
-        this.get('row').splice(this.cursor.col, 0, undefined)
-        this.rowbreak(false)
-      }
-    }
-
-    if (inRange(this.cursor.cell + 1, this.get('cells'))) {
-      this.mergeLater('cell')
-      this.del('col')
-      return () => {
-        console.log(2)
-        this.get('row').splice(this.cursor.col, 0, undefined)
-        this.cellbreak(false)
-      }
-    }
-
-    if (inRange(this.cursor.chapter + 1, this.chapters)) {
-      const deletedConfig = this.mergeLater('chapter')
-      this.del('col')
-      return () => {
-        console.log(3)
-        this.get('row').splice(this.cursor.col, 0, undefined)
-        this.chapterbreak(deletedConfig, false)
-      }
-    }
+    return () => this[delim + 'break']('before')
   }
 
-  rowbreak(prepend = true) {
+  colbreak(position='after') {
+    this.add('col', undefined, position === 'after'? 1: 0)
+  }
+
+  rowbreak(position='after') {
+    if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    if (prepend) newrow.unshift(undefined)
+    if (position === 'after') newrow.unshift(undefined)
     this.add('row', newrow)
   }
 
-  cellbreak(prepend = true) {
+  cellbreak(position='after') {
+    if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    if (prepend) newrow.unshift(undefined)
+    if (position === 'after') newrow.unshift(undefined)
 
     let newcell = this.get('cell').splice(this.cursor.row + 1)
     newcell.unshift(newrow)
@@ -291,9 +251,10 @@ class Music {
     this.add('cell', newcell)
   }
 
-  chapterbreak(config, prepend = true) {
+  chapterbreak(config, position='after') {
+    if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
-    if (prepend) newrow.unshift(undefined)
+    if (position === 'after') newrow.unshift(undefined)
 
     let newcell = this.get('cell').splice(this.cursor.row + 1)
     newcell.unshift(newrow)

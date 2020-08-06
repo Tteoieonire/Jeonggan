@@ -1,7 +1,7 @@
 <template>
   <!-- 하단 키 패널 -->
   <b-btn-toolbar key-nav class="container-fluid" v-if="!cursor.blurred && !cursor.playMode">
-    <div v-if="cursor.rhythmMode" class="row">
+    <div v-if="cursor.rhythmMode" class="row mx-auto">
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">

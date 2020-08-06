@@ -7,7 +7,6 @@
       :redoable="redoable"
       @addchapter="addchapter"
       @play="play"
-      @init="init"
       @open="open"
       @save="save"
       @undo="undo"
@@ -34,6 +33,7 @@
       @moveRhythm="moveRhythm"
       @openconfig="openconfig"
       id="workspace"
+      tabindex="0"
     ></canvaspanel>
     <configmodal
       v-if="configchapter"
@@ -41,7 +41,8 @@
       @configchange="configchange"
       @deletechapter="deletechapter"
     ></configmodal>
-    <exchangemodal :title="title" :music="music" @exchange="exchange"></exchangemodal>
+    <initmodal :title="title" @init="init"></initmodal>
+    <globalmodal :title="title" @rename="rename"></globalmodal>
   </div>
 </template>
 
@@ -51,8 +52,10 @@ import { saveAs } from 'file-saver'
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
 import canvaspanel from './components/canvaspanel.vue'
+
+import initmodal from './components/initmodal.vue'
+import globalmodal from './components/globalmodal.vue'
 import configmodal from './components/configmodal.vue'
-import exchangemodal from './components/exchangemodal.vue'
 
 import Cursor from './cursor.js'
 import Music from './music.js'
@@ -66,7 +69,6 @@ import { serializeMusic, deserializeMusic } from './serializer.js'
 /**
  * Controller
  */
-const INIT_TITLE = '수연장지곡'
 const INIT_CONFIG = {
   name: '초장',
   tempo: 60,
@@ -80,7 +82,7 @@ const MAX_HISTORY = 100
 export default {
   data() {
     return {
-      title: INIT_TITLE,
+      title: '',
       cursor: undefined,
       music: undefined,
       scale: undefined, //need update
@@ -90,20 +92,31 @@ export default {
       octave: 2,
       tickIdx: 0,
       ime: new IME(querySymbol),
-      player: null,
+      player: new Player(),
       undoHistory: [],
       undoTravel: 0
     }
   },
   methods: {
-    init() {
+    init(title = '') {
+      this.title = title
       this.cursor = new Cursor()
       this.music = new Music(this.cursor)
       this.music.addchapter(new Chapter(this.cursor, INIT_CONFIG))
+      this.player.music = this.music
 
       this.move(0, 0, 0, 0)
       this.write('main', YUL_OBJ[this.octave][0])
       this.updateChapter()
+
+      this.cursor.on('afterColChange', () => {
+        this.updateSigimShow()
+        this.ime.reset()
+      }) // focus as well
+      this.cursor.on('afterCellChange', () => this.music.trimLast())
+      this.cursor.on('afterChapterChange', this.updateChapter)
+      this.cursor.on('beforeCellChange', () => this.music.trim())
+      this.cursor.on('beforeChapterChange', () => this.music.trimChapter())
     },
     updateSigimShow() {
       if (this.cursor.blurred || this.cursor.rhythmMode) return
@@ -152,7 +165,7 @@ export default {
       this.doWithBackup(
         () => {
           this.sigimShow = false
-          return this.music.del('col', 'keep')
+          return this.music.erase()
         },
         old => this.music.get('row').splice(this.cursor.col, 1, old)
       )
@@ -177,11 +190,11 @@ export default {
       } else {
         this.doWithBackup(
           () => {
-            const old = this.music.del(what)
+            const f = this.music.del(what)
             this.updateSigimShow()
-            return old
+            return f
           },
-          old => this.music.add(what, old)
+          f => f()
         )
       }
     },
@@ -193,11 +206,12 @@ export default {
         this.doWithBackup(
           () => {
             this.octave += delta
-            this.$set(el, 'main', YUL_OBJ[this.octave][old.pitch % 12])
+            const obj = YUL_OBJ[this.octave][old.pitch % 12]
+            this.$set(this.music.get('col'), 'main', obj)
           },
           _ => {
             this.octave -= delta
-            this.$set(el, 'main', old)
+            this.$set(this.music.get('col'), 'main', old)
           }
         )
       } else this.octave += delta
@@ -227,7 +241,7 @@ export default {
     addchapter() {
       this.doWithBackup(
         () => this.music.addchapter(),
-        _ => this.music.delchapter() // TODO: maybe this is not it?
+        _ => this.music.delchapter()
       )
     },
     deletechapter() {
@@ -236,7 +250,7 @@ export default {
       this.doWithBackup(
         () => this.music.delchapter(chapter),
         old => {
-          this.move(chapter, 0, 0, 0)
+          this.cursor.chapter = chapter - 1
           this.music.addchapter(old)
           // restore cursor
         }
@@ -251,7 +265,10 @@ export default {
         this.player.resume()
       }
     },
-    exchange(title, chapters) {
+    rename(title) {
+      this.title = title
+    },
+    load(title, chapters) {
       this.cursor.blur()
       this.title = title
       this.music.chapters = chapters.map(config => {
@@ -267,7 +284,7 @@ export default {
       reader.addEventListener('load', e => {
         const result = e.target.result
         const data = deserializeMusic(result) // TODO: handle error
-        this.exchange(data.title, data.chapters)
+        this.load(data.title, data.chapters)
       })
       reader.readAsText(file);
     },
@@ -298,8 +315,7 @@ export default {
       this.undoTravel += 1
     },
     undo() {
-      // TODO: for now I assume all ops are recorded
-      this.ime.reset() // and this is part of it
+      this.ime.reset()
       if (this.undoTravel === 0) return
       this.undoTravel -= 1
       let op = this.undoHistory[this.undoTravel]
@@ -308,7 +324,7 @@ export default {
       this.cursor.loadFrom(op.oldCursor)
     },
     redo() {
-      this.ime.reset() // but this must be evidence that redo isn't possible anymore
+      this.ime.reset()
       if (this.undoTravel >= this.undoHistory.length) return
       let op = this.undoHistory[this.undoTravel]
       this.cursor.loadFrom(op.oldCursor)
@@ -351,6 +367,24 @@ export default {
           break
         case 'ArrowRight':
           this.music.moveLeftRight(+1)
+          break
+        case 'Home':
+          if (e.ctrlKey) {
+            this.music.set('chapter', 0)
+          } else {
+            let remainder = this.cursor.cell % this.music.get('chapter').config.measure
+            this.music.set('cell', this.cursor.cell - remainder, 0)
+          }
+          break
+        case 'End':
+          if (e.ctrlKey) {
+            this.music.set('chapter', -1, -1)
+          } else {
+            let measure = this.music.get('chapter').config.measure
+            let remainder = this.cursor.cell % measure
+            let dest = this.cursor.cell + measure - 1 - remainder
+            this.music.set('cell', Math.min(dest, this.music.get('cells').length - 1), -1)
+          }
           break
         /* Editing */
         case 'Space':
@@ -476,18 +510,7 @@ export default {
     }
   },
   created() {
-    this.init()
-
-    this.cursor.on('afterColChange', () => {
-      this.updateSigimShow()
-      this.ime.reset()
-    }) // focus as well
-    this.cursor.on('afterCellChange', () => this.music.trimLast())
-    this.cursor.on('afterChapterChange', this.updateChapter)
-    this.cursor.on('beforeCellChange', () => this.music.trim())
-    this.cursor.on('beforeChapterChange', () => this.music.trimChapter())
-
-    this.player = new Player(this.music)
+    this.init('수연장지곡')
   },
   mounted() {
     document
@@ -498,8 +521,10 @@ export default {
     keypanel,
     menupanel,
     canvaspanel,
-    configmodal,
-    exchangemodal
+
+    initmodal,
+    globalmodal,
+    configmodal
   }
 }
 

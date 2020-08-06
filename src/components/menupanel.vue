@@ -2,7 +2,7 @@
   <!-- 상단 메뉴바 -->
   <b-btn-toolbar key-nav style='width:100%;display:block;'>
     <b-button-group class="m-1">
-      <b-btn @click="init" aria-label="새로 만들기">
+      <b-btn v-b-modal.init aria-label="새로 만들기">
         <i class="fas fa-file"></i>
       </b-btn>
       <b-btn @click="open" aria-label="열기">
@@ -24,7 +24,19 @@
       </b-btn>
     </b-button-group>
 
-    <b-button-group class="m-1">
+    <b-button-group class="m-1 float-right">
+      <b-btn @click="addchapter" :disabled="rhythmMode">새 장 추가</b-btn>
+
+      <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
+        <template slot="button-content">
+          <i class="fas fa-ellipsis-v"></i>
+        </template>
+
+        <b-dropdown-item-button v-b-modal.global>곡 설정</b-dropdown-item-button>
+      </b-dropdown>
+    </b-button-group>
+
+    <b-button-group class="m-1 float-right">
       <b-btn
         v-if="playerMode === 'playing'"
         @click="pause"
@@ -39,18 +51,6 @@
       <b-btn @click="stop" :disabled="rhythmMode || playerMode === 'stopped'" aria-label="연주 정지">
         <i class="fas fa-stop"></i>
       </b-btn>
-    </b-button-group>
-
-    <b-button-group class="m-1 float-right">
-      <b-btn @click="addchapter" :disabled="rhythmMode">새 장 추가</b-btn>
-
-      <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
-        <template slot="button-content">
-          <i class="fas fa-ellipsis-v"></i>
-        </template>
-
-        <b-dropdown-item-button v-b-modal.exchange>불러오기/내보내기</b-dropdown-item-button>
-      </b-dropdown>
     </b-button-group>
   </b-btn-toolbar>
 </template>
@@ -70,9 +70,6 @@ export default {
     },
     stop() {
       this.$emit('play', 'stop')
-    },
-    init() {
-      this.$emit('init')
     },
     open() {
       this.$refs['uploadButton'].click()

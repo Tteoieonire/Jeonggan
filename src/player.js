@@ -14,7 +14,6 @@ class Player {
   load() {
     // TODO: 太 -[ㄴ] | 黃 에서 ㄴ에 커서를 두고 연주하면 먹통이 됨
     const rendered = this.music.render()
-    console.log(rendered)
     const data = convertMidi(rendered)
     this.midi.replayer = { getData: () => data }
   }

@@ -10,6 +10,10 @@ class Chapter {
   view(chapterIndex, lastPos) {
     const measure = this.config.measure
     const numGaks = Math.ceil(this.cells.length / measure)
+    let padding = this.config.padding
+    if (padding < 0) padding = lastPos
+    if (padding >= measure) padding = 0
+
     let gaks = []
     if (this.config.rhythm) {
       gaks.push({
@@ -29,7 +33,8 @@ class Chapter {
         gakIndex: i,
         measure: measure,
         isFirst: !this.config.rhythm && i === 0,
-        title: this.config.name
+        title: this.config.name,
+        padding: i === 0 ? padding : 0
       })
     }
     return gaks
@@ -78,7 +83,7 @@ class Chapter {
       let parent = this.get(parentOf(level))
       let destPos = this.cursor[level] + delta
       if (inRange(destPos, parent)) {
-        this.set(level, destPos, delta > 0? 0: -1)
+        this.set(level, destPos, delta > 0 ? 0 : -1)
         return true
       }
       level = parentOf(level)
@@ -134,26 +139,37 @@ class Chapter {
     }
   }
 
-  add(what, obj) {
-    const destPos = 1 + this.cursor[what]
+  add(what, obj, position = 1) {
+    const destPos = this.cursor[what] + position
     this.get(parentOf(what)).splice(destPos, 0, obj)
     this.set(what, destPos)
   }
 
-  del(what, method = '') {
+  del(what) { // shapechange
     if (what === 'cells') throw 'delchapter'
     const arr = this.get(parentOf(what))
     const idx = this.cursor[what]
-    if (method === 'keep') {
-      return arr.splice(idx, 1, undefined)[0]
-    } else if (arr.length === 1) {
-      return this.del(parentOf(what), method)
-    } else {
-      if (idx === arr.length - 1 && method !== 'unsafe') {
-        this.set(what, idx - 1, -1)
-      }
-      return arr.splice(idx, 1)[0]
+    let old = arr.splice(idx, 1)[0]
+    if (arr.length === 0) {
+      arr.splice(idx, 0, undefined)
+      return () => this.get(parentOf(what)).splice(idx, 1, old)
     }
+    if (idx === arr.length) {
+      this.set(what, idx - 1, -1)
+    }
+    return () => this.get(parentOf(what)).splice(idx, 0, old)
+  }
+
+  getDelimiter(direction=+1) {
+    if (this.get('col').main) return ''
+    if (inRange(this.cursor.col + direction, this.get('row'))) return 'col'
+    if (inRange(this.cursor.row + direction, this.get('cell'))) return 'row'
+    if (inRange(this.cursor.cell + direction, this.get('cells'))) return 'cell'
+    return 'chapter'
+  }
+
+  erase() {
+    return this.get('row').splice(this.cursor.col, 1, undefined)[0]
   }
 
   trim() {
@@ -174,11 +190,14 @@ class Chapter {
   }
 
   mergeLater(what) {
+    // set(what, ##, -1)
+    if (what === 'col') return
     const preyPos = this.cursor[what] + 1
     const parent = this.get(parentOf(what))
     if (!inRange(preyPos, parent)) return
     const childs = parent.splice(preyPos, 1)[0]
     if (childs) this.get(what).push(...childs)
+    this.mergeLater(childOf(what))
   }
 
   /* Methods: desirably a sequence of valid ops */
@@ -214,7 +233,15 @@ class Chapter {
     destPos = this.cursor.cell - delta * this.config.measure
     if (inRange(destPos, this.cells)) {
       this.focus(destPos, magnet, magnet)
+    } else if (
+      this.whichGak(destPos) === this.whichGak(this.cells.length - 1)
+    ) {
+      this.focus(-1, magnet, magnet)
     } else throw RangeError('Out of chapter')
+  }
+
+  whichGak(cell) {
+    return Math.floor((cell + this.config.padding) / this.config.measure)
   }
 }
 
