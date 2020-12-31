@@ -4,7 +4,7 @@ class Chapter {
   constructor(cursor, config, cells) {
     this.cursor = cursor
     this.config = config
-    this.cells = cells || new Array(2)
+    this.cells = cells || new Array(1)
   }
 
   view(chapterIndex, lastPos) {
@@ -180,15 +180,6 @@ class Chapter {
     this.cells.splice(this.cursor.cell, 1, undefined)
   }
 
-  trimLast(cruel = false) {
-    if (this.cursor.rhythmMode) return
-    for (var idx = this.cells.length - 1; idx > this.cursor.cell; idx--) {
-      if (!isEmptyCell(this.cells[idx])) break
-    }
-    this.cells.splice(idx + 1, this.cells.length - 1 - idx)
-    if (!cruel) this.cells.push(undefined)
-  }
-
   mergeLater(what) {
     // set(what, ##, -1)
     if (what === 'col') return
@@ -232,11 +223,16 @@ class Chapter {
     const magnet = delta > 0 ? 0 : -1
     destPos = this.cursor.cell - delta * this.config.measure
     if (inRange(destPos, this.cells)) {
-      this.focus(destPos, magnet, magnet)
+      const srcDivision = this.get('cell').length
+      const srcPos = this.cursor.row
+      this.set('cell', destPos, magnet)
+      const destDivision = this.get('cell').length
+      destPos = moveToMostAligned(srcPos, srcDivision, destDivision)
+      this.set('row', destPos, magnet)
     } else if (
       this.whichGak(destPos) === this.whichGak(this.cells.length - 1)
     ) {
-      this.focus(-1, magnet, magnet)
+      this.set('cell', -1, magnet)
     } else throw RangeError('Out of chapter')
   }
 

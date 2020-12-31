@@ -70,15 +70,6 @@ class Music {
     this.get('chapter').trim()
   }
 
-  trimLast(cruel) {
-    if (this.cursor.blurred) return
-    this.get('chapter').trimLast(cruel)
-  }
-
-  trimChapter() {
-    this.trimLast(true)
-  }
-
   /* Add & Delete */
   addchapter(chapter) {
     let destChapter = this.chapters.length

@@ -5,7 +5,7 @@
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">
-      <div>
+      <div class="mx-auto">
         <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
         <b-btn @click="erase" aria-label="지우개" class="m-1">
           <i class="fas fa-eraser"></i>
@@ -18,7 +18,7 @@
         </b-btn>
       </div>
 
-      <div>
+      <div class="mx-auto">
         <cellpad @shapechange="shapechange"></cellpad>
         <shapepad for="row" @shapechange="shapechange"></shapepad>
         <shapepad for="col" @shapechange="shapechange"></shapepad>
