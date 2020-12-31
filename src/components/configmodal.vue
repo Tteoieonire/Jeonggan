@@ -23,6 +23,12 @@
       </b-input-group>
     </b-form-group>
 
+    <b-form-group label="장단:">
+      <b-input-group>
+        <b-form-checkbox v-model="hideRhythm">장단 숨기기</b-form-checkbox>
+      </b-input-group>
+    </b-form-group>
+
     <b-form-group label="음계:">
       <b-form-checkbox-group buttons v-for="(row, r) in yuls" :key="r" v-model="scale" name="yuls">
         <b-form-checkbox
@@ -55,22 +61,21 @@ export default {
       tempo: 0,
       measure: 0,
       padding: 0,
+      hideRhythm: false,
       scale: [],
       yuls: YULS
     }
   },
   methods: {
     confirm() {
-      let rhythm = this.config.rhythm && this.config.rhythm.slice()
-      if (rhythm) {
-        rhythm.length = this.measure
-        rhythm = clone(rhythm)
-      }
+      let rhythm = this.config.rhythm.slice()
+      rhythm.length = this.measure
       this.$emit('configchange', {
         name: this.name,
         tempo: this.tempo,
         measure: this.measure,
         padding: this.padding,
+        hideRhythm: this.hideRhythm,
         scale: this.scale.map(Number).sort((a, b) => a - b),
         rhythm: rhythm
       })
@@ -81,6 +86,7 @@ export default {
       this.tempo = +this.config.tempo
       this.measure = +this.config.measure
       this.padding = +this.config.padding
+      this.hideRhythm = this.config.hideRhythm
       this.scale = this.config.scale.slice()
     },
     deletechapter() {

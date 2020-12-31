@@ -15,7 +15,7 @@ class Chapter {
     if (padding >= measure) padding = 0
 
     let gaks = []
-    if (this.config.rhythm) {
+    if (!this.config.hideRhythm) {
       gaks.push({
         rhythm: true,
         content: this.config.rhythm,
@@ -32,7 +32,7 @@ class Chapter {
         chapterIndex: chapterIndex,
         gakIndex: i,
         measure: measure,
-        isFirst: !this.config.rhythm && i === 0,
+        isFirst: this.config.hideRhythm && i === 0,
         title: this.config.name,
         padding: i === 0 ? padding : 0
       })

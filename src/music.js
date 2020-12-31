@@ -272,7 +272,8 @@ class Music {
 function newConfigFrom(config) {
   config = clone(config)
   config.name = '새 장'
-  config.rhythm = null
+  config.rhythm = config.rhythm.slice()
+  config.hideRhythm = true
   config.padding = 0 // -1?
   return config
 }

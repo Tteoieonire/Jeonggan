@@ -74,6 +74,7 @@ const INIT_CONFIG = {
   tempo: 60,
   measure: 6,
   rhythm: ['떵', null, '따닥', '쿵', '더러러러', '따'],
+  hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
   padding: 0 //?
 }
@@ -277,6 +278,7 @@ export default {
       })
       this.cursor.move(0, 0, 0, 0)
       this.undoHistory = []
+      this.undoTravel = 0
     },
     open(file) {
       // TODO: maybe warn user?
