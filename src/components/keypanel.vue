@@ -5,19 +5,24 @@
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange"></rhythmpad>
     </div>
     <div v-else class="row">
-      <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
-      <b-btn @click="erase" aria-label="지우개" class="m-1">
-        <i class="fas fa-eraser"></i>
-      </b-btn>
+      <div>
+        <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
+        <b-btn @click="erase" aria-label="지우개" class="m-1">
+          <i class="fas fa-eraser"></i>
+        </b-btn>
 
-      <sympad @write="write" type="main"></sympad>
-      <sympad v-if="sigimShow" @write="write" type="modifier"></sympad>
-      <b-btn v-else class="m-1 dropup" disabled>
-        <span class="dropdown-toggle">시김새</span>
-      </b-btn>
+        <sympad @write="write" type="main"></sympad>
+        <sympad v-if="sigimShow" @write="write" type="modifier"></sympad>
+        <b-btn v-else class="m-1 dropup" disabled>
+          <span class="dropdown-toggle">시김새</span>
+        </b-btn>
+      </div>
 
-      <shapepad for="row" @shapechange="shapechange"></shapepad>
-      <shapepad for="col" @shapechange="shapechange"></shapepad>
+      <div>
+        <cellpad @shapechange="shapechange"></cellpad>
+        <shapepad for="row" @shapechange="shapechange"></shapepad>
+        <shapepad for="col" @shapechange="shapechange"></shapepad>
+      </div>
     </div>
   </b-btn-toolbar>
 </template>
@@ -27,6 +32,7 @@ import rhythmpad from './keypads/rhythmpad.vue'
 import yulpad from './keypads/yulpad.vue'
 import sympad from './keypads/sympad.vue'
 import shapepad from './keypads/shapepad.vue'
+import cellpad from './keypads/cellpad.vue'
 
 export default {
   props: ['tickIdx', 'cursor', 'sigimShow', 'scale', 'octave'],
@@ -51,7 +57,8 @@ export default {
     rhythmpad,
     yulpad,
     sympad,
-    shapepad
+    shapepad,
+    cellpad,
   }
 }
 </script>
