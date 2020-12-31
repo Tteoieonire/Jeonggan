@@ -110,12 +110,13 @@ export default {
       this.write('main', YUL_OBJ[this.octave][0])
       this.music.add('cell')
       this.updateChapter()
+      this.updateSigimShow()
 
       this.cursor.on('afterColChange', () => {
         this.updateSigimShow()
         this.ime.reset()
       }) // TODO: focus as well
-      this.cursor.on('afterChapterChange', this.updateChapter)
+      this.cursor.on('afterChapterChange', () => this.updateChapter())
       this.cursor.on('beforeCellChange', () => this.music.trim())
     },
     updateSigimShow() {
