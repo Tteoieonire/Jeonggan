@@ -131,11 +131,11 @@ class Music {
     } catch (e) {
       if (!(e instanceof RangeError)) throw e
 
-      // let destPos = this.cursor.chapter + delta
-      // if (inRange(destPos, this.chapters)) {
-      //   const magnet = delta > 0 ? 0 : -1
-      //   this.set('chapter', destPos, magnet)
-      // } // else do nothing
+      let destPos = this.cursor.chapter + delta
+      if (inRange(destPos, this.chapters)) {
+        const magnet = delta > 0 ? 0 : -1
+        this.set('chapter', destPos, magnet)
+      } // else do nothing
     }
   }
 
@@ -265,7 +265,7 @@ function newConfigFrom(config) {
   config.name = '새 장'
   config.rhythm = config.rhythm.slice()
   config.hideRhythm = true
-  config.padding = 0 // -1?
+  config.padding = 0
   return config
 }
 

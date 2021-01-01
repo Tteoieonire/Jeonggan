@@ -27,13 +27,14 @@
       id="keypanel"
     ></keypanel>
     <canvaspanel
+      tabIndex="0"
+      :aria-label="canvasLabel"
       :cursor="cursor"
       :view="view"
       @move="move"
       @moveRhythm="moveRhythm"
       @openconfig="openconfig"
       id="workspace"
-      tabindex="0"
     ></canvaspanel>
     <configmodal
       v-if="configchapter"
@@ -76,7 +77,7 @@ const INIT_CONFIG = {
   rhythm: ['떵', null, '따닥', '쿵', '더러러러', '따'],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
-  padding: 0 //?
+  padding: 0
 }
 const MAX_HISTORY = 100
 
@@ -115,7 +116,7 @@ export default {
       this.cursor.on('afterColChange', () => {
         this.updateSigimShow()
         this.ime.reset()
-      }) // TODO: focus as well
+      })
       this.cursor.on('afterChapterChange', () => this.updateChapter())
       this.cursor.on('beforeCellChange', () => this.music.trim())
     },
@@ -509,7 +510,29 @@ export default {
     },
     redoable() {
       return this.undoTravel < this.undoHistory.length
-    }
+    },
+    canvasLabel() {
+      if (this.cursor.blurred) return '??'
+      const config = this.music.chapters[this.cursor.chapter].config
+      const chapterName = config.name
+      if (this.cursor.rhythmMode) {
+        return chapterName + ' 장단 ' + (this.cursor.cell + 1) + '번째 정간 ' + this.rhythm[this.cursor.cell]
+      }
+
+      const gak = Math.floor((this.cursor.cell + config.padding) / config.measure)
+      let pos = this.cursor.cell
+      if (gak > 0) pos = (pos + config.padding) % config.measure
+
+      const cell = this.music.get('cell')
+      const row = cell[this.cursor.row]
+      const col = row[this.cursor.col]
+      const main = col && col.main ? col.main.label : '빈칸'
+      const modifier = col && col.modifier ? col.modifier.label : ''
+      return (chapterName + ' ' + (gak + 1) + '각 ' + (pos + 1) + '번째 정간, '
+        + cell.length + '행 중 ' + (this.cursor.row + 1) + '행, '
+        + row.length + '칸 중 ' + (this.cursor.col + 1) + '칸, '
+        + main + ' ' + modifier)
+    },
   },
   created() {
     this.init('수연장지곡')

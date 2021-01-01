@@ -7,11 +7,10 @@ class Chapter {
     this.cells = cells || new Array(1)
   }
 
-  view(chapterIndex, lastPos) {
+  view(chapterIndex) {
     const measure = this.config.measure
     const numGaks = Math.ceil(this.cells.length / measure)
     let padding = this.config.padding
-    if (padding < 0) padding = lastPos
     if (padding >= measure) padding = 0
 
     let gaks = []
