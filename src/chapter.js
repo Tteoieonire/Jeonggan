@@ -58,7 +58,8 @@ class Chapter {
             time,
             duration,
             main: cur.main,
-            modifier: cur.modifier
+            modifier: cur.modifier,
+            head_duration: duration,
           })
         }
       } else if (ongoing) {

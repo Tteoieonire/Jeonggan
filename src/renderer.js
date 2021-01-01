@@ -40,11 +40,12 @@ function renderMain(note, scale, lastPitch) {
     pitches = note.main.pitch.split('').map(rel => mapper[rel])
   } else throw Error('renderMain pitch neither number nor string')
 
-  let duration = note.duration / pitches.length
+  let base_duration = note.head_duration / pitches.length
+  let tail_duration = base_duration + (note.duration - note.head_duration)
   return pitches.map((pitch, idx) => ({
     note: pitch,
-    duration,
-    time: note.time + idx * duration
+    duration: idx < pitches.length - 1? base_duration: tail_duration,
+    time: note.time + idx * base_duration
   }))
 }
 
