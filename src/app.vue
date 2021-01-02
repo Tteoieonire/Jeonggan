@@ -1,7 +1,7 @@
 <template>
   <div>
     <menupanel
-      :rhythmMode="cursor.rhythmMode"
+      :cursor="cursor"
       :playerMode="player.mode"
       :undoable="undoable"
       :redoable="redoable"
@@ -33,7 +33,6 @@
       :view="view"
       @move="move"
       @moveRhythm="moveRhythm"
-      @openconfig="openconfig"
       id="workspace"
     ></canvaspanel>
     <configmodal
@@ -90,7 +89,6 @@ export default {
       scale: undefined, //need update
       rhythm: undefined, // need update
       sigimShow: false, // need update
-      configchapter: undefined, // what??
       octave: 2,
       tickIdx: 0,
       ime: new IME(querySymbol),
@@ -219,21 +217,17 @@ export default {
       } else this.octave += delta
     },
     tickchange(tickIdx) {
+      const oldtick = this.tickIdx
       this.doWithBackup(
         () => {
-          let oldtick = this.tickIdx
           this.tickIdx = tickIdx
-          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[tickIdx])
-          return oldtick
+          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[this.tickIdx])
         },
-        oldtick => {
+        _ => {
           this.tickIdx = oldtick
-          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[oldtick])
+          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[this.tickIdx])
         }
       )
-    },
-    openconfig(chapter) {
-      this.configchapter = this.music.chapters[chapter]
     },
     configchange(config) {
       this.rhythm = config.rhythm
@@ -247,8 +241,7 @@ export default {
       )
     },
     deletechapter() {
-      const chapter = this.music.chapters.indexOf(this.configchapter)
-      if (chapter === -1) return
+      const chapter = this.cursor.chapter
       this.doWithBackup(
         () => this.music.delchapter(chapter),
         old => {
@@ -418,7 +411,7 @@ export default {
             this.erase()
           }
           return
-        case 'Delete': // ?
+        case 'Delete':
           if (this.music.get('col').main) {
             this.erase()
           } else {
@@ -506,13 +499,17 @@ export default {
       return this.music.view()
     },
     undoable() {
-      return this.undoTravel > 0
+      return this.player.mode === 'stopped' && this.undoTravel > 0
     },
     redoable() {
-      return this.undoTravel < this.undoHistory.length
+      return this.player.mode === 'stopped' && this.undoTravel < this.undoHistory.length
+    },
+    configchapter() {
+      if (this.cursor.blurred) return
+      return this.music.chapters[this.cursor.chapter]
     },
     canvasLabel() {
-      if (this.cursor.blurred) return '??'
+      if (this.cursor.blurred) return '선택된 정간이 없습니다.'
       const config = this.music.chapters[this.cursor.chapter].config
       const chapterName = config.name
       if (this.cursor.rhythmMode) {

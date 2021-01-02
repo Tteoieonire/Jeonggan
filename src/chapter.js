@@ -149,14 +149,14 @@ class Chapter {
     if (what === 'cells') throw 'delchapter'
     const arr = this.get(parentOf(what))
     const idx = this.cursor[what]
-    let old = arr.splice(idx, 1)[0]
-    if (arr.length === 0) {
-      arr.splice(idx, 0, undefined)
+    if (arr.length === 1) {
+      var old = arr.splice(idx, 1, undefined)[0]
       return () => this.get(parentOf(what)).splice(idx, 1, old)
     }
-    if (idx === arr.length) {
+    if (idx === arr.length - 1) {
       this.set(what, idx - 1, -1)
     }
+    old = arr.splice(idx, 1)[0]
     return () => this.get(parentOf(what)).splice(idx, 0, old)
   }
 

@@ -41,6 +41,7 @@ module.exports = {
     }
   },
   devServer: {
+    publicPath: '/dist/',
     historyApiFallback: true,
     noInfo: true
   },

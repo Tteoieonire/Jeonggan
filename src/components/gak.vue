@@ -2,9 +2,6 @@
   <div class="wrapper" :style="{height}">
     <div class="margin">
       <div v-if="gak.isFirst">
-        <b-btn variant="link" @click="openconfig" v-b-modal.configmodal>
-          <i class="fas fa-wrench" :title="title + ' 설정'"></i>
-        </b-btn>
         <span class="title">{{ gak.title }}</span>
       </div>
     </div>
@@ -16,10 +13,8 @@
         :key="i"
         :active="thisCell(i, true)"
         @click="moveRhythm(i)"
-        tabindex="-1"
         class="gugak"
         variant="info"
-        button
       >{{ tick || '' }}</b-list-group-item>
     </b-list-group>
 
@@ -66,9 +61,6 @@ export default {
     moveRhythm(cell) {
       this.$emit('moveRhythm', this.gak.chapterIndex, cell)
     },
-    openconfig() {
-      this.$emit('openconfig', this.gak.chapterIndex)
-    }
   },
   computed: {
     title() {

@@ -63,7 +63,7 @@ class Cursor {
     this._move(true, chapter, cell)
   }
 
-  startPlay() { // trimLast(true)??
+  startPlay() {
     this.playMode = true
     this.prevPos = [this.chapter, this.cell, this.row, this.col]
   }

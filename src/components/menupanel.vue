@@ -25,13 +25,16 @@
     </b-button-group>
 
     <b-button-group class="m-1 float-right">
-      <b-btn @click="addchapter" :disabled="rhythmMode">새 장 추가</b-btn>
+      <b-btn @click="addchapter" :disabled="cursor.blurred || !editable">새 장 추가</b-btn>
 
       <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
         <template slot="button-content">
           <i class="fas fa-ellipsis-v"></i>
         </template>
 
+        <b-dropdown-item-button v-b-modal.configmodal
+          :disabled="cursor.blurred || !editable"
+        >장 설정</b-dropdown-item-button>
         <b-dropdown-item-button v-b-modal.global>곡 설정</b-dropdown-item-button>
       </b-dropdown>
     </b-button-group>
@@ -40,15 +43,15 @@
       <b-btn
         v-if="playerMode === 'playing'"
         @click="pause"
-        :disabled="rhythmMode"
+        :disabled="cursor.rhythmMode"
         aria-label="일시 정지"
       >
         <i class="fas fa-pause"></i>
       </b-btn>
-      <b-btn v-else @click="resume" :disabled="rhythmMode" aria-label="재생">
+      <b-btn v-else @click="resume" :disabled="cursor.rhythmMode" aria-label="재생">
         <i class="fas fa-play"></i>
       </b-btn>
-      <b-btn @click="stop" :disabled="rhythmMode || playerMode === 'stopped'" aria-label="연주 정지">
+      <b-btn @click="stop" :disabled="cursor.rhythmMode || editable" aria-label="연주 정지">
         <i class="fas fa-stop"></i>
       </b-btn>
     </b-button-group>
@@ -57,7 +60,7 @@
 
 <script>
 export default {
-  props: ['rhythmMode', 'playerMode', 'undoable', 'redoable'],
+  props: ['cursor', 'playerMode', 'undoable', 'redoable'],
   methods: {
     addchapter() {
       this.$emit('addchapter')
@@ -87,6 +90,11 @@ export default {
     redo() {
       this.$emit('redo')
     }
+  },
+  computed: {
+    editable() {
+      return this.playerMode === 'stopped'
+    },
   },
   mounted() {
     this.$refs['uploadButton'].addEventListener('change', this.onfile)
