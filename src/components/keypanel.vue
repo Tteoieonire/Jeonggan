@@ -8,7 +8,7 @@
       <div class="mx-auto">
         <yulpad :scale="scale" :octave="octave" @write="write" @octavechange="octavechange"></yulpad>
         <b-btn @click="erase" aria-label="지우개" class="m-1">
-          <i class="fas fa-eraser"></i>
+          <font-awesome-icon icon="eraser"/>
         </b-btn>
 
         <sympad @write="write" type="main"></sympad>

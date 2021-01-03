@@ -115,10 +115,7 @@ export default {
 
 .gak > * {
   height: 3.5rem;
-  padding: 0;
-}
-
-.rhythm {
+  padding: 0 !important;
 }
 
 .rhythm > * {

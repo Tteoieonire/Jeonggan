@@ -1,74 +1,53 @@
+const production = process.env.NODE_ENV === 'production'
+
 var path = require('path')
-var webpack = require('webpack')
-const ExtractTextPlugin = require('extract-text-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
 
 module.exports = {
+  mode: production ? 'production' : 'development',
   entry: './src/main.js',
   output: {
     path: path.resolve(__dirname, './dist'),
-    filename: 'build.js'
+    publicPath: '/dist/',
+    filename: 'build.js',
   },
   module: {
     rules: [
       {
         test: /\.vue$/,
-        loader: 'vue-loader'
+        loader: 'vue-loader',
       },
       {
         test: /\.js$/,
         loader: 'babel-loader',
-        exclude: /node_modules/
+        options: {
+          presets: [['@babel/preset-env', { targets: '> 0.5%, not dead' }]],
+        },
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,
-        use: ExtractTextPlugin.extract({
-          fallback: 'style-loader',
-          use: 'css-loader'
-        })
+        use: [
+          production ? MiniCssExtractPlugin.loader : 'vue-style-loader',
+          { loader: 'css-loader', options: { esModule: false } },
+        ],
       },
-      {
-        test: /\.(png|jpg|gif|svg|ttf|eot|woff2?)$/,
-        loader: 'file-loader',
-        options: {
-          name: '[name].[ext]?[hash]'
-        }
-      }
-    ]
+    ],
   },
   resolve: {
     alias: {
-      vue$: 'vue/dist/vue.esm.js'
-    }
+      vue$: 'vue/dist/vue.esm.js',
+    },
+    modules: ['node_modules'],
   },
   devServer: {
     publicPath: '/dist/',
     historyApiFallback: true,
-    noInfo: true
+    noInfo: true,
   },
-  performance: {
-    hints: false
-  },
-  plugins: [new ExtractTextPlugin('main.css')],
-  devtool: '#eval-source-map'
-}
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map'
-  // http://vue-loader.vuejs.org/en/workflow/production.html
-  module.exports.plugins = (module.exports.plugins || []).concat([
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: '"production"'
-      }
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      sourceMap: true,
-      compress: {
-        warnings: false
-      }
-    }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true
-    })
-  ])
+  plugins: [
+    new MiniCssExtractPlugin({ filename: 'main.css' }),
+    new VueLoaderPlugin(),
+  ],
 }
