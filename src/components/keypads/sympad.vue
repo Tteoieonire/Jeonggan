@@ -14,8 +14,8 @@
 
 <style>
 .sympad-item * {
-  padding: 0.2rem 0;
-  text-align: center;
+  padding: 0.2rem 0 !important;
+  text-align: center !important;
 }
 
 </style>

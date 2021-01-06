@@ -57,7 +57,7 @@ export default {
 }
 
 .myrow > * {
-  padding: 0;
+  padding: 0 !important;
 }
 
 .cur {
