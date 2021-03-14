@@ -19,11 +19,13 @@
       :sigimShow="sigimShow"
       :scale="scale"
       :octave="octave"
+      :trill="trill"
       @write="write"
       @erase="erase"
       @shapechange="shapechange"
       @octavechange="octavechange"
       @tickchange="tickchange"
+      @trillchange="trillchange"
       id="keypanel"
     ></keypanel>
     <canvaspanel
@@ -76,7 +78,7 @@ const INIT_CONFIG = {
   rhythm: ['떵', null, '따닥', '쿵', '더러러러', '따'],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
-  padding: 0
+  padding: 0,
 }
 const MAX_HISTORY = 100
 
@@ -89,12 +91,14 @@ export default {
       scale: undefined, //need update
       rhythm: undefined, // need update
       sigimShow: false, // need update
+      trillShow: { before: false, after: false },
       octave: 2,
+      trill: { before: false, after: false },
       tickIdx: 0,
       ime: new IME(querySymbol),
       player: new Player(),
       undoHistory: [],
-      undoTravel: 0
+      undoTravel: 0,
     }
   },
   methods: {
@@ -109,22 +113,26 @@ export default {
       this.write('main', YUL_OBJ[this.octave][0])
       this.music.add('cell')
       this.updateChapter()
-      this.updateSigimShow()
+      this.updateSympad()
 
       this.cursor.on('afterColChange', () => {
-        this.updateSigimShow()
+        this.updateSympad()
         this.ime.reset()
       })
       this.cursor.on('afterChapterChange', () => this.updateChapter())
       this.cursor.on('beforeCellChange', () => this.music.trim())
     },
-    updateSigimShow() {
+    updateSympad() {
       if (this.cursor.blurred || this.cursor.rhythmMode) return
-      const main = this.music.get('col').main
+      const el = this.music.get('col')
       this.sigimShow =
-        main &&
-        main.pitch &&
-        (typeof main.pitch === 'number' || main.pitch.length === 1)
+        !!el.main &&
+        !!el.main.pitch &&
+        (typeof el.main.pitch === 'number' || el.main.pitch.length === 1)
+      this.trillShow = {before: false, after: false}
+      if (el.modifier && el.modifier.trillable) {
+        this.trillShow = el.modifier.trillable
+      }
     },
     updateChapter() {
       if (this.cursor.blurred) return
@@ -150,12 +158,12 @@ export default {
           const el = this.music.get('col')
           const old = el[where]
           this.$set(el, where, obj)
-          this.updateSigimShow()
+          this.updateSympad()
           return old
         },
         old => {
           this.$set(this.music.get('col'), where, old)
-          this.updateSigimShow()
+          this.updateSympad()
         }
       )
       if (resetIME) this.ime.reset()
@@ -184,14 +192,14 @@ export default {
           () => this.music.add(what),
           _ => {
             this.music.del(what)
-            this.updateSigimShow()
+            this.updateSympad()
           }
         )
       } else {
         this.doWithBackup(
           () => {
             const f = this.music.del(what)
-            this.updateSigimShow()
+            this.updateSympad()
             return f
           },
           f => f()
@@ -200,21 +208,7 @@ export default {
     },
     octavechange(delta) {
       if (this.octave + delta < 0 || this.octave + delta > 4) return
-      const el = !this.cursor.blurred && this.music.get('col')
-      const old = el && el.main
-      if (old && typeof old.pitch === 'number') {
-        this.doWithBackup(
-          () => {
-            this.octave += delta
-            const obj = YUL_OBJ[this.octave][old.pitch % 12]
-            this.$set(this.music.get('col'), 'main', obj)
-          },
-          _ => {
-            this.octave -= delta
-            this.$set(this.music.get('col'), 'main', old)
-          }
-        )
-      } else this.octave += delta
+      this.octave += delta
     },
     tickchange(tickIdx) {
       const oldtick = this.tickIdx
@@ -228,6 +222,15 @@ export default {
           this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[this.tickIdx])
         }
       )
+    },
+    trillchange(trill) {
+      // TODO: update modifier
+      if (this.trill.before !== trill.before) {
+        //
+      } else if (this.trill.after !== trill.after) {
+        //
+      } // else ???
+      this.trill = trill
     },
     configchange(config) {
       this.rhythm = config.rhythm
@@ -282,12 +285,13 @@ export default {
         const data = deserializeMusic(result) // TODO: handle error
         this.load(data.title, data.chapters)
       })
-      reader.readAsText(file);
+      reader.readAsText(file)
     },
     save() {
       const data = serializeMusic(this.title, this.music)
-      const blob = new Blob([data], {type: 'text/x-yaml'})
-      let filename = this.title.replace('\\s+', '-').replace('\\W+', '') + '.yml'
+      const blob = new Blob([data], { type: 'text/x-yaml' })
+      let filename =
+        this.title.replace('\\s+', '-').replace('\\W+', '') + '.yml'
       saveAs(blob, filename)
     },
     doWithBackup(redo, undo) {
@@ -298,6 +302,10 @@ export default {
               and returns nothing
        */
       this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
+      if (this.undoHistory.length === MAX_HISTORY) {
+        this.undoHistory.shift()
+      }
+
       const oldCursor = this.cursor.clone()
       const data = redo()
       const newCursor = this.cursor.clone()
@@ -306,7 +314,7 @@ export default {
         redo,
         data,
         oldCursor,
-        newCursor
+        newCursor,
       })
       this.undoTravel += 1
     },
@@ -368,7 +376,8 @@ export default {
           if (e.ctrlKey) {
             this.music.set('chapter', 0)
           } else {
-            let remainder = this.cursor.cell % this.music.get('chapter').config.measure
+            let remainder =
+              this.cursor.cell % this.music.get('chapter').config.measure
             this.music.set('cell', this.cursor.cell - remainder, 0)
           }
           break
@@ -379,7 +388,8 @@ export default {
             let measure = this.music.get('chapter').config.measure
             let remainder = this.cursor.cell % measure
             let dest = this.cursor.cell + measure - 1 - remainder
-            this.music.set('cell', Math.min(dest, this.music.get('cells').length - 1), -1)
+            dest = Math.min(dest, this.music.get('cells').length - 1)
+            this.music.set('cell', dest, -1)
           }
           break
         /* Editing */
@@ -476,7 +486,7 @@ export default {
             'KeyL',
             'KeyS',
             'KeyA',
-            'KeyM'
+            'KeyM',
           ]
           let idxPitch = pitch2code.indexOf(e.code)
           if (idxPitch !== -1 && !hasModifierKey(e)) {
@@ -492,7 +502,7 @@ export default {
           return
       }
       e.preventDefault()
-    }
+    },
   },
   computed: {
     view() {
@@ -502,7 +512,10 @@ export default {
       return this.player.mode === 'stopped' && this.undoTravel > 0
     },
     redoable() {
-      return this.player.mode === 'stopped' && this.undoTravel < this.undoHistory.length
+      return (
+        this.player.mode === 'stopped' &&
+        this.undoTravel < this.undoHistory.length
+      )
     },
     configchapter() {
       if (this.cursor.blurred) return
@@ -513,10 +526,18 @@ export default {
       const config = this.music.chapters[this.cursor.chapter].config
       const chapterName = config.name
       if (this.cursor.rhythmMode) {
-        return chapterName + ' 장단 ' + (this.cursor.cell + 1) + '번째 정간 ' + this.rhythm[this.cursor.cell]
+        return (
+          chapterName +
+          ' 장단 ' +
+          (this.cursor.cell + 1) +
+          '번째 정간 ' +
+          this.rhythm[this.cursor.cell]
+        )
       }
 
-      const gak = Math.floor((this.cursor.cell + config.padding) / config.measure)
+      const gak = Math.floor(
+        (this.cursor.cell + config.padding) / config.measure
+      )
       let pos = this.cursor.cell
       if (gak > 0) pos = (pos + config.padding) % config.measure
 
@@ -525,10 +546,25 @@ export default {
       const col = row[this.cursor.col]
       const main = col && col.main ? col.main.label : '빈칸'
       const modifier = col && col.modifier ? col.modifier.label : ''
-      return (chapterName + ' ' + (gak + 1) + '각 ' + (pos + 1) + '번째 정간, '
-        + cell.length + '행 중 ' + (this.cursor.row + 1) + '행, '
-        + row.length + '칸 중 ' + (this.cursor.col + 1) + '칸, '
-        + main + ' ' + modifier)
+      return (
+        chapterName +
+        ' ' +
+        (gak + 1) +
+        '각 ' +
+        (pos + 1) +
+        '번째 정간, ' +
+        cell.length +
+        '행 중 ' +
+        (this.cursor.row + 1) +
+        '행, ' +
+        row.length +
+        '칸 중 ' +
+        (this.cursor.col + 1) +
+        '칸, ' +
+        main +
+        ' ' +
+        modifier
+      )
     },
   },
   created() {
@@ -546,8 +582,8 @@ export default {
 
     initmodal,
     globalmodal,
-    configmodal
-  }
+    configmodal,
+  },
 }
 
 function hasModifierKey(e) {

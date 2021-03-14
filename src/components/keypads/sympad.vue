@@ -1,15 +1,40 @@
 <template>
-  <b-dropdown :text="label" class="m-1" dropup>
-    <b-container>
-      <b-row role="group" v-for="(group, i) in SYMBOL" :key="i">
-        <b-col class="p-0" v-for="(obj, j) in group" :key="j">
-          <b-dropdown-item-btn class="gugak sympad-item" @click="write(obj)" :aria-label="obj.label">
-            <span aria-hidden="true">{{ obj.text }}</span>
-          </b-dropdown-item-btn>
-        </b-col>
-      </b-row>
-    </b-container>
-  </b-dropdown>
+  <b-button-group class="m-1">
+    <b-dropdown :text="label" dropup :disabled="disabled">
+      <b-container>
+        <b-row role="group" v-for="(group, i) in SYMBOL" :key="i">
+          <b-col class="p-0" v-for="(obj, j) in group" :key="j">
+            <b-dropdown-item-btn
+              class="gugak sympad-item"
+              @click="write(obj)"
+              :aria-label="obj.label"
+            >
+              <span aria-hidden="true">{{ obj.text }}</span>
+            </b-dropdown-item-btn>
+          </b-col>
+        </b-row>
+      </b-container>
+    </b-dropdown>
+
+    <b-button-group vertical v-if="type === 'modifier'">
+      <b-btn
+        class="btn-half gugak"
+        :disabled="disabled || !trillShow.before"
+        :pressed="trill.before"
+        @click="toggleTrillBefore"
+      >
+        ~
+      </b-btn>
+      <b-btn
+        class="btn-half gugak"
+        :disabled="disabled || !trillShow.after"
+        :pressed="trill.after"
+        @click="toggleTrillAfter"
+      >
+        ~
+      </b-btn>
+    </b-button-group>
+  </b-button-group>
 </template>
 
 <style>
@@ -18,6 +43,12 @@
   text-align: center !important;
 }
 
+.btn-half {
+  padding: 0rem 0.75rem !important;
+  font-size: 0.5rem !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
 </style>
 
 <script>
@@ -237,12 +268,24 @@ export function querySymbol(where, pitch) {
 
 // Focusable??
 export default {
-  props: ['type'],
+  props: ['type', 'sigimShow', 'trillShow', 'trill'],
   methods: {
     write(obj) {
       if (obj.pitch == null) obj = undefined
       this.$emit('write', this.type, obj)
-    }
+    },
+    toggleTrillBefore() {
+      this.$emit('trillchange', {
+        before: !this.trill.before,
+        after: this.trill.after,
+      })
+    },
+    toggleTrillAfter() {
+      this.$emit('trillchange', {
+        before: this.trill.before,
+        after: !this.trill.after,
+      })
+    },
   },
   computed: {
     SYMBOL() {
@@ -250,7 +293,10 @@ export default {
     },
     label() {
       return this.type === 'main' ? '부호' : '시김새'
-    }
-  }
+    },
+    disabled() {
+      return this.type === 'modifier' && !this.sigimShow
+    },
+  },
 }
 </script>
