@@ -3,7 +3,7 @@
  */
 
 import { YUL_OBJ, REST_OBJ } from './constants.js'
-import { MAIN, MODIFIER } from './components/keypads/sympad.vue'
+import { querySymbol } from './symbols.js'
 import { clone } from './utils.js'
 
 const INDENT = '  '
@@ -31,14 +31,14 @@ function serializeCells(cells) {
 }
 
 function serializeScale(scale) {
-  return scale.map((pitch) => TABLE[pitch]).join('')
+  return scale.map(pitch => TABLE[pitch]).join('')
 }
 
 function serializeConfig(config) {
   config = clone(config)
   config.scale = serializeScale(config.scale)
   config.rhythm =
-    '|\n' + config.rhythm.map((s) => INDENT + INDENT + (s || '')).join('\n')
+    '|\n' + config.rhythm.map(s => INDENT + INDENT + (s || '')).join('\n')
 
   let serialized = ''
   for (let attr in config) {
@@ -78,12 +78,12 @@ function recursiveLookup(node, query) {
 }
 
 function deserializeCol(col) {
-  col = col.trim().split(':')
+  const field = col.trim().split(':')
   let main =
-    (col[0] === '△' && REST_OBJ) ||
-    recursiveLookup(YUL_OBJ, col[0]) ||
-    recursiveLookup(MAIN, col[0])
-  let modifier = recursiveLookup(MODIFIER, col[1])
+    (field[0] === '△' && REST_OBJ) ||
+    recursiveLookup(YUL_OBJ, field[0]) ||
+    querySymbol('main', field[0])
+  let modifier = querySymbol('main', field[1])
   return { main, modifier }
 }
 
@@ -91,12 +91,15 @@ function deserializeCells(string) {
   return string
     .trim()
     .split('\n\n')
-    .map(function (cell) {
+    .map(function(cell) {
       return cell
         .trim()
         .split('\n')
-        .map(function (row) {
-          return row.trim().split(' ').map(deserializeCol)
+        .map(function(row) {
+          return row
+            .trim()
+            .split(' ')
+            .map(deserializeCol)
         })
     })
 }
@@ -104,12 +107,12 @@ function deserializeCells(string) {
 function deserializeMusic(yaml) {
   let chapters = YAML.parse(yaml)
   const title = chapters.shift()
-  chapters.forEach(function (config) {
+  chapters.forEach(function(config) {
     config.scale = config.scale
       .trim()
       .split('')
-      .map((c) => TABLE.indexOf(c))
-    config.rhythm = config.rhythm.split('\n').map((s) => s || null)
+      .map(c => TABLE.indexOf(c))
+    config.rhythm = config.rhythm.split('\n').map(s => s || null)
     config.rhythm.length = config.measure
     config.content = deserializeCells(config.content)
   })

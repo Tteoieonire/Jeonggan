@@ -1,6 +1,7 @@
+import { querySymbol } from './symbols'
+
 class IME {
-  constructor(querySymbol) {
-    this.querySymbol = querySymbol
+  constructor() {
     this.grace = false
     this.reset()
   }
@@ -23,7 +24,7 @@ class IME {
     let sequence = this.trillBefore
     sequence += this.digits + this.equals + this.special
     sequence += this.trillAfter
-    return this.querySymbol(where, sequence)
+    return querySymbol(where, sequence)
   }
 
   update(code, shiftKey) {

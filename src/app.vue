@@ -17,6 +17,7 @@
       :tickIdx="tickIdx"
       :cursor="cursor"
       :sigimShow="sigimShow"
+      :trillShow="trillShow"
       :scale="scale"
       :octave="octave"
       :trill="trill"
@@ -65,7 +66,6 @@ import Chapter from './chapter.js'
 import Player from './player.js'
 import IME from './ime.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
-import { querySymbol } from './components/keypads/sympad.vue'
 import { serializeMusic, deserializeMusic } from './serializer.js'
 
 /**
@@ -95,7 +95,7 @@ export default {
       octave: 2,
       trill: { before: false, after: false },
       tickIdx: 0,
-      ime: new IME(querySymbol),
+      ime: new IME(),
       player: new Player(),
       undoHistory: [],
       undoTravel: 0,
@@ -129,7 +129,7 @@ export default {
         !!el.main &&
         !!el.main.pitch &&
         (typeof el.main.pitch === 'number' || el.main.pitch.length === 1)
-      this.trillShow = {before: false, after: false}
+      this.trillShow = { before: false, after: false }
       if (el.modifier && el.modifier.trillable) {
         this.trillShow = el.modifier.trillable
       }
