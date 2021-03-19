@@ -185,6 +185,20 @@ export default {
       const obj = this.ime.update(key, shiftKey)
       this.write(where, obj, false)
     },
+    backspace() {
+      if (this.ime.isComposing()) {
+        let where = this.ime.grace ? 'modifier' : 'main'
+        let obj = this.ime.backspace()
+        this.write(where, obj, false)
+      } else if (this.music.get('col').main) {
+        this.erase()
+      } else {
+        this.doWithBackup(
+          () => this.music.backspace(),
+          f => f()
+        )
+      }
+    },
     shapechange(what, delta) {
       if (this.cursor.blurred) return
       if (delta === +1) {
@@ -400,18 +414,7 @@ export default {
           )
           break
         case 'Backspace':
-          if (this.ime.isComposing()) {
-            let where = this.ime.grace ? 'modifier' : 'main'
-            let obj = this.ime.backspace()
-            this.write(where, obj, false)
-          } else if (this.music.get('col').main) {
-            this.erase()
-          } else {
-            this.doWithBackup(
-              () => this.music.backspace(),
-              f => f()
-            )
-          }
+          this.backspace()
           break
         case 'Minus':
         case 'NumpadSubtract':
