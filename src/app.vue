@@ -65,6 +65,7 @@ import Music from './music.js'
 import Chapter from './chapter.js'
 import Player from './player.js'
 import IME from './ime.js'
+import { querySymbol } from './symbols.js'
 import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
 import { serializeMusic, deserializeMusic } from './serializer.js'
 
@@ -91,9 +92,8 @@ export default {
       scale: undefined, //need update
       rhythm: undefined, // need update
       sigimShow: false, // need update
-      trillShow: { before: false, after: false },
       octave: 2,
-      trill: { before: false, after: false },
+      trill: { before: null, after: null },
       tickIdx: 0,
       ime: new IME(),
       player: new Player(),
@@ -129,9 +129,9 @@ export default {
         !!el.main &&
         !!el.main.pitch &&
         (typeof el.main.pitch === 'number' || el.main.pitch.length === 1)
-      this.trillShow = { before: false, after: false }
-      if (el.modifier && el.modifier.trillable) {
-        this.trillShow = el.modifier.trillable
+      this.trill = { before: null, after: null }
+      if (el.modifier && el.modifier.trill) {
+        this.trill = el.modifier.trill
       }
     },
     updateChapter() {
@@ -238,13 +238,10 @@ export default {
       )
     },
     trillchange(trill) {
-      // TODO: update modifier
-      if (this.trill.before !== trill.before) {
-        //
-      } else if (this.trill.after !== trill.after) {
-        //
-      } // else ???
-      this.trill = trill
+      let query = this.music.get('col').modifier.query
+      query = query.replace(/~/g, '')
+      query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
+      this.write('modifier', querySymbol('modifier', query))
     },
     configchange(config) {
       this.rhythm = config.rhythm
@@ -530,6 +527,12 @@ export default {
     configchapter() {
       if (this.cursor.blurred) return
       return this.music.chapters[this.cursor.chapter]
+    },
+    trillShow() {
+      return {
+        before: this.trill && this.trill.before != null,
+        after: this.trill && this.trill.after != null,
+      }
     },
     canvasLabel() {
       if (this.cursor.blurred) return '선택된 정간이 없습니다.'

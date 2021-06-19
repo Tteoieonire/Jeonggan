@@ -44,56 +44,37 @@ function renderMain(note, scale, lastPitch) {
   let tail_duration = base_duration + (note.duration - note.head_duration)
   return pitches.map((pitch, idx) => ({
     note: pitch,
-    duration: idx < pitches.length - 1? base_duration: tail_duration,
-    time: note.time + idx * base_duration
+    duration: idx < pitches.length - 1 ? base_duration : tail_duration,
+    time: note.time + idx * base_duration,
   }))
 }
 
 function renderModifier(note, modifier, scale) {
-  let time = note.time
-  let duration = note.duration
-  let refIdx = pitchToScaleIdx(note.note, scale)
-
-  let pitches = modifier.pitch
-    .split('')
-    .map(rel => scaleIdxToPitch(rel - 3 + refIdx, scale))
-
-  if (modifier.tall) {
-    duration /= modifier.pitch.length
-    return pitches.map((note, idx) => ({
-      note,
-      duration,
-      time: time + idx * duration
-    })) // equally
-  }
-  if (modifier.text === 'I' || modifier.text === 'H') {
-    return allotGrace(pitches, time, duration, 1)
-  }
-  return allotGrace(pitches, time, duration, 0)
+  const refIdx = pitchToScaleIdx(note.note, scale)
+  const pitches = modifier.pitch.map(part =>
+    part.split('').map(rel => scaleIdxToPitch(rel - 3 + refIdx, scale))
+  )
+  return allotGrace(pitches, note.time, note.duration)
 }
 
-function allotGrace (pitches, time, duration, trailing = 0) {
-  const maxGraceDuration = 100
-  const numNotes = pitches.length
-  const idxMain = numNotes - 1 - trailing
-  let results = []
-  if (duration >= maxGraceDuration * (numNotes + 1)) {
-    duration -= maxGraceDuration * (numNotes - 1)
-    results = pitches.map((note, idx) => ({
-      note,
-      duration: idx === idxMain ? duration : maxGraceDuration
-    }))
-  } else {
-    duration /= (numNotes + 1)
-    results = pitches.map((note, idx) => ({
-      note,
-      duration: duration * (idx === idxMain ? 2 : 1)
-    }))
+function allotGrace(pitches, time, duration) {
+  const maxDur = 100
+  const numGrace = pitches[0].length + pitches[2].length
+  const numMain = pitches[1].length
+
+  const squeeze = duration < maxDur * (numGrace + numMain * 2)
+  const graceDur = squeeze ? duration / (numGrace + numMain * 2) : maxDur
+  const mainDur = (duration - graceDur * numGrace) / numMain
+
+  let results = [].concat(
+    pitches[0].map(note => ({ note, duration: graceDur })),
+    pitches[1].map(note => ({ note, duration: mainDur })),
+    pitches[2].map(note => ({ note, duration: graceDur }))
+  )
+  for (let i = 0; i < results.length; i++) {
+    results[i].time = time
+    time += results[i].duration
   }
-  results.reduce(function (acc, cur) {
-    cur.time = acc
-    return acc + cur.duration
-  }, time)
   return results
 }
 

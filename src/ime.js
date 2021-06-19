@@ -21,6 +21,9 @@ class IME {
   compile() {
     if (!this.isComposing()) return undefined
     const where = this.grace ? 'modifier' : 'main'
+    if (this.trillBefore && !this.digits && !this.equals && !this.special) {
+      return querySymbol('modifier', '343') // single ~
+    }
     let sequence = this.trillBefore
     sequence += this.digits + this.equals + this.special
     sequence += this.trillAfter
@@ -44,9 +47,8 @@ class IME {
       this.equals += '='
       if (this.equals === '=====') this.equals = '='
     } else if (code === 'Backquote') {
-      if (this.digits === '' && !this.equals && !this.special) {
+      if (!this.digits && !this.equals && !this.special) {
         this.trillBefore = '~'
-        return undefined // TODO
       } else {
         this.trillAfter = '~'
       }
