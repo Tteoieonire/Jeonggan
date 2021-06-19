@@ -96,14 +96,15 @@ export default {
 
 .margin {
   width: 100%;
-  height: 7rem;
+  height: 5rem;
   text-align: center;
   background-color: white;
+  padding: 0.5rem 0;
 }
 
 .title {
   height: 4rem;
-  text-align: left;
+  text-align: right;
   writing-mode: vertical-rl;
   text-orientation: upright;
 }

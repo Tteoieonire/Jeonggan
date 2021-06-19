@@ -52,7 +52,7 @@
 </style>
 
 <script>
-import { querySymbol } from '../../symbol'
+import { querySymbol } from '../../symbols'
 
 const frame_main = [
   ['3'],
@@ -77,7 +77,7 @@ const frame_modifier = [
   ['343', '353', '323', '313'],
   ['143', '243', '3243', '24243', '243243'],
   ['I', 'H'],
-  ['343', '323', '353', '313'],
+  ['=', '==', '===', '===='],
 ]
 
 // TODO: Focusable??

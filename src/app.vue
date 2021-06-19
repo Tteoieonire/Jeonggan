@@ -418,9 +418,9 @@ export default {
           break
         case 'Minus':
         case 'NumpadSubtract':
-          if (e.shiftKey) {
+          if (hasShiftKeyOnly(e)) {
             this.write('modifier', undefined)
-          } else if (!hasModifierKey(e)) {
+          } else if (hasNoModifierKey(e)) {
             this.erase()
           }
           return
@@ -462,17 +462,22 @@ export default {
         case 'Comma':
           this.write('main', REST_OBJ)
           return
-        case 'Backquote':
         case 'Equal':
+          if (e.ctrlKey || e.altKey || e.metaKey) return
+          if (!this.sigimShow) return
+          this.writeIME(e.code, true)
+          break
+        case 'Backquote':
         case 'KeyH':
         case 'KeyI':
-          if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+          if (!hasShiftKeyOnly(e)) return
           if (!this.sigimShow) return
           this.writeIME(e.code, true)
           break
         default:
           const prefix = e.code.slice(0, -1)
           if (prefix === 'Digit' || prefix === 'Numpad') {
+            if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
             this.writeIME(e.code.slice(-1), e.shiftKey)
             break
           }
@@ -492,9 +497,11 @@ export default {
             'KeyM',
           ]
           let idxPitch = pitch2code.indexOf(e.code)
-          if (idxPitch !== -1 && !hasModifierKey(e)) {
-            this.write('main', YUL_OBJ[this.octave][idxPitch])
-            return
+          if (idxPitch !== -1) {
+            if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
+            let octave = this.octave + (e.shiftKey? 1: 0) // TODO: maybe upto editor settings
+            this.write('main', YUL_OBJ[octave][idxPitch])
+            break
           }
 
           if (e.ctrlKey && e.code === 'KeyZ') {
@@ -589,8 +596,11 @@ export default {
   },
 }
 
-function hasModifierKey(e) {
-  return e.ctrlKey || e.shiftKey || e.altKey || e.metaKey
+function hasNoModifierKey(e) {
+  return !(e.ctrlKey || e.shiftKey || e.altKey || e.metaKey)
+}
+function hasShiftKeyOnly(e) {
+  return !e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey
 }
 </script>
 
