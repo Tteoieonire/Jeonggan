@@ -206,22 +206,22 @@ const MODIFIER = {
   },
   I: {
     pitch: ['2', '3', '2'],
-    text: 'I',
+    texts: ['工', 'I'],
     trill: { before: false, after: false },
   },
   '~I': {
     pitch: ['232', '3', '2'],
-    text: '~I',
+    texts: ['~工', '~I'],
     trill: { before: true, after: false },
   },
   'I~': {
     pitch: ['2', '3', '232'],
-    text: 'I~',
+    texts: ['工~', 'I~'],
     trill: { before: false, after: true },
   },
   '~I~': {
     pitch: ['232', '3', '232'],
-    text: '~I~',
+    texts: ['~工~', '~I~'],
     trill: { before: true, after: true },
   },
   H: {
@@ -280,23 +280,25 @@ function trillBefore(pitch) {
   pitch = head + '' + (head + 1) + '' + pitch
   return pitch
 }
+
 function trillAfter(pitch) {
   let tail = +pitch[pitch.length - 1]
   pitch += '' + (tail + 1) + '' + tail
   return pitch
 }
 
-function processQuery(table, query, mode='query') {
+function processQuery(table, query, mode = 'query') {
   if (mode === 'query') return query
   // mode === 'text'
   const keys = Object.keys(table)
   for (const key of keys) {
     if (table[key].text === query) return key
+    if (table[key].texts && table[key].texts.includes(query)) return key
   }
   return query.replace('𝆔', '') // fallback
 }
 
-function querySymbol(where, query, mode='query') {
+function querySymbol(where, query, mode = 'query') {
   const isMain = where === 'main'
   const table = isMain ? MAIN : MODIFIER
   const labeler = isMain ? labelMain : labelModifier
@@ -305,34 +307,43 @@ function querySymbol(where, query, mode='query') {
 
   let reply = table[query]
   if (reply) {
-    reply.query = query
-    if (!reply.label) reply.label = labeler(reply.pitch)
-    return reply
+    return {
+      query: query,
+      pitch: reply.pitch,
+      text: reply.text || reply.texts[0],
+      label: reply.query || labeler(reply.pitch),
+      trill: reply.trill,
+    }
   }
 
   const fallback = trimTrill(query)
+  let pitch
   if (query === fallback) {
-    reply = {
+    pitch = isMain ? query : [query.slice(0, -1), query.slice(-1), '']
+    return {
+      query: query,
+      pitch: pitch,
       text: (isMain ? '' : '𝆔') + query,
-      pitch: isMain ? query : [query.slice(0, -1), query.slice(-1), ''],
+      label: labeler(pitch),
     }
-    reply.query = query
-    reply.label = labeler(reply.pitch)
-    return reply
   }
 
-  reply = clone(querySymbol(where, fallback))
+  reply = querySymbol(where, fallback)
+  pitch = reply.pitch
   if (query[0] === '~') {
-    if (reply.pitch[0]) reply.pitch[0] = trillBefore(reply.pitch[0])
-    else reply.pitch[0] = trillBefore(reply.pitch[1]).slice(0, 2)
+    if (pitch[0]) pitch[0] = trillBefore(pitch[0])
+    else pitch[0] = trillBefore(pitch[1]).slice(0, 2)
   }
   if (query[query.length - 1] === '~') {
-    if (reply.pitch[2]) reply.pitch[2] = trillAfter(reply.pitch[2])
-    else reply.pitch[2] = trillAfter(reply.pitch[1]).slice(-2)
+    if (pitch[2]) pitch[2] = trillAfter(pitch[2])
+    else pitch[2] = trillAfter(pitch[1]).slice(-2)
   }
-  reply.query = query
-  reply.label = labeler(reply.pitch)
-  return reply
+  return {
+    query: query,
+    pitch: pitch,
+    text: (isMain ? '' : '𝆔') + query,
+    label: labeler(pitch),
+  }
 }
 
 export { querySymbol }
