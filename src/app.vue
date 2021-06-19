@@ -281,8 +281,9 @@ export default {
       this.cursor.blur()
       this.title = title
       this.music.chapters = chapters.map(config => {
-        const chapter = new Chapter(this.cursor, config, config.content)
-        return chapter
+        const content = config.content
+        delete config.content
+        return new Chapter(this.cursor, config, content)
       })
       this.cursor.move(0, 0, 0, 0)
       this.undoHistory = []
@@ -302,7 +303,7 @@ export default {
       const data = serializeMusic(this.title, this.music)
       const blob = new Blob([data], { type: 'text/x-yaml' })
       let filename =
-        this.title.replace('\\s+', '-').replace('\\W+', '') + '.yml'
+        this.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
       saveAs(blob, filename)
     },
     doWithBackup(redo, undo) {

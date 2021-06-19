@@ -44,7 +44,7 @@ function serializeConfig(config) {
   for (let attr in config) {
     serialized += INDENT + attr + ': ' + config[attr] + '\n'
   }
-  return serialized + '\ncontent: |\n'
+  return serialized + '\n' + INDENT + 'content: |\n'
 }
 
 function serializeChapter(chapter) {
@@ -79,11 +79,11 @@ function recursiveLookup(node, query) {
 
 function deserializeCol(col) {
   const field = col.trim().split(':')
+  if (field[0] === '-') return null
+  if (field[0] === '△') return { main: REST_OBJ }
   let main =
-    (field[0] === '△' && REST_OBJ) ||
-    recursiveLookup(YUL_OBJ, field[0]) ||
-    querySymbol('main', field[0])
-  let modifier = querySymbol('main', field[1])
+    recursiveLookup(YUL_OBJ, field[0]) || querySymbol('main', field[0], 'text')
+  let modifier = field[1] && querySymbol('modifier', field[1], 'text')
   return { main, modifier }
 }
 
