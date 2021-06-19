@@ -177,7 +177,7 @@ const MODIFIER = {
   },
   '~3243~': {
     pitch: ['3432434', '3', ''],
-    text: '𝆔3243~',
+    text: '𝆔~3243~',
     trill: { before: true, after: true },
   },
   '24243': {
@@ -191,7 +191,7 @@ const MODIFIER = {
   },
   '~243243': {
     pitch: ['2324324', '3', ''],
-    text: '𝆔243243~',
+    text: '𝆔~243243',
     trill: { before: true, after: false },
   },
   '243243~': {
