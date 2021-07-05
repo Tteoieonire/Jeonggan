@@ -46,6 +46,7 @@ function renderMain(note, scale, lastPitch) {
     note: pitch,
     duration: idx < pitches.length - 1 ? base_duration : tail_duration,
     time: note.time + idx * base_duration,
+    head_duration: note.head_duration
   }))
 }
 
@@ -55,7 +56,9 @@ function renderModifier(note, modifier, scale, graceCap) {
     part.split('').map(rel => scaleIdxToPitch(rel - 3 + refIdx, scale))
   )
   let notes = allotGrace(pitches, note.time, note.head_duration, graceCap)
+  console.log(notes, note)
   notes[notes.length - 1].duration += (note.duration - note.head_duration)
+  console.log(notes)
   return notes
 }
 
