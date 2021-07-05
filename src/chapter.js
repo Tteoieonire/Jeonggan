@@ -20,7 +20,7 @@ class Chapter {
         content: this.config.rhythm,
         chapterIndex: chapterIndex,
         isFirst: true,
-        title: this.config.name
+        title: this.config.name,
       })
     }
     for (let i = 0; i < numGaks; i++) {
@@ -33,23 +33,47 @@ class Chapter {
         measure: measure,
         isFirst: this.config.hideRhythm && i === 0,
         title: this.config.name,
-        padding: i === 0 ? padding : 0
+        padding: i === 0 ? padding : 0,
       })
     }
     return gaks
   }
 
-  compile(time = 0) {
-    if (this.cells.length === 0) return [time]
+  convertConfigToMidi() {
+    let events = []
+    const msPerBeat = 60000 / this.config.tempo
+    events.push({
+      type: 'setTempo',
+      microsecondsPerBeat: (1000 * msPerBeat) | 0,
+      deltaTime: 0,
+    })
+    events.push({
+      type: 'timeSignature',
+      metronome: this.config.measure,
+      numerator: this.config.measure,
+      denominator: chooseTimeSignatureDenominator(this.config.measure),
+      deltaTime: 0,
+    })
+    events.push({
+      type: 'keySignature',
+      key: chooseKeySignature(this.config.scale),
+      scale: 0,
+      deltaTime: 0,
+    })
+    return events
+  }
+
+  convertToNotes(time = 0, fromBeginning = false, ticksPerCell = 0) {
+    if (this.cells.length === 0) return { time, notes: [] }
     const cursorBackup = this.cursor
     this.cursor = this.cursor.clone()
-    if (time > 0) this.focus(0, 0, 0)
+    if (fromBeginning || time > 0) this.focus(0, 0, 0)
 
     let notes = []
     let ongoing = false
     do {
       let cur = this.get('col')
-      let duration = this.colDuration()
+      let duration = this.colDuration(ticksPerCell)
       if (cur.main) {
         ongoing = !!cur.main.pitch // no ongoing if rest
         if (ongoing) {
@@ -68,13 +92,13 @@ class Chapter {
     } while (this.stepCol())
 
     this.cursor = cursorBackup
-    notes.push(time)
-    return notes
+    return { time, notes }
   }
 
-  colDuration() {
+  colDuration(ticksPerCell = 0) {
+    if (!ticksPerCell) ticksPerCell = 60000 / this.config.tempo // milliseconds
     const fraction = this.get('cell').length * this.get('row').length
-    return 60000 / this.config.tempo / fraction
+    return ticksPerCell / fraction
   }
 
   stepCol(delta = +1) {
@@ -145,7 +169,8 @@ class Chapter {
     this.set(what, destPos)
   }
 
-  del(what) { // shapechange
+  del(what) {
+    // shapechange
     if (what === 'cells') throw 'delchapter'
     const arr = this.get(parentOf(what))
     const idx = this.cursor[what]
@@ -160,7 +185,7 @@ class Chapter {
     return () => this.get(parentOf(what)).splice(idx, 0, old)
   }
 
-  getDelimiter(direction=+1) {
+  getDelimiter(direction = +1) {
     if (this.get('col').main) return ''
     if (inRange(this.cursor.col + direction, this.get('row'))) return 'col'
     if (inRange(this.cursor.row + direction, this.get('cell'))) return 'row'
@@ -259,6 +284,44 @@ function childOf(what) {
   if (what === 'cell') return 'row'
   if (what === 'row') return 'col'
   throw 'what??'
+}
+
+function chooseTimeSignatureDenominator(numerator) {
+  if (numerator === 12) return 8
+  const log = Math.log2((numerator * 4) / 3) | 0
+  return Math.pow(2, log)
+}
+
+function chooseKeySignature(scale) {
+  // [D#, E, F, F#, G, G#, A, A#, B, C, C#, D]
+  const needAccidentalInKey = {
+    '-6': [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+    '-5': [0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+    '-4': [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
+    '-3': [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0],
+    '-2': [0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0],
+    '-1': [1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0],
+    '0': [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0],
+    '1': [1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0],
+    '2': [1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+    '3': [1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0],
+    '4': [0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+    '5': [0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+  }
+  let minAccidentals = 12
+  let bestKey = 0
+  for (const key in needAccidentalInKey) {
+    let numAccidentals = scale
+      .map(x => needAccidentalInKey[key][x])
+      .reduce((a, b) => a + b)
+    if (numAccidentals < minAccidentals) {
+      bestKey = +key
+      minAccidentals = numAccidentals
+    } else if (numAccidentals === minAccidentals) {
+      if (Math.abs(+key) < Math.abs(bestKey)) bestKey = +key
+    }
+  }
+  return bestKey
 }
 
 export default Chapter

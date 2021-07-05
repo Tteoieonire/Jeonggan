@@ -51,8 +51,7 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: justify;
-  text-align-last: center;
+  text-align: center;
   /**/
 }
 

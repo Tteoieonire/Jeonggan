@@ -13,8 +13,8 @@ class Player {
 
   load() {
     // TODO: 太 -[ㄴ] | 黃 에서 ㄴ에 커서를 두고 연주하면 먹통이 됨
-    const rendered = this.music.render()
-    const data = convertMidi(rendered)
+    const rendered = this.music.convertForPlayer(1)
+    const data = convertToEvents(rendered)
     this.midi.replayer = { getData: () => data }
   }
 
@@ -67,7 +67,7 @@ function makeMidiEvent(subtype, noteNumber, velocity = 127) {
   return { type: 'channel', channel: 0, subtype, noteNumber, velocity }
 }
 
-function convertMidi(notes) {
+function convertToEvents(notes) {
   const delay = 1
   let midis = []
   let time = 0

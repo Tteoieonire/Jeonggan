@@ -19,20 +19,57 @@ class Music {
     return { gaks, maxMeasure }
   }
 
-  render() {
-    let bgn = this.cursor.blurred ? 0 : this.cursor.chapter
-    let rendered = this.chapters.slice(bgn).reduce(
-      function(acc, chapter) {
-        let elapsed = acc.pop()
-        let compiled = chapter.compile(elapsed)
-        elapsed = compiled.pop()
-        let rendered = render(compiled, chapter.config.scale)
-        return acc.concat(rendered, [elapsed])
-      },
-      [0]
-    )
-    rendered.pop()
+  convertForPlayer() {
+    const bgn = this.cursor.blurred ? 0 : this.cursor.chapter
+    const chapters = this.chapters.slice(bgn)
+    let rendered = []
+    let time = 0
+    for (const chapter of chapters) {
+      const compiled = chapter.convertToNotes(time)
+      const notes = render(compiled.notes, chapter.config.scale)
+      rendered = rendered.concat(notes)
+      time = compiled.time
+    }
     return rendered
+  }
+
+  convertToMidi(delay = 0) {
+    const header = { format: 2, ticksPerBeat: 96 }
+    let tracks = [[]]
+    let time = 0, timePlayed = 0
+    let track = tracks[0]
+    for (let i = 0; i < this.chapters.length; i++) {
+      const chapter = this.chapters[i]
+      track.push(...chapter.convertConfigToMidi())
+
+      const compiled = chapter.convertToNotes(time, true, header.ticksPerBeat)
+      const ticksPerSecond = (header.ticksPerBeat * chapter.config.tempo) / 60
+      const rendered = render(
+        compiled.notes,
+        chapter.config.scale,
+        ticksPerSecond
+      )
+      for (const note of rendered) {
+        track.push({
+          type: 'noteOn',
+          channel: 0,
+          noteNumber: note.note,
+          velocity: 127,
+          deltaTime: ((note.time - timePlayed) | 0) + delay,
+        })
+        track.push({
+          type: 'noteOff',
+          channel: 0,
+          noteNumber: note.note,
+          velocity: 0,
+          deltaTime: (note.duration | 0) - delay,
+        })
+        timePlayed = note.time + note.duration
+      }
+      time = compiled.time
+    }
+    tracks.forEach(track => track.push({ type: 'endOfTrack' }))
+    return { header, tracks }
   }
 
   stepCol(delta = +1) {
@@ -77,7 +114,10 @@ class Music {
       destChapter = 1 + this.cursor.chapter
     }
     if (!chapter) {
-      chapter = new Chapter(this.cursor, newConfigFrom(this.get('chapter').config))
+      chapter = new Chapter(
+        this.cursor,
+        newConfigFrom(this.get('chapter').config)
+      )
     }
 
     this.chapters.splice(destChapter, 0, chapter)
@@ -155,7 +195,7 @@ class Music {
       const srcY = (this.cursor.cell + config.padding) % config.measure
       const srcRow = this.cursor.row
       const srcDivision = this.get('cell').length
-      this.set('chapter', destPos, delta > 0? -1: 0) // TODO: adds an extra cell at the end!
+      this.set('chapter', destPos, delta > 0 ? -1 : 0) // TODO: adds an extra cell at the end!
 
       // set cell
       chapter = this.get('chapter')
@@ -220,18 +260,18 @@ class Music {
     return () => this[delim + 'break']('before')
   }
 
-  colbreak(position='after') {
-    this.add('col', undefined, position === 'after'? 1: 0)
+  colbreak(position = 'after') {
+    this.add('col', undefined, position === 'after' ? 1 : 0)
   }
 
-  rowbreak(position='after') {
+  rowbreak(position = 'after') {
     if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
     if (position === 'after') newrow.unshift(undefined)
     this.add('row', newrow)
   }
 
-  cellbreak(position='after') {
+  cellbreak(position = 'after') {
     if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
     if (position === 'after') newrow.unshift(undefined)
@@ -242,7 +282,7 @@ class Music {
     this.add('cell', newcell)
   }
 
-  chapterbreak(config, position='after') {
+  chapterbreak(config, position = 'after') {
     if (position === 'before') this.add('col', undefined, 0)
     let newrow = this.get('row').splice(this.cursor.col + 1)
     if (position === 'after') newrow.unshift(undefined)

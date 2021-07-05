@@ -49,21 +49,22 @@ function renderMain(note, scale, lastPitch) {
   }))
 }
 
-function renderModifier(note, modifier, scale) {
+function renderModifier(note, modifier, scale, graceCap) {
   const refIdx = pitchToScaleIdx(note.note, scale)
   const pitches = modifier.pitch.map(part =>
     part.split('').map(rel => scaleIdxToPitch(rel - 3 + refIdx, scale))
   )
-  return allotGrace(pitches, note.time, note.duration)
+  let notes = allotGrace(pitches, note.time, note.head_duration, graceCap)
+  notes[notes.length - 1].duration += (note.duration - note.head_duration)
+  return notes
 }
 
-function allotGrace(pitches, time, duration) {
-  const maxDur = 100
+function allotGrace(pitches, time, duration, graceCap) {
   const numGrace = pitches[0].length + pitches[2].length
   const numMain = pitches[1].length
 
-  const squeeze = duration < maxDur * (numGrace + numMain * 2)
-  const graceDur = squeeze ? duration / (numGrace + numMain * 2) : maxDur
+  const squeeze = duration < graceCap * (numGrace + numMain * 2)
+  const graceDur = squeeze ? duration / (numGrace + numMain * 2) : graceCap
   const mainDur = (duration - graceDur * numGrace) / numMain
 
   let results = [].concat(
@@ -78,20 +79,21 @@ function allotGrace(pitches, time, duration) {
   return results
 }
 
-function renderNote(note, scale, lastPitch) {
+function renderNote(note, scale, lastPitch, graceCap) {
   let notes = renderMain(note, scale, lastPitch)
   if (!note.modifier) return notes
   if (notes.length === 1) {
-    return renderModifier(notes[0], note.modifier, scale)
+    return renderModifier(notes[0], note.modifier, scale, graceCap)
   }
   throw Error('Dunno how to read modifier on notes group')
 }
 
-function render(notes, scale) {
+function render(notes, scale, ticksPerSecond = 1000) {
+  const graceCap = ticksPerSecond / 10
   let lastPitch = undefined
   let result = []
   for (let i = 0; i < notes.length; i++) {
-    let rendered = renderNote(notes[i], scale, lastPitch)
+    let rendered = renderNote(notes[i], scale, lastPitch, graceCap)
     result = result.concat(rendered)
     lastPitch = rendered[rendered.length - 1].note
   }

@@ -36,6 +36,7 @@
           :disabled="cursor.blurred || !editable"
         >장 설정</b-dropdown-item-button>
         <b-dropdown-item-button v-b-modal.global>곡 설정</b-dropdown-item-button>
+        <b-dropdown-item-button @click="exportMidi">MIDI 내보내기</b-dropdown-item-button>
       </b-dropdown>
     </b-button-group>
 
@@ -83,6 +84,9 @@ export default {
     },
     save() {
       this.$emit('save')
+    },
+    exportMidi() {
+      this.$emit('exportMidi')
     },
     undo() {
       this.$emit('undo')

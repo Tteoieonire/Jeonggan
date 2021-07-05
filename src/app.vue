@@ -9,6 +9,7 @@
       @play="play"
       @open="open"
       @save="save"
+      @exportMidi="exportMidi"
       @undo="undo"
       @redo="redo"
       id="menubar"
@@ -51,6 +52,7 @@
 
 <script>
 import { saveAs } from 'file-saver'
+import { writeMidi } from 'midi-file'
 
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
@@ -304,6 +306,13 @@ export default {
       const blob = new Blob([data], { type: 'text/x-yaml' })
       let filename =
         this.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
+      saveAs(blob, filename)
+    },
+    exportMidi() {
+      const data = writeMidi(this.music.convertToMidi(), {running: true})
+      const blob = new Blob([Uint8Array.from(data)], {type: 'audio/midi'})
+      let filename =
+        this.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)
     },
     doWithBackup(redo, undo) {
@@ -582,7 +591,7 @@ export default {
     },
   },
   created() {
-    this.init('수연장지곡')
+    this.init('새 곡')
   },
   mounted() {
     document
