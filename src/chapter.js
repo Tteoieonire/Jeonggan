@@ -9,7 +9,6 @@ class Chapter {
 
   view(chapterIndex) {
     const measure = this.config.measure
-    const numGaks = Math.ceil(this.cells.length / measure)
     let padding = this.config.padding
     if (padding >= measure) padding = 0
 
@@ -23,8 +22,11 @@ class Chapter {
         title: this.config.name,
       })
     }
+
+    const numGaks = Math.ceil((this.cells.length + padding) / measure)
     for (let i = 0; i < numGaks; i++) {
-      let sliced = this.cells.slice(i * measure, (i + 1) * measure)
+      const bgn = Math.max(0, i * measure - padding)
+      const sliced = this.cells.slice(bgn, (i + 1) * measure - padding)
       gaks.push({
         rhythm: false,
         content: sliced,
@@ -33,7 +35,7 @@ class Chapter {
         measure: measure,
         isFirst: this.config.hideRhythm && i === 0,
         title: this.config.name,
-        padding: i === 0 ? padding : 0,
+        padding: padding,
       })
     }
     return gaks

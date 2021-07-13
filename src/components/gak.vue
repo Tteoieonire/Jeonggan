@@ -47,6 +47,7 @@ export default {
     thisCell(cell, rhythmMode) {
       if (!rhythmMode) {
         cell += this.gak.gakIndex * this.gak.measure
+        if (this.gak.gakIndex > 0) cell -= this.gak.padding
       }
       return (
         this.cursor.rhythmMode === rhythmMode &&
@@ -56,6 +57,7 @@ export default {
     },
     move(cell, row, col) {
       cell += this.gak.gakIndex * this.gak.measure
+      if (this.gak.gakIndex > 0) cell -= this.gak.padding
       this.$emit('move', this.gak.chapterIndex, cell, row, col)
     },
     moveRhythm(cell) {
@@ -77,7 +79,7 @@ export default {
       return 7 + 3.5 * this.maxMeasure + 'rem'
     },
     padding() {
-      return (this.gak.padding || 0) * 3.5 + 'rem'
+      return (this.gak.gakIndex === 0? this.gak.padding: 0) * 3.5 + 'rem'
     }
   },
   components: {
