@@ -1,21 +1,18 @@
 <template>
-  <b-form-radio-group
-    :checked="tickIdx"
-    @change="change"
-    buttons
-    name="rhythms"
+  <b-btn-group
     size="lg"
     class="my-1 mx-auto gugak"
   >
-    <b-form-radio
+    <b-btn
       v-for="(item, i) in RHYTHM_OBJ"
       :key="i"
-      :value="i"
       :aria-label="getLabel(item)"
+      :pressed="thisTick(i)"
+      @click="change(i)"
     >
       <span aria-hidden>{{ getText(item) }}</span>
-    </b-form-radio>
-  </b-form-radio-group>
+    </b-btn>
+  </b-btn-group>
 </template>
   
 <script>
@@ -32,8 +29,11 @@ export default {
     getText(item) {
       return item || ''
     },
-    change(e) {
-      this.$emit('tickchange', e)
+    thisTick(i) {
+      return this.tickIdx == i
+    },
+    change(i) {
+      this.$emit('tickchange', i)
     }
   }
 }

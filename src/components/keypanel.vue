@@ -8,18 +8,9 @@
     <div v-if="cursor.rhythmMode" class="row mx-auto">
       <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange" />
     </div>
-    <div v-else class="row">
-      <div class="mx-auto">
-        <yulpad
-          :scale="scale"
-          :octave="octave"
-          @write="write"
-          @octavechange="octavechange"
-        />
-        <b-btn @click="erase" aria-label="지우개" class="m-1">
-          <font-awesome-icon icon="eraser" />
-        </b-btn>
-
+    <div v-else class="row mx-auto">
+      <div class="ml-auto mr-0">
+        <!-- TODO: 주법 -->
         <sympad @write="write" type="main" />
         <sympad
           :sigimShow="sigimShow"
@@ -31,10 +22,22 @@
         />
       </div>
 
-      <div class="mx-auto">
-        <cellpad @shapechange="shapechange"></cellpad>
-        <shapepad for="row" @shapechange="shapechange" />
+      <yulpad
+        class="ml-auto mr-0"
+        :scale="scale"
+        :octave="octave"
+        @write="write"
+        @octavechange="octavechange"
+      />
+
+      <div class="ml-auto mr-0">
+        <b-btn @click="erase" aria-label="지우개" class="m-1">
+          <font-awesome-icon icon="eraser" />
+        </b-btn>
+
         <shapepad for="col" @shapechange="shapechange" />
+        <shapepad for="row" @shapechange="shapechange" />
+        <cellpad @shapechange="shapechange"></cellpad>
       </div>
     </div>
   </b-btn-toolbar>

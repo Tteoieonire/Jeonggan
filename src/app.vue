@@ -359,9 +359,7 @@ export default {
     },
     keypressRhythm(e) {
       let measure = this.rhythm.length
-      if (e.code === 'Backspace' || e.code === 'Delete') {
-        this.tickchange(0)
-      } else if (e.code === 'ArrowUp') {
+      if (e.code === 'ArrowUp') {
         if (this.cursor.cell === 0) this.cursor.cell = measure
         this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
       } else if (e.code === 'ArrowDown') {
@@ -376,11 +374,12 @@ export default {
       } else return
       e.preventDefault()
     },
-    keypressHandler(e) {
+    keypressNavHandler(e) {
       if (this.cursor.blurred) return
       if (this.cursor.select_mode) return
       if (this.cursor.rhythmMode) return this.keypressRhythm(e)
       switch (e.code) {
+        /* Navigation */
         case 'ArrowUp':
           this.music.moveUpDown(-1)
           break
@@ -393,6 +392,48 @@ export default {
         case 'ArrowRight':
           this.music.moveLeftRight(+1)
           break
+        /* Editing */
+        case 'Space':
+          this.doWithBackup(
+            () => this.music.add('col'),
+            _ => this.music.backspace()
+          )
+          break
+        case 'Enter':
+        case 'NumpadEnter':
+          if (e.ctrlKey) {
+            this.doWithBackup(
+              () => this.music.chapterbreak(),
+              _ => this.music.backspace()
+            )
+          } else if (e.shiftKey) {
+            this.doWithBackup(
+              () => this.music.rowbreak(),
+              _ => this.music.backspace()
+            )
+          } else {
+            this.doWithBackup(
+              () => this.music.cellbreak(),
+              _ => this.music.backspace()
+            )
+          }
+          break
+        default:
+          return
+      }
+      e.preventDefault()
+    },
+    keypressHandler(e) {
+      if (this.cursor.blurred) return
+      if (this.cursor.select_mode) return
+      if (this.cursor.rhythmMode) {
+        if (e.code === 'Backspace' || e.code === 'Delete') {
+          this.tickchange(0)
+          e.preventDefault()
+        }
+        return true
+      }
+      switch (e.code) {
         case 'Home':
           if (e.ctrlKey) {
             this.music.set('chapter', 0)
@@ -414,12 +455,6 @@ export default {
           }
           break
         /* Editing */
-        case 'Space':
-          this.doWithBackup(
-            () => this.music.add('col'),
-            _ => this.music.backspace()
-          )
-          break
         case 'Backspace':
           this.backspace()
           break
@@ -441,25 +476,6 @@ export default {
             )
           }
           return
-        case 'Enter':
-        case 'NumpadEnter':
-          if (e.ctrlKey) {
-            this.doWithBackup(
-              () => this.music.chapterbreak(),
-              _ => this.music.backspace()
-            )
-          } else if (e.shiftKey) {
-            this.doWithBackup(
-              () => this.music.rowbreak(),
-              _ => this.music.backspace()
-            )
-          } else {
-            this.doWithBackup(
-              () => this.music.cellbreak(),
-              _ => this.music.backspace()
-            )
-          }
-          break
         case 'Slash':
           this.octavechange(-1)
           break
@@ -506,7 +522,7 @@ export default {
           let idxPitch = pitch2code.indexOf(e.code)
           if (idxPitch !== -1) {
             if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
-            let octave = this.octave + (e.shiftKey? 1: 0) // TODO: maybe upto editor settings
+            let octave = this.octave + (e.shiftKey ? 1 : 0) // TODO: maybe upto editor settings
             this.write('main', YUL_OBJ[octave][idxPitch])
             break
           }
@@ -594,9 +610,10 @@ export default {
     this.init('새 곡')
   },
   mounted() {
+    document.addEventListener('keydown', this.keypressHandler)
     document
       .getElementById('workspace')
-      .addEventListener('keydown', this.keypressHandler)
+      .addEventListener('keydown', this.keypressNavHandler)
   },
   components: {
     keypanel,

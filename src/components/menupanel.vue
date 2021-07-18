@@ -24,38 +24,40 @@
       </b-btn>
     </b-button-group>
 
-    <b-button-group class="m-1 float-right">
-      <b-btn @click="addchapter" :disabled="cursor.blurred || !editable">새 장 추가</b-btn>
+    <div class='float-right'>
+      <b-button-group class="m-1">
+        <b-btn
+          v-if="playerMode === 'playing'"
+          @click="pause"
+          :disabled="cursor.rhythmMode"
+          aria-label="일시 정지"
+        >
+          <font-awesome-icon icon="pause" />
+        </b-btn>
+        <b-btn v-else @click="resume" :disabled="cursor.rhythmMode" aria-label="재생">
+          <font-awesome-icon icon="play" />
+        </b-btn>
+        <b-btn @click="stop" :disabled="cursor.rhythmMode || editable" aria-label="연주 정지">
+          <font-awesome-icon icon="stop" />
+        </b-btn>
+      </b-button-group>
 
-      <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
-        <template slot="button-content">
-          <font-awesome-icon icon="ellipsis-v" />
-        </template>
+      <b-button-group class="m-1">
+        <b-btn @click="addchapter" :disabled="cursor.blurred || !editable">새 장 추가</b-btn>
 
-        <b-dropdown-item-button v-b-modal.configmodal
-          :disabled="cursor.blurred || !editable"
-        >장 설정</b-dropdown-item-button>
-        <b-dropdown-item-button v-b-modal.global>곡 설정</b-dropdown-item-button>
-        <b-dropdown-item-button @click="exportMidi">MIDI 내보내기</b-dropdown-item-button>
-      </b-dropdown>
-    </b-button-group>
+        <b-dropdown no-caret right aria-label="그 밖의 명령 목록">
+          <template slot="button-content">
+            <font-awesome-icon icon="ellipsis-v" />
+          </template>
 
-    <b-button-group class="m-1 float-right">
-      <b-btn
-        v-if="playerMode === 'playing'"
-        @click="pause"
-        :disabled="cursor.rhythmMode"
-        aria-label="일시 정지"
-      >
-        <font-awesome-icon icon="pause" />
-      </b-btn>
-      <b-btn v-else @click="resume" :disabled="cursor.rhythmMode" aria-label="재생">
-        <font-awesome-icon icon="play" />
-      </b-btn>
-      <b-btn @click="stop" :disabled="cursor.rhythmMode || editable" aria-label="연주 정지">
-        <font-awesome-icon icon="stop" />
-      </b-btn>
-    </b-button-group>
+          <b-dropdown-item-button v-b-modal.configmodal
+            :disabled="cursor.blurred || !editable"
+          >장 설정</b-dropdown-item-button>
+          <b-dropdown-item-button v-b-modal.global>곡 설정</b-dropdown-item-button>
+          <b-dropdown-item-button @click="exportMidi">MIDI 내보내기</b-dropdown-item-button>
+        </b-dropdown>
+      </b-button-group>
+    </div>
   </b-btn-toolbar>
 </template>
 

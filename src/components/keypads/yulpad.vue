@@ -1,5 +1,9 @@
 <template>
   <div class="d-inline-block">
+    <b-button-group class="mx-1 my-1">
+      <b-btn @click="rest" aria-label="쉼표">△</b-btn>
+    </b-button-group>
+
     <b-button-group class="m-1" aria-label="율명 입력">
       <b-btn :disabled="octave<=0" @click="lower" variant="outline-primary" aria-label="옥타브 내림">亻</b-btn>
 
@@ -12,10 +16,6 @@
       >{{yul.text}}</b-btn>
 
       <b-btn :disabled="octave>=4" @click="raise" variant="outline-primary" aria-label="옥타브 올림">氵</b-btn>
-    </b-button-group>
-
-    <b-button-group class="mx-1 my-1">
-      <b-btn @click="rest" aria-label="쉼표">△</b-btn>
     </b-button-group>
   </div>
 </template>
