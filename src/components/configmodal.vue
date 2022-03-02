@@ -19,7 +19,12 @@
 
     <b-form-group label="첫 정간 위치:">
       <b-input-group append="칸 띄우기">
-        <b-form-input v-model="padding" type="number" min="0" :max="measure-1"></b-form-input>
+        <b-form-input
+          v-model="padding"
+          type="number"
+          min="0"
+          :max="measure - 1"
+        ></b-form-input>
       </b-input-group>
     </b-form-group>
 
@@ -30,31 +35,46 @@
     </b-form-group>
 
     <b-form-group label="음계:">
-      <b-form-checkbox-group buttons v-for="(row, r) in yuls" :key="r" v-model="scale" name="yuls">
-        <b-form-checkbox
-          v-for="(yul, i) in row"
-          :key="yul.label"
-          :value="i + 6 * r"
-          :title="yul.label"
-          v-b-tooltip.hover
-        >{{yul.text}}</b-form-checkbox>
-      </b-form-checkbox-group>
+      <b-form-checkbox-group
+        buttons
+        v-model="scale"
+        :options="yuls"
+        name="yuls"
+        class="yuls"
+      ></b-form-checkbox-group>
     </b-form-group>
 
     <b-form-group label="장 관리:">
-      <b-btn variant="danger" @click="deletechapter">삭제</b-btn>
+      <b-button variant="danger" @click="deletechapter" v-b-modal.configmodal
+        >삭제</b-button
+      >
     </b-form-group>
   </b-modal>
 </template>
 
-<script>
-import { clone } from '../utils.js'
-import { YUL_OBJ } from '../constants.js'
+<style>
+.yuls {
+  width: 18rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+.yuls * {
+  margin: 0;
+}
+</style>
 
-const YULS = [YUL_OBJ[2].slice(0, 6), YUL_OBJ[2].slice(6, 12)]
+<script lang="ts">
+import { defineComponent, PropType } from 'vue'
 
-export default {
-  props: ['config'],
+import { YUL_OBJ } from '../constants'
+import { Config } from '../music'
+
+const YULS = YUL_OBJ[2].map(x => ({ text: x.text, value: x.label }))
+const SCALE = YUL_OBJ[2].map(x => x.label)
+
+export default defineComponent({
+  props: { config: { type: Object as PropType<Config>, required: true } },
+  emits: { configchange: (config: Config) => true, deletechapter: () => true },
   data() {
     return {
       name: '',
@@ -62,23 +82,26 @@ export default {
       measure: 0,
       padding: 0,
       hideRhythm: false,
-      scale: [],
-      yuls: YULS
+      scale: ['황종'],
+      yuls: YULS,
     }
   },
   methods: {
     confirm() {
       let rhythm = this.config.rhythm.slice()
       rhythm.length = this.measure
-      this.$emit('configchange', {
+      const config: Config = {
         name: this.name,
         tempo: this.tempo,
         measure: this.measure,
         padding: this.padding,
         hideRhythm: this.hideRhythm,
-        scale: this.scale.map(Number).sort((a, b) => a - b),
-        rhythm: rhythm
-      })
+        scale: this.scale
+          .map(x => SCALE.indexOf(x))
+          .sort((a: number, b: number) => a - b),
+        rhythm,
+      }
+      this.$emit('configchange', config)
     },
     reset() {
       if (!this.config) return
@@ -87,20 +110,19 @@ export default {
       this.measure = +this.config.measure
       this.padding = +this.config.padding
       this.hideRhythm = this.config.hideRhythm
-      this.scale = this.config.scale.slice()
+      this.scale = this.config.scale.map(i => SCALE[i])
     },
     deletechapter() {
       this.$emit('deletechapter')
-      this.$root.$emit('bv::hide::modal', 'configmodal')
-    }
+    },
   },
   watch: {
     config() {
       this.reset()
-    }
+    },
   },
   created() {
     this.reset()
-  }
-}
+  },
+})
 </script>

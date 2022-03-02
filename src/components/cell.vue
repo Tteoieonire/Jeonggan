@@ -2,50 +2,64 @@
   <b-container style="height: 100%">
     <b-row
       v-for="(row, r) in cell"
-      :key="r"
+      :key="getID(row) ?? -r"
       :style="getRowStyle(row)"
       align-v="center"
       class="myrow"
     >
       <b-col
         v-for="(col, c) in row"
-        :key="c"
-        :class="{cur: thisCol(r, c)}"
+        :key="getID(col) ?? -c"
+        :class="{ cur: thisCol(r, c) }"
         @click.stop="move(r, c)"
       >
-        <span class="gugak">{{getMain(col)}}</span>
-        <span v-if="col && col.modifier" class="gugak modifier">{{ col.modifier.text }}</span>
+        <span class="gugak">{{ getMain(col) }}</span>
+        <span v-if="col && col.modifier" class="gugak modifier">{{
+          'text' in col.modifier ? col.modifier.text : col.modifier.texts[0]
+        }}</span>
       </b-col>
     </b-row>
   </b-container>
 </template>
 
-<script>
-export default {
-  props: ['thisCell', 'cursor', 'cell'],
+<script lang="ts">
+import Cursor from '@/cursor'
+import { defineComponent, PropType } from 'vue'
+
+import { Cell, Row, Col } from '../music'
+import { getID } from '../utils'
+
+export default defineComponent({
+  props: {
+    thisCell: { type: Boolean, required: true },
+    cursor: { type: Cursor },
+    cell: { type: Object as PropType<Cell>, required: true },
+  },
+  emits: { move: (row: number, col: number) => true },
   methods: {
-    getRowStyle(row) {
-      const longest = Math.max(this.cell.length, row.length)
+    getRowStyle(row?: Row) {
+      const longest = Math.max(this.cell.length, row ? row.length : 1)
       return {
         fontSize: 1.5 * Math.exp(-0.2 * longest) + 'em',
-        height: 100 / this.cell.length + '%'
+        height: 100 / this.cell.length + '%',
       }
     },
-    getMain(col) {
+    getMain(col?: Col) {
       return col && col.main ? col.main.text : '-'
     },
-    move(r, c) {
+    move(r: number, c: number) {
       this.$emit('move', r, c)
     },
-    thisCol(r, c) {
+    thisCol(r: number, c: number) {
       if (!this.thisCell) return false
-      return this.cursor.row === r && this.cursor.col === c
-    }
-  }
-}
+      return this.cursor?.row === r && this.cursor?.col === c
+    },
+    getID,
+  },
+})
 </script>
 
-<style>
+<style scoped>
 .myrow {
   width: 3rem;
   white-space: nowrap;
@@ -65,7 +79,6 @@ export default {
 
 .modifier {
   font-size: 70%;
-  margin-left: -0.3em;
-  vertical-align: 10%;
+  vertical-align: 15%;
 }
 </style>

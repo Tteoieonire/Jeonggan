@@ -1,15 +1,17 @@
 const production = process.env.NODE_ENV === 'production'
 
-var path = require('path')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const VueLoaderPlugin = require('vue-loader/lib/plugin')
+const path = require('path')
+
+const { VueLoaderPlugin } = require('vue-loader')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
 module.exports = {
   mode: production ? 'production' : 'development',
-  entry: './src/main.js',
+  devtool: production ? 'cheap-module-source-map' : 'inline-source-map',
+  entry: path.resolve(__dirname, './src/main.ts'),
   output: {
     path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
     filename: 'build.js',
   },
   module: {
@@ -19,35 +21,42 @@ module.exports = {
         loader: 'vue-loader',
       },
       {
-        test: /\.js$/,
-        loader: 'babel-loader',
-        options: {
-          presets: [['@babel/preset-env', { targets: '> 0.5%, not dead' }]],
-        },
+        test: /\.js|\.ts$/,
         exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: [
+                ['@babel/preset-env', { targets: '> 0.5%, not dead' }],
+                'babel-preset-typescript-vue3',
+              ],
+              plugins: ['@babel/plugin-transform-runtime'],
+            },
+          },
+        ],
       },
       {
         test: /\.css$/,
-        use: [
-          production ? MiniCssExtractPlugin.loader : 'vue-style-loader',
-          { loader: 'css-loader', options: { esModule: false } },
-        ],
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
   resolve: {
-    alias: {
-      vue$: 'vue/dist/vue.esm.js',
-    },
     modules: ['node_modules'],
+    extensions: ['.ts', '.js', '.vue'],
+    plugins: [new TsconfigPathsPlugin()],
   },
   devServer: {
-    publicPath: '/dist/',
-    historyApiFallback: true,
-    noInfo: true,
+    static: {
+      directory: path.join(__dirname, 'dist'),
+    },
   },
   plugins: [
-    new MiniCssExtractPlugin({ filename: 'main.css' }),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: './index.html',
+    }),
     new VueLoaderPlugin(),
   ],
 }

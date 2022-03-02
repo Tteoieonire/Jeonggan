@@ -1,109 +1,99 @@
-class Cursor {
-  constructor(afterMove) {
-    this.blur()
-    this.rhythmMode = false
-    this.playMode = false
-    this.eventlisteners = {} // before/after chapter/cell/col change
+export type Level = 'music' | 'chapter' | 'cell' | 'row' | 'col'
+export type CoordLevel = 'chapter' | 'cell' | 'row' | 'col'
+
+type Coord<T> = { [level in CoordLevel]: T } & { rhythmMode: boolean }
+type Position = Coord<number>
+
+type Time = 'before' | 'after'
+type Event = `${Time}${Capitalize<keyof Position>}Change`
+type Handler = () => void
+
+function checkChanges(curPos: Position, newPos: Position): Coord<boolean> {
+  const rhythmMode = curPos.rhythmMode !== newPos.rhythmMode
+  const chapter = curPos.chapter !== newPos.chapter
+  const cell = rhythmMode || chapter || curPos.cell !== newPos.cell
+  const row = cell || curPos.row !== newPos.row
+  const col = row || curPos.col !== newPos.col
+  return { rhythmMode, chapter, cell, row, col }
+}
+
+class Cursor implements Position {
+  rhythmMode: boolean
+  chapter: number
+  cell: number
+  row: number
+  col: number
+
+  eventlisteners: Partial<Record<Event, Handler>>
+  constructor(
+    rhythmMode: boolean,
+    chapter: number,
+    cell: number,
+    row: number,
+    col: number
+  ) {
+    this.rhythmMode = rhythmMode
+    this.chapter = chapter
+    this.cell = cell
+    this.row = row
+    this.col = col
+    this.eventlisteners = {}
   }
 
-  blur() {
-    this.blurred = true
-    this.chapter = undefined
-    this.cell = undefined
-    this.row = undefined
-    this.col = undefined
+  clone() {
+    return new Cursor(
+      this.rhythmMode,
+      this.chapter,
+      this.cell,
+      this.row,
+      this.col
+    )
   }
 
-  checkChanges(newRhythmMode, newChapter, newCell, newRow, newCol) {
-    let changes = {}
-    changes.rhythmMode = this.blurred || this.rhythmMode !== newRhythmMode
-    changes.chapter = this.blurred || this.chapter !== newChapter
-    changes.cell =
-      changes.rhythmMode || changes.chapter || this.cell !== newCell
-    changes.row = changes.cell || this.row !== newRow
-    changes.col = changes.row || this.col !== newCol
-    return changes
+  loadFrom(newPos: Position) {
+    this.rhythmMode = newPos.rhythmMode
+    this.chapter = newPos.chapter
+    this.cell = newPos.cell
+    this.row = newPos.row
+    this.col = newPos.col
   }
 
-  on(change, f) {
+  checkChanges(newPos: Position): Coord<boolean> {
+    return checkChanges(this, newPos)
+  }
+
+  on(change: Event, f: Handler) {
     this.eventlisteners[change] = f
   }
 
-  dispatchEvents(changes, time = 'before') {
-    if (this.playMode) return
-    ;[ // bottom up
+  dispatchEvents(changes: Coord<boolean>, time: Time = 'before') {
+    const events: Event[] = [
       changes.col && time + 'ColChange',
       changes.row && time + 'RowChange',
       changes.cell && time + 'CellChange',
       changes.chapter && time + 'ChapterChange',
-      changes.rhythmMode && time + 'RhythmModeChange'
-    ]
-      .map(event => this.eventlisteners[event])
-      .forEach(f => f && f())
+      changes.rhythmMode && time + 'RhythmModeChange',
+    ].filter((x): x is Event => x !== false) // bottom up
+    events.map(event => this.eventlisteners[event]).forEach(f => f && f())
   }
 
-  _move(newRhythmMode, newChapter, newCell, newRow, newCol) {
-    const changes = this.checkChanges(...arguments)
+  _move(newPos: Position) {
+    const changes = this.checkChanges(newPos)
     this.dispatchEvents(changes, 'before')
-
-    this.blurred = false
-    this.rhythmMode = newRhythmMode
-    this.chapter = newChapter
-    this.cell = newCell
-    this.row = newRow
-    this.col = newCol
+    this.loadFrom(newPos)
     this.dispatchEvents(changes, 'after')
   }
 
-  move(chapter, cell, row, col) {
-    this._move(false, chapter, cell, row, col)
+  move(chapter: number, cell: number, row: number, col: number) {
+    this._move({ rhythmMode: false, chapter, cell, row, col })
   }
 
-  moveRhythm(chapter, cell) {
-    this._move(true, chapter, cell)
+  moveRhythm(chapter: number, cell: number) {
+    this._move({ rhythmMode: true, chapter, cell, row: 0, col: 0 })
   }
 
-  startPlay() {
-    this.playMode = true
-    this.prevPos = [this.chapter, this.cell, this.row, this.col]
-  }
-
-  stopPlay() {
-    this.playMode = false
-    this.move(...this.prevPos)
-    this.prevPos = undefined
-  }
-
-  clone() {
-    let ghost = new Cursor()
-    ghost.blurred = this.blurred
-    ghost.rhythmMode = this.rhythmMode
-    ghost.playMode = this.playMode
-    ghost.chapter = this.chapter
-    ghost.cell = this.cell
-    ghost.row = this.row
-    ghost.col = this.col
-    ghost.prevPos = this.prevPos
-    return ghost
-  }
-
-  loadFrom(other) {
-    if (other.blurred) this.blur()
-    if (other.playMode) {
-      this.playMode = other.playMode
-      this.prevPos = other.prevPos
-    }
-    this._move(other.rhythmMode, other.chapter, other.cell, other.row, other.col)
-  }
-
-  log() {
-    console.log('blurred', this.blurred)
-    console.log('rhythmMode', this.rhythmMode)
-    console.log('playMode', this.playMode)
-    console.log('chapter', this.chapter)
-    console.log('cell', this.cell)
-    console.log('row', this.row)
-    console.log('col', this.col)
+  moveTo(other: Cursor) {
+    this._move(other)
   }
 }
 

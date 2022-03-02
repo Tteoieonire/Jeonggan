@@ -1,6 +1,20 @@
-import { clone } from './utils'
+type MainEntry = {
+  pitch?: string | number
+  text: string
+  label?: string
+}
 
-const MAIN = {
+type TrillState = { before?: boolean; after?: boolean }
+type _Common = {
+  query?: string
+  pitches: [string, string, string]
+  label?: string
+  tall?: boolean
+  trill?: TrillState
+}
+type ModifierEntry = _Common & ({ text: string } | { texts: string[] })
+
+const MAIN: Record<string, MainEntry> = {
   '0': { pitch: '0', text: '0' },
   '1': { pitch: '1', text: '1' },
   '2': { pitch: '2', text: '2' },
@@ -25,212 +39,212 @@ const MAIN = {
   '54321': { pitch: '54321', text: '54321' },
 }
 
-const MODIFIER = {
+const MODIFIER: Record<string, ModifierEntry> = {
   '====': {
-    pitch: ['', '313', ''],
+    pitches: ['', '313', ''],
     tall: true,
     text: '313',
   },
   '==': {
-    pitch: ['', '323', ''],
+    pitches: ['', '323', ''],
     tall: true,
     text: '323',
-    trill: { before: null, after: false },
+    trill: { after: false },
   },
   '==~': {
-    pitch: ['', '323', '43'],
+    pitches: ['', '323', '43'],
     tall: true,
     text: '323~',
-    trill: { before: null, after: true },
+    trill: { after: true },
   },
   '=': {
-    pitch: ['', '343', ''],
+    pitches: ['', '343', ''],
     tall: true,
     text: '343',
-    trill: { before: null, after: false },
+    trill: { after: false },
   },
   '=~': {
-    pitch: ['', '343', '43'],
+    pitches: ['', '343', '43'],
     tall: true,
     text: '343~',
-    trill: { before: null, after: true },
+    trill: { after: true },
   },
   '===': {
-    pitch: ['', '353', ''],
+    pitches: ['', '353', ''],
     tall: true,
     text: '353',
   },
   '43': {
-    pitch: ['4', '3', ''],
+    pitches: ['4', '3', ''],
     text: '𝆔43',
-    trill: { before: null, after: false },
+    trill: { after: false },
   },
   '43~': {
-    pitch: ['434', '3', ''],
+    pitches: ['434', '3', ''],
     text: '𝆔43~',
-    trill: { before: null, after: true },
+    trill: { after: true },
   },
   '53': {
-    pitch: ['5', '3', ''],
+    pitches: ['5', '3', ''],
     text: '𝆔53',
-    trill: { before: null, after: false },
+    trill: { after: false },
   },
   '53~': {
-    pitch: ['534', '3', ''],
+    pitches: ['534', '3', ''],
     text: '𝆔53~',
-    trill: { before: null, after: true },
+    trill: { after: true },
   },
   '63': {
-    pitch: ['6', '3', ''],
+    pitches: ['6', '3', ''],
     text: '𝆔63',
-    trill: { before: null, after: false },
+    trill: { after: false },
   },
   '63~': {
-    pitch: ['634', '3', ''],
+    pitches: ['634', '3', ''],
     text: '𝆔63~',
-    trill: { before: null, after: true },
+    trill: { after: true },
   },
   '23': {
-    pitch: ['2', '3', ''],
+    pitches: ['2', '3', ''],
     text: '𝆔23',
-    trill: { before: false, after: null },
+    trill: { before: false },
   },
   '~23': {
-    pitch: ['232', '3', ''],
+    pitches: ['232', '3', ''],
     text: '𝆔~23',
-    trill: { before: true, after: null },
+    trill: { before: true },
   },
   '13': {
-    pitch: ['1', '3', ''],
+    pitches: ['1', '3', ''],
     text: '𝆔13',
-    trill: { before: false, after: null },
+    trill: { before: false },
   },
   '~13': {
-    pitch: ['121', '3', ''],
+    pitches: ['121', '3', ''],
     text: '𝆔~13',
-    trill: { before: true, after: null },
+    trill: { before: true },
   },
   '03': {
-    pitch: ['0', '3', ''],
+    pitches: ['0', '3', ''],
     text: '𝆔03',
-    trill: { before: false, after: null },
+    trill: { before: false },
   },
   '~03': {
-    pitch: ['010', '3', ''],
+    pitches: ['010', '3', ''],
     text: '𝆔~03',
-    trill: { before: true, after: null },
+    trill: { before: true },
   },
   '343': {
-    pitch: ['34', '3', ''],
+    pitches: ['34', '3', ''],
     text: '𝆔343',
   },
   '353': {
-    pitch: ['35', '3', ''],
+    pitches: ['35', '3', ''],
     text: '𝆔353',
   },
   '323': {
-    pitch: ['32', '3', ''],
+    pitches: ['32', '3', ''],
     text: '𝆔323',
   },
   '313': {
-    pitch: ['31', '3', ''],
+    pitches: ['31', '3', ''],
     text: '𝆔313',
   },
   '143': {
-    pitch: ['14', '3', ''],
+    pitches: ['14', '3', ''],
     text: '𝆔143',
   },
   '243': {
-    pitch: ['24', '3', ''],
+    pitches: ['24', '3', ''],
     text: '𝆔243',
     trill: { before: false, after: false },
   },
   '~243': {
-    pitch: ['2324', '3', ''],
+    pitches: ['2324', '3', ''],
     text: '𝆔~243',
     trill: { before: true, after: false },
   },
   '243~': {
-    pitch: ['2434', '3', ''],
+    pitches: ['2434', '3', ''],
     text: '𝆔243~',
     trill: { before: false, after: true },
   },
   '~243~': {
-    pitch: ['232434', '3', ''],
+    pitches: ['232434', '3', ''],
     text: '𝆔~243~',
     trill: { before: true, after: true },
   },
   '3243': {
-    pitch: ['324', '3', ''],
+    pitches: ['324', '3', ''],
     text: '𝆔3243',
     trill: { before: false, after: false },
   },
   '~3243': {
-    pitch: ['34324', '3', ''],
+    pitches: ['34324', '3', ''],
     text: '𝆔~3243',
     trill: { before: true, after: false },
   },
   '3243~': {
-    pitch: ['32434', '3', ''],
+    pitches: ['32434', '3', ''],
     text: '𝆔3243~',
     trill: { before: false, after: true },
   },
   '~3243~': {
-    pitch: ['3432434', '3', ''],
+    pitches: ['3432434', '3', ''],
     text: '𝆔~3243~',
     trill: { before: true, after: true },
   },
   '24243': {
-    pitch: ['2424', '3', ''],
+    pitches: ['2424', '3', ''],
     text: '𝆔24243',
   },
   '243243': {
-    pitch: ['24324', '3', ''],
+    pitches: ['24324', '3', ''],
     text: '𝆔243243',
     trill: { before: false, after: false },
   },
   '~243243': {
-    pitch: ['2324324', '3', ''],
+    pitches: ['2324324', '3', ''],
     text: '𝆔~243243',
     trill: { before: true, after: false },
   },
   '243243~': {
-    pitch: ['2432434', '3', ''],
+    pitches: ['2432434', '3', ''],
     text: '𝆔243243~',
     trill: { before: false, after: true },
   },
   '~243243~': {
-    pitch: ['232432434', '3', ''],
+    pitches: ['232432434', '3', ''],
     text: '𝆔~243243~',
     trill: { before: true, after: true },
   },
   I: {
-    pitch: ['2', '3', '2'],
+    pitches: ['2', '3', '2'],
     texts: ['工', 'I'],
     trill: { before: false, after: false },
   },
   '~I': {
-    pitch: ['232', '3', '2'],
+    pitches: ['232', '3', '2'],
     texts: ['~工', '~I'],
     trill: { before: true, after: false },
   },
   'I~': {
-    pitch: ['2', '3', '232'],
+    pitches: ['2', '3', '232'],
     texts: ['工~', 'I~'],
     trill: { before: false, after: true },
   },
   '~I~': {
-    pitch: ['232', '3', '232'],
+    pitches: ['232', '3', '232'],
     texts: ['~工~', '~I~'],
     trill: { before: true, after: true },
   },
   H: {
-    pitch: ['4', '3', '4'],
+    pitches: ['4', '3', '4'],
     text: 'H',
   },
 }
 
-function readOut(pitch) {
+function readOut(pitch: string): string {
   const table = [
     '제 음의 세 음 아래',
     '제 음의 두 음 아래',
@@ -242,17 +256,17 @@ function readOut(pitch) {
   ]
   return pitch
     .split('')
-    .map(n => table[n])
+    .map(n => table[+n])
     .join(', ')
 }
 
-function labelMain(pitch) {
+function labelMain(pitch: string): string {
   const digit = pitch.split('').join(', ')
   const readout = readOut(pitch)
   return digit + '. ' + readout
 }
 
-function labelModifier(pitches) {
+function labelModifier(pitches: [string, string, string]): string {
   let result = ''
 
   const digits = pitches.map(s => s.split('').join(', '))
@@ -269,81 +283,121 @@ function labelModifier(pitches) {
   return result
 }
 
-function trimTrill(query) {
+function trimTrill(query: string): string {
   if (query[0] === '~') query = query.slice(1)
   if (query[query.length - 1] === '~') query = query.slice(0, -1)
   return query
 }
 
-function trillBefore(pitch) {
+function trillBefore(pitch: string): string {
   let head = +pitch[0]
   pitch = head + '' + (head + 1) + '' + pitch
   return pitch
 }
 
-function trillAfter(pitch) {
+function trillAfter(pitch: string): string {
   let tail = +pitch[pitch.length - 1]
   pitch += '' + (tail + 1) + '' + tail
   return pitch
 }
 
-function processQuery(table, query, mode = 'query') {
+function processQuery(
+  table: typeof MAIN | typeof MODIFIER,
+  query: string,
+  mode: 'query' | 'text' = 'query'
+) {
   if (mode === 'query') return query
-  // mode === 'text'
-  const keys = Object.keys(table)
-  for (const key of keys) {
-    if (table[key].text === query) return key
-    if (table[key].texts && table[key].texts.includes(query)) return key
+
+  for (const [key, value] of Object.entries(table)) {
+    if ('text' in value && value.text === query) return key
+    if ('texts' in value && value.texts.includes(query)) return key
   }
   return query.replace('𝆔', '') // fallback
 }
 
-function querySymbol(where, query, mode = 'query') {
-  const isMain = where === 'main'
-  const table = isMain ? MAIN : MODIFIER
-  const labeler = isMain ? labelMain : labelModifier
+function queryMain(query: string, mode: 'query' | 'text' = 'query'): MainEntry {
+  query = processQuery(MAIN, query, mode)
 
-  query = processQuery(table, query, mode)
-
-  let reply = table[query]
+  let reply = MAIN[query]
   if (reply) {
+    let label = reply.label
+    if (label == null) {
+      if (typeof reply.pitch !== 'string') throw Error('queryMain cannot label')
+      label = labelMain(reply.pitch)
+    }
     return {
-      query: query,
       pitch: reply.pitch,
-      text: reply.text || reply.texts[0],
-      label: reply.query || labeler(reply.pitch),
-      trill: reply.trill,
+      text: reply.text,
+      label,
     }
-  }
-
-  const fallback = trimTrill(query)
-  let pitch
-  if (query === fallback) {
-    pitch = isMain ? query : [query.slice(0, -1), query.slice(-1), '']
-    return {
-      query: query,
-      pitch: pitch,
-      text: (isMain ? '' : '𝆔') + query,
-      label: labeler(pitch),
-    }
-  }
-
-  reply = querySymbol(where, fallback)
-  pitch = reply.pitch
-  if (query[0] === '~') {
-    if (pitch[0]) pitch[0] = trillBefore(pitch[0])
-    else pitch[0] = trillBefore(pitch[1]).slice(0, 2)
-  }
-  if (query[query.length - 1] === '~') {
-    if (pitch[2]) pitch[2] = trillAfter(pitch[2])
-    else pitch[2] = trillAfter(pitch[1]).slice(-2)
   }
   return {
-    query: query,
-    pitch: pitch,
-    text: (isMain ? '' : '𝆔') + query,
-    label: labeler(pitch),
+    pitch: query,
+    text: query,
+    label: labelMain(query),
   }
 }
 
-export { querySymbol }
+function queryModifier(
+  query: string,
+  mode: 'query' | 'text' = 'query'
+): ModifierEntry {
+  query = processQuery(MODIFIER, query, mode)
+
+  let reply = MODIFIER[query]
+  if (reply) {
+    const response: ModifierEntry = {
+      query: query,
+      pitches: reply.pitches,
+      text: 'text' in reply ? reply.text : reply.texts[0],
+      label: reply.query || labelModifier(reply.pitches),
+      trill: reply.trill,
+    }
+    return response
+  }
+
+  const fallback = trimTrill(query)
+  if (query === fallback) {
+    let pitches: [string, string, string] = [
+      query.slice(0, -1),
+      query.slice(-1),
+      '',
+    ]
+    return {
+      query: query,
+      pitches: pitches,
+      text: '𝆔' + query,
+      label: labelModifier(pitches),
+    }
+  }
+
+  reply = querySymbol('modifier', fallback, mode)
+  let pitches = reply.pitches
+  if (query[0] === '~') {
+    if (pitches[0]) pitches[0] = trillBefore(pitches[0])
+    else pitches[0] = trillBefore(pitches[1]).slice(0, 2)
+  }
+  if (query[query.length - 1] === '~') {
+    if (pitches[2]) pitches[2] = trillAfter(pitches[2])
+    else pitches[2] = trillAfter(pitches[1]).slice(-2)
+  }
+  return {
+    query: query,
+    pitches: pitches,
+    text: '𝆔' + query,
+    label: labelModifier(pitches),
+  }
+}
+
+type EntryOf = { main: MainEntry; modifier: ModifierEntry }
+function querySymbol<K extends keyof EntryOf>(
+  where: K,
+  query: string,
+  mode: 'query' | 'text' = 'query'
+): EntryOf[K] {
+  return (
+    where === 'main' ? queryMain(query, mode) : queryModifier(query, mode)
+  ) as any
+}
+
+export { querySymbol, MainEntry, ModifierEntry, TrillState, EntryOf }

@@ -6,13 +6,14 @@
   </b-modal>
 </template>
 
-<script>
-export default {
-  props: ['title'],
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+export default defineComponent({
+  props: { title: { type: String, required: true } },
+  emits: { rename: (name: string) => true },
   data() {
-    return {
-      name: '',
-    }
+    return { name: '' }
   },
   methods: {
     rename() {
@@ -22,5 +23,5 @@ export default {
       this.name = this.title
     }
   }
-}
+})
 </script>

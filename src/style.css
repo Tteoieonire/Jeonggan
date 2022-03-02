@@ -1,8 +1,6 @@
-@import '~bootstrap/dist/css/bootstrap.css';
-@import '~bootstrap-vue/dist/bootstrap-vue.css';
-
-body {
+#app {
   background: sienna;
+  padding: 2rem 0;
 }
 
 .footer {
@@ -12,11 +10,19 @@ body {
   color: white;
 }
 
-#app {
-  transition: all 0.2s;
+.float-right {
+  float: right;
 }
 
 .gugak {
   font-family: 'TteoiJeonggan';
   word-break: keep-all;
+}
+
+@font-face {
+  font-family: 'TteoiJeonggan';
+  src: url('../assets/TteoiJeonggan.woff2') format('woff2'),
+    url('../assets/TteoiJeonggan.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
 }

@@ -1,6 +1,10 @@
-import Vue from 'vue'
-import BootstrapVue from 'bootstrap-vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import './style.css'
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+
+import BootstrapVue3 from 'bootstrap-vue-3'
+import { createApp } from 'vue'
+
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
   faEllipsisV,
@@ -14,9 +18,9 @@ import {
   faStop,
   faUndo,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import app from './app.vue'
-import './style.css'
+import MyApp from './app.vue'
 
 library.add(
   faEllipsisV,
@@ -31,10 +35,7 @@ library.add(
   faUndo
 )
 
-Vue.use(BootstrapVue)
-Vue.component('font-awesome-icon', FontAwesomeIcon)
-
-new Vue({
-  el: '#app',
-  render: h => h(app),
-})
+createApp(MyApp)
+  .use(BootstrapVue3)
+  .component('font-awesome-icon', FontAwesomeIcon)
+  .mount('#app')

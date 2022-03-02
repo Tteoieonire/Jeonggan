@@ -1,7 +1,7 @@
 <template>
-  <div class="wrapper" :style="{height}">
+  <div class="wrapper">
     <div class="margin">
-      <div v-if="gak.isFirst">
+      <div v-if="gak.gakIndex === 0">
         <span class="title">{{ gak.title }}</span>
       </div>
     </div>
@@ -15,14 +15,20 @@
         @click="moveRhythm(i)"
         class="gugak"
         variant="info"
-      >{{ tick || '' }}</b-list-group-item>
+        >{{ tick || '' }}</b-list-group-item
+      >
     </b-list-group>
 
     <!-- 일반 각 -->
-    <b-list-group v-else class="gak" :aria-label="label" :style="{paddingTop: padding}">
+    <b-list-group
+      v-else
+      class="gak"
+      :aria-label="label"
+      :style="{ paddingTop: padding }"
+    >
       <b-list-group-item
         v-for="(cell, i) in gak.content"
-        :key="i"
+        :key="getID(cell) ?? -i"
         :active="thisCell(i, false)"
         @click="move(i, 0, 0)"
       >
@@ -38,31 +44,44 @@
   </div>
 </template>
 
-<script>
-import cell from './cell.vue'
+<script lang="ts">
+import { defineComponent, PropType } from 'vue'
 
-export default {
-  props: ['cursor', 'gak', 'maxMeasure'],
+import cell from './cell.vue'
+import Cursor from '@/cursor'
+import { Gak } from '@/music'
+import { getID } from '../utils'
+
+export default defineComponent({
+  props: {
+    cursor: { type: Object as PropType<Cursor> },
+    gak: { type: Object as PropType<Gak>, required: true },
+  },
+  emits: {
+    move: (gak: number, cell: number, row: number, col: number) => true,
+    moveRhythm: (gak: number, cell: number) => true,
+  },
   methods: {
-    thisCell(cell, rhythmMode) {
+    thisCell(cell: number, rhythmMode: boolean) {
       if (!rhythmMode) {
         cell += this.gak.gakIndex * this.gak.measure
         if (this.gak.gakIndex > 0) cell -= this.gak.padding
       }
       return (
-        this.cursor.rhythmMode === rhythmMode &&
-        this.cursor.chapter === this.gak.chapterIndex &&
-        this.cursor.cell === cell
+        this.cursor?.rhythmMode === rhythmMode &&
+        this.cursor?.chapter === this.gak.chapterIndex &&
+        this.cursor?.cell === cell
       )
     },
-    move(cell, row, col) {
+    move(cell: number, row: number, col: number) {
       cell += this.gak.gakIndex * this.gak.measure
       if (this.gak.gakIndex > 0) cell -= this.gak.padding
       this.$emit('move', this.gak.chapterIndex, cell, row, col)
     },
-    moveRhythm(cell) {
+    moveRhythm(cell: number) {
       this.$emit('moveRhythm', this.gak.chapterIndex, cell)
     },
+    getID,
   },
   computed: {
     title() {
@@ -75,23 +94,19 @@ export default {
         return this.title + ' ' + (this.gak.gakIndex + 1) + '각'
       }
     },
-    height() {
-      return 7 + 3.5 * this.maxMeasure + 'rem'
-    },
     padding() {
-      return (this.gak.gakIndex === 0? this.gak.padding: 0) * 3.5 + 'rem'
-    }
+      return (this.gak.gakIndex === 0 ? this.gak.padding : 0) * 3.5 + 'rem'
+    },
   },
   components: {
-    cell
-  }
-}
+    cell,
+  },
+})
 </script>
 
-<style>
+<style scoped>
 .wrapper {
   width: 4rem;
-  float: right;
   background-color: beige;
   overflow: hidden;
 }

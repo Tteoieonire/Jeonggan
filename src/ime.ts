@@ -1,10 +1,12 @@
 import { querySymbol } from './symbols'
 
 class IME {
-  constructor() {
-    this.grace = false
-    this.reset()
-  }
+  grace: boolean = false
+  digits: string = ''
+  equals: string = ''
+  special: string = ''
+  trillBefore: string = ''
+  trillAfter: string = ''
 
   reset() {
     this.digits = ''
@@ -15,7 +17,13 @@ class IME {
   }
 
   isComposing() {
-    return this.digits || this.equals || this.special || this.trillBefore || this.trillAfter
+    return (
+      this.digits ||
+      this.equals ||
+      this.special ||
+      this.trillBefore ||
+      this.trillAfter
+    )
   }
 
   compile() {
@@ -30,7 +38,7 @@ class IME {
     return querySymbol(where, sequence)
   }
 
-  update(code, shiftKey) {
+  update(code: string, shiftKey: boolean) {
     if (this.grace !== shiftKey) {
       this.grace = shiftKey
       this.reset()

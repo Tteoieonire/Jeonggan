@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <div id="keypress">
     <menupanel
-      :cursor="cursor"
-      :playerMode="player.mode"
+      :rhythmMode="editor.cursor.rhythmMode"
+      :playing="player?.playing"
       :undoable="undoable"
       :redoable="redoable"
       @addchapter="addchapter"
@@ -15,11 +15,12 @@
       id="menubar"
     ></menupanel>
     <keypanel
+      v-if="!player"
       :tickIdx="tickIdx"
-      :cursor="cursor"
+      :rhythmMode="editor.cursor.rhythmMode"
       :sigimShow="sigimShow"
       :trillShow="trillShow"
-      :scale="scale"
+      :scale="config.scale"
       :octave="octave"
       :trill="trill"
       @write="write"
@@ -33,26 +34,26 @@
     <canvaspanel
       tabIndex="0"
       :aria-label="canvasLabel"
-      :cursor="cursor"
-      :view="view"
+      :cursor="player?.cursor || editor.cursor"
+      :gaks="gaks"
       @move="move"
       @moveRhythm="moveRhythm"
       id="workspace"
     ></canvaspanel>
-    <configmodal
-      v-if="configchapter"
-      :config="configchapter.config"
-      @configchange="configchange"
-      @deletechapter="deletechapter"
-    ></configmodal>
-    <initmodal :title="title" @init="init"></initmodal>
-    <globalmodal :title="title" @rename="rename"></globalmodal>
   </div>
+  <configmodal
+    :config="config"
+    @configchange="configchange"
+    @deletechapter="deletechapter"
+  ></configmodal>
+  <initmodal :title="title" @init="create"></initmodal>
+  <globalmodal :title="title" @rename="rename"></globalmodal>
 </template>
 
-<script>
+<script lang="ts">
 import { saveAs } from 'file-saver'
 import { writeMidi } from 'midi-file'
+import { defineComponent } from 'vue'
 
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
@@ -62,240 +63,229 @@ import initmodal from './components/initmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import configmodal from './components/configmodal.vue'
 
-import Cursor from './cursor.js'
-import Music from './music.js'
-import Chapter from './chapter.js'
-import Player from './player.js'
-import IME from './ime.js'
-import { querySymbol } from './symbols.js'
-import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants.js'
-import { serializeMusic, deserializeMusic } from './serializer.js'
+import Cursor, { CoordLevel } from './cursor'
+import {
+  Config,
+  Chapter,
+  Music,
+  MusicEditor,
+  MusicPlayer,
+  UndoOp,
+} from './music'
+import IME from './ime'
+import { querySymbol, TrillState } from './symbols'
+import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants'
+import { serializeMusic, deserializeMusic } from './serializer'
+import { EntryOf } from './symbols'
+import { convertToMidi } from './converter'
+import { inRange, wrappedIdx } from './utils'
 
 /**
  * Controller
  */
-const INIT_CONFIG = {
+const INIT_CONFIG: Config = {
   name: '초장',
   tempo: 60,
   measure: 6,
-  rhythm: ['떵', null, '따닥', '쿵', '더러러러', '따'],
+  rhythm: ['떵', '', '따닥', '쿵', '더러러러', '따'],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
   padding: 0,
 }
 const MAX_HISTORY = 100
+const PITCH2CODE = [
+  'KeyG',
+  'KeyE',
+  'KeyX',
+  'KeyU',
+  'KeyR',
+  'KeyW',
+  'KeyB',
+  'KeyD',
+  'KeyL',
+  'KeyS',
+  'KeyA',
+  'KeyM',
+]
 
-export default {
+type UndoRecord = {
+  undo: UndoOp
+  redo: () => UndoOp
+  oldCursor: Cursor
+  newCursor: Cursor
+}
+
+export default defineComponent({
   data() {
     return {
       title: '',
-      cursor: undefined,
-      music: undefined,
-      scale: undefined, //need update
-      rhythm: undefined, // need update
+      music: undefined as unknown as Music,
+      editor: undefined as unknown as MusicEditor,
+      player: undefined as undefined | MusicPlayer,
+      config: undefined as unknown as Config,
       sigimShow: false, // need update
       octave: 2,
-      trill: { before: null, after: null },
-      tickIdx: 0,
+      trill: {} as TrillState,
+      tickIdx: -1,
       ime: new IME(),
-      player: new Player(),
-      undoHistory: [],
+      undoHistory: [] as Array<UndoRecord>,
       undoTravel: 0,
     }
   },
   methods: {
-    init(title = '') {
+    create(title = '') {
       this.title = title
-      this.cursor = new Cursor()
-      this.music = new Music(this.cursor)
-      this.music.addchapter(new Chapter(this.cursor, INIT_CONFIG))
-      this.player.music = this.music
-
+      const chapters = [new Chapter(INIT_CONFIG)]
+      this.music = new Music(chapters)
+      this.editor = this.music.getEditor()
       this.move(0, 0, 0, 0)
       this.write('main', YUL_OBJ[this.octave][0])
-      this.music.add('cell')
+      this.editor.add('cell')
+      this.init()
+    },
+    load(title: string, chapters: Chapter[]) {
+      this.title = title
+      this.music = new Music(chapters)
+      this.editor = this.music.getEditor()
+      this.init()
+    },
+    init() {
+      this.player = undefined
+      this.undoHistory = []
+      this.undoTravel = 0
       this.updateChapter()
       this.updateSympad()
 
-      this.cursor.on('afterColChange', () => {
+      this.editor.cursor.on('afterColChange', () => {
         this.updateSympad()
         this.ime.reset()
       })
-      this.cursor.on('afterChapterChange', () => this.updateChapter())
-      this.cursor.on('beforeCellChange', () => this.music.trim())
+      this.editor.cursor.on('afterCellChange', () => this.updateRhythm())
+      this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
+      this.editor.cursor.on('beforeCellChange', () => {
+        if (!this.editor.cursor.rhythmMode) this.editor.trim()
+      })
     },
     updateSympad() {
-      if (this.cursor.blurred || this.cursor.rhythmMode) return
-      const el = this.music.get('col')
+      if (this.editor.cursor.rhythmMode) return
+      const el = this.editor.get('col')
       this.sigimShow =
-        !!el.main &&
-        !!el.main.pitch &&
+        !!el.main?.pitch &&
         (typeof el.main.pitch === 'number' || el.main.pitch.length === 1)
-      this.trill = { before: null, after: null }
+      this.trill = {}
       if (el.modifier && el.modifier.trill) {
         this.trill = el.modifier.trill
       }
     },
+    updateRhythm() {
+      if (this.editor.cursor.rhythmMode)
+        this.tickIdx = RHYTHM_OBJ.indexOf(
+          this.config.rhythm[this.editor.cursor.cell]
+        )
+    },
     updateChapter() {
-      if (this.cursor.blurred) return
-      let config = this.music.get('chapter').config
-      this.rhythm = config && config.rhythm
-      this.scale = config && config.scale
+      this.config = this.editor.get('chapter').config
     },
-    moveRhythm(chapter, cell) {
-      if (this.cursor.playMode) return
-      this.cursor.moveRhythm(chapter, cell)
-      this.$nextTick(() => {
-        this.tickIdx = RHYTHM_OBJ.indexOf(this.rhythm[cell])
+    move(chapter: number, cell: number, row: number, col: number) {
+      if (this.player != null) return
+      this.editor.cursor.move(chapter, cell, row, col)
+    },
+    moveRhythm(chapter: number, cell: number) {
+      if (this.player != null) return
+      chapter = wrappedIdx(chapter, this.editor.getLength('music'))
+      cell = wrappedIdx(cell, this.config.rhythm.length)
+      this.editor.cursor.moveRhythm(chapter, cell)
+      this.updateRhythm()
+    },
+    write<K extends keyof EntryOf>(
+      where: K,
+      obj?: EntryOf[K],
+      resetIME = true
+    ) {
+      this.doWithBackup(() => {
+        const el = { main: this.editor.get('col').main, [where]: obj }
+        return this.editor.write('col', el)
       })
-    },
-    move(chapter, cell, row, col) {
-      if (this.cursor.playMode) return
-      this.cursor.move(chapter, cell, row, col)
-    },
-    write(where, obj, resetIME = true) {
-      if (this.cursor.blurred) return
-      this.doWithBackup(
-        () => {
-          const el = this.music.get('col')
-          const old = el[where]
-          this.$set(el, where, obj)
-          this.updateSympad()
-          return old
-        },
-        old => {
-          this.$set(this.music.get('col'), where, old)
-          this.updateSympad()
-        }
-      )
       if (resetIME) this.ime.reset()
     },
     erase() {
-      if (this.cursor.blurred) return
-      this.doWithBackup(
-        () => {
-          this.sigimShow = false
-          return this.music.erase()
-        },
-        old => this.music.get('row').splice(this.cursor.col, 1, old)
-      )
+      this.doWithBackup(() => this.editor.erase())
       this.ime.reset()
     },
-    writeIME(key, shiftKey) {
+    writeIME(key: string, shiftKey: boolean) {
       if (shiftKey && !this.sigimShow) return
       const where = shiftKey ? 'modifier' : 'main'
       const obj = this.ime.update(key, shiftKey)
       this.write(where, obj, false)
     },
-    backspace() {
-      if (this.ime.isComposing()) {
-        let where = this.ime.grace ? 'modifier' : 'main'
-        let obj = this.ime.backspace()
-        this.write(where, obj, false)
-      } else if (this.music.get('col').main) {
-        this.erase()
-      } else {
-        this.doWithBackup(
-          () => this.music.backspace(),
-          f => f()
-        )
-      }
-    },
-    shapechange(what, delta) {
-      if (this.cursor.blurred) return
+    shapechange(what: CoordLevel, delta: -1 | 1) {
       if (delta === +1) {
-        this.doWithBackup(
-          () => this.music.add(what),
-          _ => {
-            this.music.del(what)
-            this.updateSympad()
-          }
-        )
+        this.doWithBackup(() => this.editor.add(what))
       } else {
-        this.doWithBackup(
-          () => {
-            const f = this.music.del(what)
-            this.updateSympad()
-            return f
-          },
-          f => f()
-        )
+        this.doWithBackup(() => this.editor.del(what))
       }
     },
-    octavechange(delta) {
+    octavechange(delta: -1 | 1) {
       if (this.octave + delta < 0 || this.octave + delta > 4) return
       this.octave += delta
     },
-    tickchange(tickIdx) {
+    tickchange(tickIdx: number) {
       const oldtick = this.tickIdx
-      this.doWithBackup(
-        () => {
-          this.tickIdx = tickIdx
-          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[this.tickIdx])
-        },
-        _ => {
+      this.doWithBackup(() => {
+        this.tickIdx = tickIdx
+        this.config.rhythm.splice(
+          this.editor.cursor.cell,
+          1,
+          RHYTHM_OBJ[this.tickIdx]
+        )
+        return () => {
           this.tickIdx = oldtick
-          this.rhythm.splice(this.cursor.cell, 1, RHYTHM_OBJ[this.tickIdx])
+          this.config.rhythm.splice(
+            this.editor.cursor.cell,
+            1,
+            RHYTHM_OBJ[this.tickIdx]
+          )
         }
-      )
+      })
     },
-    trillchange(trill) {
-      let query = this.music.get('col').modifier.query
+    trillchange(trill: TrillState) {
+      let query = this.editor.get('col').modifier?.query
+      if (query == null) return
       query = query.replace(/~/g, '')
       query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
       this.write('modifier', querySymbol('modifier', query))
     },
-    configchange(config) {
-      this.rhythm = config.rhythm
-      this.scale = config.scale
-      this.$set(this.configchapter, 'config', config)
+    configchange(config: Config) {
+      this.editor.get('chapter').setConfig(config)
+      this.config = config
     },
     addchapter() {
-      this.doWithBackup(
-        () => this.music.addchapter(),
-        _ => this.music.delchapter()
-      )
+      this.doWithBackup(() => this.editor.add('chapter'))
     },
     deletechapter() {
-      const chapter = this.cursor.chapter
-      this.doWithBackup(
-        () => this.music.delchapter(chapter),
-        old => {
-          this.cursor.chapter = chapter - 1
-          this.music.addchapter(old)
-          // restore cursor
-        }
-      )
+      this.doWithBackup(() => this.editor.del('chapter'))
     },
-    play(command) {
+    async play(command: 'stop' | 'pause' | 'resume') {
       if (command === 'stop') {
-        this.player.stop()
+        await this.player?.stop()
+        delete this.player
       } else if (command === 'pause') {
-        this.player.pause()
-      } else {
-        this.player.resume()
+        await this.player?.stop()
+      } else if (command === 'resume') {
+        this.player = this.player || this.editor.asPlayer()
+        await this.player.play()
       }
+      if (this.player?.playing == null) this.player = undefined
     },
-    rename(title) {
+    rename(title: string) {
       this.title = title
     },
-    load(title, chapters) {
-      this.cursor.blur()
-      this.title = title
-      this.music.chapters = chapters.map(config => {
-        const content = config.content
-        delete config.content
-        return new Chapter(this.cursor, config, content)
-      })
-      this.cursor.move(0, 0, 0, 0)
-      this.undoHistory = []
-      this.undoTravel = 0
-    },
-    open(file) {
+    open(file: any) {
       // TODO: maybe warn user?
       const reader = new FileReader()
       reader.addEventListener('load', e => {
-        const result = e.target.result
+        const result = e.target?.result
+        if (typeof result !== 'string') return
         const data = deserializeMusic(result) // TODO: handle error
         this.load(data.title, data.chapters)
       })
@@ -309,113 +299,81 @@ export default {
       saveAs(blob, filename)
     },
     exportMidi() {
-      const data = writeMidi(this.music.convertToMidi(), {running: true})
-      const blob = new Blob([Uint8Array.from(data)], {type: 'audio/midi'})
+      const data = writeMidi(convertToMidi(this.music.getViewer()), {
+        running: true,
+      })
+      const blob = new Blob([Uint8Array.from(data)], { type: 'audio/midi' })
       let filename =
         this.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)
     },
-    doWithBackup(redo, undo) {
-      /** redo: a function that does the (re)-operation.
-              takes zero args and returns data needed for `undo`
-          undo: a function that reverses the operation.
-              takes one arg which is return value of `redo`
-              and returns nothing
+    doWithBackup(op: () => UndoOp) {
+      /** op: a function that does the (re)-operation.
+              takes zero args and returns undo function
        */
       this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
-      if (this.undoHistory.length === MAX_HISTORY) {
-        this.undoHistory.shift()
-      }
 
-      const oldCursor = this.cursor.clone()
-      const data = redo()
-      const newCursor = this.cursor.clone()
-      this.undoHistory.push({
-        undo,
-        redo,
-        data,
-        oldCursor,
-        newCursor,
-      })
+      const oldCursor = this.editor.cursor.clone()
+      const undo = op()
+      const newCursor = this.editor.cursor.clone()
+      this.updateSympad()
+      this.undoHistory.push({ undo, redo: op, oldCursor, newCursor })
       this.undoTravel += 1
+
+      if (this.undoTravel > MAX_HISTORY) {
+        this.undoHistory = this.undoHistory.slice(-MAX_HISTORY)
+        this.undoTravel = MAX_HISTORY
+      }
     },
     undo() {
       this.ime.reset()
       if (this.undoTravel === 0) return
       this.undoTravel -= 1
-      let op = this.undoHistory[this.undoTravel]
-      this.cursor.loadFrom(op.newCursor)
-      op.undo(op.data)
-      this.cursor.loadFrom(op.oldCursor)
+      const { undo, newCursor } = this.undoHistory[this.undoTravel]
+      this.editor.cursor.moveTo(newCursor)
+      undo()
+      this.updateSympad()
     },
     redo() {
       this.ime.reset()
       if (this.undoTravel >= this.undoHistory.length) return
-      let op = this.undoHistory[this.undoTravel]
-      this.cursor.loadFrom(op.oldCursor)
-      op.redo() // assert return value == op.data
-      this.cursor.loadFrom(op.newCursor)
+      const { redo, oldCursor } = this.undoHistory[this.undoTravel]
+      this.editor.cursor.moveTo(oldCursor)
+      redo()
+      this.updateSympad()
       this.undoTravel += 1
     },
-    keypressRhythm(e) {
-      let measure = this.rhythm.length
-      if (e.code === 'ArrowUp') {
-        if (this.cursor.cell === 0) this.cursor.cell = measure
-        this.moveRhythm(this.cursor.chapter, this.cursor.cell - 1)
-      } else if (e.code === 'ArrowDown') {
-        if (this.cursor.cell === measure - 1) this.cursor.cell = -1
-        this.moveRhythm(this.cursor.chapter, this.cursor.cell + 1)
-      } else if (e.code === 'ArrowLeft') {
-        if (this.tickIdx === 0) this.tickIdx = RHYTHM_OBJ.length
-        this.tickchange(this.tickIdx - 1)
-      } else if (e.code === 'ArrowRight') {
-        if (this.tickIdx === RHYTHM_OBJ.length - 1) this.tickIdx = -1
-        this.tickchange(this.tickIdx + 1)
-      } else return
-      e.preventDefault()
-    },
-    keypressNavHandler(e) {
-      if (this.cursor.blurred) return
-      if (this.cursor.select_mode) return
-      if (this.cursor.rhythmMode) return this.keypressRhythm(e)
+    keypressNavHandler(e: KeyboardEvent) {
+      if (this.player) return
+      const isRhythm = this.editor.cursor.rhythmMode
       switch (e.code) {
         /* Navigation */
         case 'ArrowUp':
-          this.music.moveUpDown(-1)
+          this.editor.moveUpDown('up')
           break
         case 'ArrowDown':
-          this.music.moveUpDown(+1)
+          this.editor.moveUpDown('down')
           break
         case 'ArrowLeft':
-          this.music.moveLeftRight(-1)
+          this.editor.moveLeftRight('left')
           break
         case 'ArrowRight':
-          this.music.moveLeftRight(+1)
+          this.editor.moveLeftRight('right')
           break
         /* Editing */
         case 'Space':
-          this.doWithBackup(
-            () => this.music.add('col'),
-            _ => this.music.backspace()
-          )
+          if (isRhythm) return
+          this.doWithBackup(() => this.editor.colbreak())
           break
         case 'Enter':
         case 'NumpadEnter':
-          if (e.ctrlKey) {
-            this.doWithBackup(
-              () => this.music.chapterbreak(),
-              _ => this.music.backspace()
-            )
-          } else if (e.shiftKey) {
-            this.doWithBackup(
-              () => this.music.rowbreak(),
-              _ => this.music.backspace()
-            )
+          if (isRhythm) return // TODO
+          if (e.shiftKey) {
+            this.doWithBackup(() => this.editor.rowbreak())
+          } else if (e.ctrlKey) {
+            this.doWithBackup(() => this.editor.chapterbreak())
           } else {
-            this.doWithBackup(
-              () => this.music.cellbreak(),
-              _ => this.music.backspace()
-            )
+            this.doWithBackup(() => this.editor.cellbreak())
           }
           break
         default:
@@ -423,40 +381,47 @@ export default {
       }
       e.preventDefault()
     },
-    keypressHandler(e) {
-      if (this.cursor.blurred) return
-      if (this.cursor.select_mode) return
-      if (this.cursor.rhythmMode) {
-        if (e.code === 'Backspace' || e.code === 'Delete') {
-          this.tickchange(0)
-          e.preventDefault()
-        }
-        return true
+    keypressRhythmHandler(e: KeyboardEvent) {
+      switch (e.code) {
+        case 'Backspace':
+        case 'Delete':
+          this.tickchange(-1)
+          break
+        default:
+          const prefix = e.code.slice(0, -1)
+          if (prefix === 'Digit' || prefix === 'Numpad') {
+            const idx = +e.code.slice(-1) - 1
+            if (hasNoModifierKey(e) && inRange(idx, RHYTHM_OBJ.length)) {
+              this.tickchange(idx)
+              break
+            }
+          }
+          return
       }
+      e.preventDefault()
+    },
+    keypressHandler(e: KeyboardEvent) {
+      if (this.player) return
+      if (this.editor.cursor.rhythmMode) return this.keypressRhythmHandler(e)
+
       switch (e.code) {
         case 'Home':
-          if (e.ctrlKey) {
-            this.music.set('chapter', 0)
-          } else {
-            let remainder =
-              this.cursor.cell % this.music.get('chapter').config.measure
-            this.music.set('cell', this.cursor.cell - remainder, 0)
-          }
+          e.ctrlKey ? this.editor.move('chapter', 0, 0) : this.editor.moveHome()
           break
         case 'End':
-          if (e.ctrlKey) {
-            this.music.set('chapter', -1, -1)
-          } else {
-            let measure = this.music.get('chapter').config.measure
-            let remainder = this.cursor.cell % measure
-            let dest = this.cursor.cell + measure - 1 - remainder
-            dest = Math.min(dest, this.music.get('cells').length - 1)
-            this.music.set('cell', dest, -1)
-          }
+          e.ctrlKey
+            ? this.editor.move('chapter', -1, -1)
+            : this.editor.moveEnd()
           break
         /* Editing */
         case 'Backspace':
-          this.backspace()
+          if (this.ime.isComposing()) {
+            const where = this.ime.grace ? 'modifier' : 'main'
+            const obj = this.ime.backspace()
+            this.write(where, obj, false)
+          } else {
+            this.doWithBackup(() => this.editor.backspace())
+          }
           break
         case 'Minus':
         case 'NumpadSubtract':
@@ -467,14 +432,7 @@ export default {
           }
           return
         case 'Delete':
-          if (this.music.get('col').main) {
-            this.erase()
-          } else {
-            this.doWithBackup(
-              () => this.music.deletekey(),
-              f => f()
-            )
-          }
+          this.doWithBackup(() => this.editor.deletekey())
           return
         case 'Slash':
           this.octavechange(-1)
@@ -505,21 +463,7 @@ export default {
             break
           }
 
-          const pitch2code = [
-            'KeyG',
-            'KeyE',
-            'KeyX',
-            'KeyU',
-            'KeyR',
-            'KeyW',
-            'KeyB',
-            'KeyD',
-            'KeyL',
-            'KeyS',
-            'KeyA',
-            'KeyM',
-          ]
-          let idxPitch = pitch2code.indexOf(e.code)
+          let idxPitch = PITCH2CODE.indexOf(e.code)
           if (idxPitch !== -1) {
             if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
             let octave = this.octave + (e.shiftKey ? 1 : 0) // TODO: maybe upto editor settings
@@ -538,82 +482,58 @@ export default {
     },
   },
   computed: {
-    view() {
-      return this.music.view()
+    gaks() {
+      return (this as any).music.asGaks() // ??
     },
-    undoable() {
-      return this.player.mode === 'stopped' && this.undoTravel > 0
+    undoable(): boolean {
+      return this.player == null && this.undoTravel > 0
     },
-    redoable() {
-      return (
-        this.player.mode === 'stopped' &&
-        this.undoTravel < this.undoHistory.length
-      )
+    redoable(): boolean {
+      return this.player == null && this.undoTravel < this.undoHistory.length
     },
-    configchapter() {
-      if (this.cursor.blurred) return
-      return this.music.chapters[this.cursor.chapter]
-    },
-    trillShow() {
+    trillShow(): TrillState {
       return {
         before: this.trill && this.trill.before != null,
         after: this.trill && this.trill.after != null,
       }
     },
-    canvasLabel() {
-      if (this.cursor.blurred) return '선택된 정간이 없습니다.'
-      const config = this.music.chapters[this.cursor.chapter].config
-      const chapterName = config.name
-      if (this.cursor.rhythmMode) {
+    canvasLabel(): string {
+      if (this.player) return ''
+      const chapterName = this.config.name
+      if (this.editor.cursor.rhythmMode) {
         return (
-          chapterName +
-          ' 장단 ' +
-          (this.cursor.cell + 1) +
-          '번째 정간 ' +
-          this.rhythm[this.cursor.cell]
+          `${chapterName} 장단 ${this.editor.cursor.cell + 1}번째 정간, ` +
+          this.config.rhythm[this.editor.cursor.cell]
         )
       }
 
-      const gak = Math.floor(
-        (this.cursor.cell + config.padding) / config.measure
-      )
-      let pos = this.cursor.cell
-      if (gak > 0) pos = (pos + config.padding) % config.measure
+      let pos = this.editor.cursor.cell
+      const gak = Math.floor((pos + this.config.padding) / this.config.measure)
+      if (gak > 0) pos = (pos + this.config.padding) % this.config.measure
 
-      const cell = this.music.get('cell')
-      const row = cell[this.cursor.row]
-      const col = row[this.cursor.col]
-      const main = col && col.main ? col.main.label : '빈칸'
-      const modifier = col && col.modifier ? col.modifier.label : ''
+      const numRows = this.editor.getLength('cell')
+      const numCols = this.editor.getLength('row')
+      const col = this.editor.get('col')
+      const main = col.main?.label ?? '빈칸'
+      const modifier = col.modifier?.label ?? ''
       return (
-        chapterName +
-        ' ' +
-        (gak + 1) +
-        '각 ' +
-        (pos + 1) +
-        '번째 정간, ' +
-        cell.length +
-        '행 중 ' +
-        (this.cursor.row + 1) +
-        '행, ' +
-        row.length +
-        '칸 중 ' +
-        (this.cursor.col + 1) +
-        '칸, ' +
-        main +
-        ' ' +
-        modifier
+        `${chapterName} ${gak + 1}각 ${pos + 1}번째 정간, ` +
+        `${numRows}행 중 ${this.editor.cursor.row + 1}행, ` +
+        `${numCols}열 중 ${this.editor.cursor.col + 1}열, ` +
+        `${main} ${modifier}`
       )
     },
   },
   created() {
-    this.init('새 곡')
+    this.create('새 곡')
   },
   mounted() {
-    document.addEventListener('keydown', this.keypressHandler)
+    document
+      .getElementById('keypress')
+      ?.addEventListener('keydown', this.keypressHandler)
     document
       .getElementById('workspace')
-      .addEventListener('keydown', this.keypressNavHandler)
+      ?.addEventListener('keydown', this.keypressNavHandler)
   },
   components: {
     keypanel,
@@ -624,12 +544,12 @@ export default {
     globalmodal,
     configmodal,
   },
-}
+})
 
-function hasNoModifierKey(e) {
+function hasNoModifierKey(e: KeyboardEvent) {
   return !(e.ctrlKey || e.shiftKey || e.altKey || e.metaKey)
 }
-function hasShiftKeyOnly(e) {
+function hasShiftKeyOnly(e: KeyboardEvent) {
   return !e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey
 }
 </script>

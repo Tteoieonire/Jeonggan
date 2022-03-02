@@ -1,35 +1,61 @@
 <template>
   <div class="d-inline-block">
-    <b-button-group class="mx-1 my-1">
-      <b-btn @click="rest" aria-label="쉼표">△</b-btn>
-    </b-button-group>
+    <b-button class="m-1" @click="rest" aria-label="쉼표">
+      <span aria-hidden="true">△</span>
+    </b-button>
 
     <b-button-group class="m-1" aria-label="율명 입력">
-      <b-btn :disabled="octave<=0" @click="lower" variant="outline-primary" aria-label="옥타브 내림">亻</b-btn>
+      <b-button
+        :disabled="octave <= 0"
+        @click="lower"
+        variant="outline-primary"
+        aria-label="옥타브 내림"
+        >亻</b-button
+      >
 
-      <b-btn
+      <b-button
         v-for="(yul, i) in yuls"
         :key="i"
         :title="yul.label"
+        :aria-label="yul.label"
         @click="note(i)"
         v-b-tooltip.hover
-      >{{yul.text}}</b-btn>
+        >{{ yul.text }}</b-button
+      >
 
-      <b-btn :disabled="octave>=4" @click="raise" variant="outline-primary" aria-label="옥타브 올림">氵</b-btn>
+      <b-button
+        :disabled="octave >= 4"
+        @click="raise"
+        variant="outline-primary"
+        aria-label="옥타브 올림"
+        >氵</b-button
+      >
     </b-button-group>
   </div>
 </template>
 
-<script>
-import { YUL_OBJ, REST_OBJ } from '../../constants.js'
+<script lang="ts">
+import { defineComponent, PropType } from 'vue'
 
-export default {
-  props: ['scale', 'octave'],
+import { YUL_OBJ, REST_OBJ } from '../../constants'
+import { MainEntry, ModifierEntry } from '../../symbols'
+
+export default defineComponent({
+  props: {
+    scale: { type: Array as PropType<number[]>, required: true },
+    octave: { type: Number, required: true },
+  },
+  emits: {
+    write(where: 'main' | 'modifier', obj: MainEntry | ModifierEntry) {
+      return true
+    },
+    octavechange: (delta: 1 | -1) => true,
+  },
   methods: {
     rest() {
       this.$emit('write', 'main', REST_OBJ)
     },
-    note(i) {
+    note(i: number) {
       let obj = this.yuls[i]
       this.$emit('write', 'main', obj)
     },
@@ -38,13 +64,13 @@ export default {
     },
     raise() {
       if (this.octave < 4) this.$emit('octavechange', +1)
-    }
+    },
   },
   computed: {
     yuls() {
       const obj = YUL_OBJ[this.octave]
-      return this.scale.map(x => obj[x]);
-    }
-  }
-}
+      return this.scale.map(x => obj[x])
+    },
+  },
+})
 </script>

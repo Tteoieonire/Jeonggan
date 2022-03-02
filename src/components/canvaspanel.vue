@@ -1,36 +1,48 @@
 <template>
-  <div>
+  <div class="gaks">
     <gak
-      v-for="(gak, i) in view.gaks"
-      :key="i"
+      v-for="gak in gaks"
+      :key="`${gak.chapterID}_${gak.gakIndex}`"
       :cursor="cursor"
       :gak="gak"
-      :maxMeasure="view.maxMeasure"
       @move="move"
       @moveRhythm="moveRhythm"
-      @openconfig="openconfig"
     ></gak>
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import Cursor from '@/cursor'
+import { Gak } from '@/music'
+import { defineComponent, PropType } from 'vue'
+
 import gak from './gak.vue'
 
-export default {
-  props: ['cursor', 'view'],
+export default defineComponent({
+  props: {
+    cursor: { type: Object as PropType<Cursor | undefined>, required: true },
+    gaks: { type: Object as PropType<Gak[]>, required: true }
+  },
+  emits: {
+    move: (chapter: number, cell: number, row: number, col: number) => true,
+    moveRhythm: (chapter: number, cell: number) => true
+  },
   methods: {
-    move(chapter, cell, row, col) {
+    move(chapter: number, cell: number, row: number, col: number) {
       this.$emit('move', chapter, cell, row, col)
     },
-    moveRhythm(chapter, cell) {
+    moveRhythm(chapter: number, cell: number) {
       this.$emit('moveRhythm', chapter, cell)
-    },
-    openconfig(chapter) {
-      this.$emit('openconfig', chapter)
     }
   },
-  components: {
-    gak
-  }
-}
+  components: { gak }
+})
 </script>
+
+<style scoped>
+.gaks {
+  display: flex;
+  flex-flow: row-reverse wrap;
+  align-items: flex-start;
+}
+</style>
