@@ -4,7 +4,7 @@
   "description": "모바일 정간보 작·편곡기",
   "scripts": {
     "build": "cross-env NODE_ENV=production webpack --progress",
-    "dev": "cross-env NODE_ENV=development webpack serve --open-app-name firefox"
+    "dev": "cross-env NODE_ENV=development webpack serve"
   },
   "dependencies": {
     "@babel/runtime": "^7.17.2",

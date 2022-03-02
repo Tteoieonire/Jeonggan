@@ -11,7 +11,7 @@ module.exports = {
   devtool: production ? 'cheap-module-source-map' : 'inline-source-map',
   entry: path.resolve(__dirname, './src/main.ts'),
   output: {
-    path: path.resolve(__dirname, './dist'),
+    path: path.resolve(__dirname, './'),
     filename: 'build.js',
   },
   module: {
@@ -49,13 +49,13 @@ module.exports = {
   },
   devServer: {
     static: {
-      directory: path.join(__dirname, 'dist'),
+      directory:__dirname,
     },
   },
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: './index.html',
+      template: './src/index.html',
     }),
     new VueLoaderPlugin(),
   ],
