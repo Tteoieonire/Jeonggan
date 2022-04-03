@@ -47,13 +47,18 @@
     @deletechapter="deletechapter"
   ></configmodal>
   <initmodal :title="title" @init="create"></initmodal>
-  <globalmodal :title="title" @rename="rename"></globalmodal>
+  <globalmodal
+    :title="title"
+    :instrument="instrument"
+    @rename="rename"
+  ></globalmodal>
 </template>
 
 <script lang="ts">
 import { saveAs } from 'file-saver'
 import { writeMidi } from 'midi-file'
 import { defineComponent } from 'vue'
+import { InstrumentName } from 'soundfont-player'
 
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
@@ -119,6 +124,7 @@ export default defineComponent({
   data() {
     return {
       title: '',
+      instrument: 'acoustic_grand_piano' as InstrumentName,
       music: undefined as unknown as Music,
       editor: undefined as unknown as MusicEditor,
       player: undefined as undefined | MusicPlayer,
@@ -143,8 +149,9 @@ export default defineComponent({
       this.editor.add('cell')
       this.init()
     },
-    load(title: string, chapters: Chapter[]) {
+    load(title: string, chapters: Chapter[], instrument: InstrumentName) {
       this.title = title
+      this.instrument = instrument
       this.music = new Music(chapters)
       this.editor = this.music.getEditor()
       this.init()
@@ -267,18 +274,19 @@ export default defineComponent({
     },
     async play(command: 'stop' | 'pause' | 'resume') {
       if (command === 'stop') {
-        await this.player?.stop()
-        delete this.player
+        this.player?.stop()
+        this.player = undefined
       } else if (command === 'pause') {
-        await this.player?.stop()
+        this.player?.stop()
       } else if (command === 'resume') {
         this.player = this.player || this.editor.asPlayer()
-        await this.player.play()
+        await this.player.play(this.instrument)
       }
-      if (this.player?.playing == null) this.player = undefined
+      if (this.player?.finished) this.player = undefined
     },
-    rename(title: string) {
+    rename(title: string, instrument: InstrumentName) {
       this.title = title
+      this.instrument = instrument
     },
     open(file: any) {
       // TODO: maybe warn user?
@@ -287,12 +295,12 @@ export default defineComponent({
         const result = e.target?.result
         if (typeof result !== 'string') return
         const data = deserializeMusic(result) // TODO: handle error
-        this.load(data.title, data.chapters)
+        this.load(data.title, data.chapters, data.instrument)
       })
       reader.readAsText(file)
     },
     save() {
-      const data = serializeMusic(this.title, this.music)
+      const data = serializeMusic(this.title, this.music, this.instrument)
       const blob = new Blob([data], { type: 'text/x-yaml' })
       let filename =
         this.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
@@ -302,7 +310,9 @@ export default defineComponent({
       const data = writeMidi(convertToMidi(this.music.getViewer()), {
         running: true,
       })
-      const blob = new Blob([Uint8Array.from(data)], { type: 'audio/midi' })
+      const blob = new Blob([Uint8Array.from(data)], {
+        type: 'audio/midi',
+      })
       let filename =
         this.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)

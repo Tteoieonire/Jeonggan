@@ -21,7 +21,7 @@ import gak from './gak.vue'
 export default defineComponent({
   props: {
     cursor: { type: Object as PropType<Cursor | undefined>, required: true },
-    gaks: { type: Object as PropType<Gak[]>, required: true }
+    gaks: { type: Object as PropType<Gak[]>, required: true },
   },
   emits: {
     move: (chapter: number, cell: number, row: number, col: number) => true,

@@ -5,6 +5,7 @@ import YAML from 'yaml'
 import { Cell, Chapter, Col, Config, Music, Row } from './music'
 import { YUL_OBJ, REST_OBJ } from './constants'
 import { MainEntry, querySymbol } from './symbols'
+import { InstrumentName } from 'soundfont-player'
 
 const INDENT = '  '
 const TABLE = '黃大太夾姑仲蕤林夷南無應'
@@ -54,10 +55,13 @@ function serializeChapter(chapter: Chapter) {
   )
 }
 
-function serializeMusic(title: string, music: Music) {
-  return (
-    '-\n' + INDENT + title + '\n-\n' + music.map(serializeChapter).join('\n-\n')
-  )
+function serializeMusic(
+  title: string,
+  music: Music,
+  instrument: InstrumentName
+) {
+  const header = YAML.stringify({ title, instrument })
+  return '-\n' + header + '-\n' + music.map(serializeChapter).join('\n-\n')
 }
 
 /**
@@ -92,9 +96,23 @@ function deserializeCells(string: string) {
     })
 }
 
+type Header = {
+  title: string
+  instrument: InstrumentName
+}
+function deserializeHeader(header: string | any): Header {
+  if (typeof header === 'string') {
+    return { title: header, instrument: 'acoustic_grand_piano' }
+  }
+  return {
+    title: header.title,
+    instrument: header.instrument || 'acoustic_grand_piano',
+  }
+}
+
 function deserializeMusic(yaml: string) {
   let contents = YAML.parse(yaml)
-  const title: string = contents.shift()
+  const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
     const rhythm: string[] = content.rhythm
       .split('\n')
@@ -115,7 +133,7 @@ function deserializeMusic(yaml: string) {
     const cells = deserializeCells(content.content)
     return new Chapter(config, cells)
   })
-  return { title, chapters }
+  return { title, chapters, instrument }
 }
 
 export { serializeMusic, deserializeMusic }

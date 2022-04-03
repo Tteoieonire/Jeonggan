@@ -1,4 +1,4 @@
-import { Player, instrument } from 'soundfont-player'
+import { Player, instrument, InstrumentName } from 'soundfont-player'
 
 import Cursor, { Level } from './cursor'
 import {
@@ -399,16 +399,23 @@ export class MusicViewer {
   }
 }
 
-const _promise = instrument(new AudioContext() as any, 'acoustic_grand_piano')
-let _player: Player | null = null
-async function getPlayer() {
-  if (_player == null) _player = await _promise
-  return _player
-}
-
 export class MusicPlayer extends MusicViewer {
-  playing?: boolean
+  protected static _ac = new AudioContext()
+  protected static _players: Partial<Record<InstrumentName, Player>> = {}
+
+  protected _player?: Player
   lastPitch?: number
+  finished = false
+
+  protected async getPlayer(_instrument: InstrumentName) {
+    if (!(_instrument in MusicPlayer._players)) {
+      MusicPlayer._players[_instrument] = await instrument(
+        MusicPlayer._ac,
+        _instrument
+      )
+    }
+    return MusicPlayer._players[_instrument]
+  }
 
   render(sori: Sori) {
     const scale = this.music[this.cursor.chapter].config.scale
@@ -420,9 +427,10 @@ export class MusicPlayer extends MusicViewer {
     }
   }
 
-  async play() {
-    this.playing = true
-    const player = await getPlayer()
+  async play(instrument: InstrumentName) {
+    this.stop()
+    this.finished = false
+    this._player = await this.getPlayer(instrument)
     let notes: Note[]
     let lastPitch: number | undefined = undefined
     do {
@@ -431,7 +439,7 @@ export class MusicPlayer extends MusicViewer {
       const duration = this.colDuration()
 
       if (cur?.main) {
-        player.stop()
+        this._player?.stop()
         if (cur.main.pitch) {
           const sori: Sori = {
             time: 0,
@@ -443,24 +451,23 @@ export class MusicPlayer extends MusicViewer {
 
           ;[notes, lastPitch] = this.render(sori)
           for (const note of notes) {
-            player.stop()
-            if (!this.playing) return
-            player.start('' + note.pitch)
+            if (!this._player) return
+            this._player.stop()
+            this._player.start('' + note.pitch)
             await sleep(note.duration)
           }
           continue
         }
       }
       await sleep(duration)
-    } while (this.playing && (this.stepCol() || this.stepChapter()))
-    player.stop()
-    this.playing = undefined
+    } while (this._player && (this.stepCol() || this.stepChapter()))
+    this.stop()
+    this.finished = true
   }
 
-  async stop() {
-    this.playing = false
-    const player = await getPlayer()
-    player.stop()
+  stop() {
+    this._player?.stop()
+    delete this._player
   }
 }
 
