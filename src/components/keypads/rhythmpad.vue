@@ -28,7 +28,7 @@ export default defineComponent({
     },
     change(i: number) {
       this.$emit('tickchange', i)
-    }
-  }
+    },
+  },
 })
 </script>

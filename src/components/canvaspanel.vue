@@ -25,7 +25,7 @@ export default defineComponent({
   },
   emits: {
     move: (chapter: number, cell: number, row: number, col: number) => true,
-    moveRhythm: (chapter: number, cell: number) => true
+    moveRhythm: (chapter: number, cell: number) => true,
   },
   methods: {
     move(chapter: number, cell: number, row: number, col: number) {
@@ -33,9 +33,9 @@ export default defineComponent({
     },
     moveRhythm(chapter: number, cell: number) {
       this.$emit('moveRhythm', chapter, cell)
-    }
+    },
   },
-  components: { gak }
+  components: { gak },
 })
 </script>
 

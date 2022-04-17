@@ -4,7 +4,8 @@
   "description": "모바일 정간보 작·편곡기",
   "scripts": {
     "build": "cross-env NODE_ENV=production webpack --progress",
-    "dev": "cross-env NODE_ENV=development webpack serve"
+    "dev": "cross-env NODE_ENV=development webpack serve",
+    "format": "prettier --write src"
   },
   "dependencies": {
     "@babel/runtime": "^7.17.2",
@@ -33,6 +34,7 @@
     "cross-env": "^7.0.3",
     "css-loader": "^6.6.0",
     "html-webpack-plugin": "^5.5.0",
+    "prettier": "2.6.2",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.6",
     "tsconfig-paths-webpack-plugin": "^3.5.2",

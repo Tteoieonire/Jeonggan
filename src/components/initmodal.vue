@@ -14,13 +14,13 @@ export default defineComponent({
   emits: { init: (name: string) => true },
   data() {
     return {
-      name: this.title
+      name: this.title,
     }
   },
   methods: {
     init() {
       this.$emit('init', this.name)
-    }
-  }
+    },
+  },
 })
 </script>

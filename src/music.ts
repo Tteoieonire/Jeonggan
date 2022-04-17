@@ -53,7 +53,7 @@ export class Chapter extends Array<Cell | undefined> {
 
   static get [Symbol.species]() {
     // Prevents weird behaviors when using native Array methods
-    return Array;
+    return Array
   }
 
   setConfig(config: Config) {
@@ -105,7 +105,7 @@ export class Music extends Array<Chapter> {
 
   static get [Symbol.species]() {
     // Prevents weird behaviors when using native Array methods
-    return Array;
+    return Array
   }
 
   asGaks() {
@@ -558,8 +558,8 @@ export class MusicEditor extends MusicViewer {
     const parent = this.get(parentLevel)
     if (!inRange(preyPos, parent)) return idOp
 
-    const obj =  parent.splice(preyPos, 1)
-    const children =obj[0]
+    const obj = parent.splice(preyPos, 1)
+    const children = obj[0]
     const numChildren = children?.length
     const config = (children as any)?.config
     if (children) this.get(what).push(...(children as any))

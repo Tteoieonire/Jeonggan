@@ -21,7 +21,7 @@ export default defineComponent({
     },
     reset() {
       this.name = this.title
-    }
-  }
+    },
+  },
 })
 </script>

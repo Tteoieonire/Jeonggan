@@ -36,7 +36,7 @@ import { defineComponent, PropType } from 'vue'
 
 export default defineComponent({
   props: {
-    for: { type: String as PropType<'col' | 'row'>, required: true }
+    for: { type: String as PropType<'col' | 'row'>, required: true },
   },
   emits: { shapechange: (type: 'row' | 'col', delta: 1 | -1) => true },
   methods: {
@@ -45,7 +45,7 @@ export default defineComponent({
     },
     del() {
       this.$emit('shapechange', this.for, -1)
-    }
+    },
   },
   computed: {
     label() {
@@ -53,8 +53,8 @@ export default defineComponent({
     },
     transform() {
       return this.for === 'col' ? 'rotate(90)' : ''
-    }
-  }
+    },
+  },
 })
 </script>
 
