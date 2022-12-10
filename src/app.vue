@@ -512,8 +512,8 @@ export default defineComponent({
       const chapterName = this.config.name
       if (this.editor.cursor.rhythmMode) {
         return (
-          `${chapterName} 장단 ${this.editor.cursor.cell + 1}번째 정간, ` +
-          this.config.rhythm[this.editor.cursor.cell]
+          this.config.rhythm[this.editor.cursor.cell] +
+          `, ${chapterName} 장단 ${this.editor.cursor.cell + 1}번째 정간`
         )
       }
 
@@ -527,10 +527,10 @@ export default defineComponent({
       const main = col.main?.label ?? '빈칸'
       const modifier = col.modifier?.label ?? ''
       return (
+        `${main} ${modifier}, ` +
         `${chapterName} ${gak + 1}각 ${pos + 1}번째 정간, ` +
         `${numRows}행 중 ${this.editor.cursor.row + 1}행, ` +
-        `${numCols}열 중 ${this.editor.cursor.col + 1}열, ` +
-        `${main} ${modifier}`
+        `${numCols}열 중 ${this.editor.cursor.col + 1}열`
       )
     },
   },
