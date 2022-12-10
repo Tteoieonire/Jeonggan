@@ -3,6 +3,7 @@
     <gak
       v-for="gak in gaks"
       :key="`${gak.chapterID}_${gak.gakIndex}`"
+      :anchor="anchor"
       :cursor="cursor"
       :gak="gak"
       @moveTo="moveTo"
@@ -19,6 +20,7 @@ import gak from './gak.vue'
 
 export default defineComponent({
   props: {
+    anchor: { type: Object as PropType<Cursor> },
     cursor: { type: Object as PropType<Cursor> },
     gaks: { type: Object as PropType<Gak[]>, required: true },
   },

@@ -35,8 +35,10 @@
       tabIndex="0"
       :aria-label="canvasLabel"
       :cursor="player?.cursor || editor.cursor"
+      :anchor="editor.anchor"
       :gaks="gaks"
       @moveTo="moveTo"
+      @click="discardSelection"
       id="workspace"
     ></canvaspanel>
   </div>
@@ -195,6 +197,9 @@ export default defineComponent({
       if (this.player != null) return
       this.editor.cursor.moveTo(coord)
     },
+    discardSelection() {
+      this.editor.discardSelection()
+    },
     write<K extends keyof EntryOf>(
       where: K,
       obj?: EntryOf[K],
@@ -350,15 +355,27 @@ export default defineComponent({
       switch (e.code) {
         /* Navigation */
         case 'ArrowUp':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
+
           this.editor.moveUpDown('up')
           break
         case 'ArrowDown':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
+
           this.editor.moveUpDown('down')
           break
         case 'ArrowLeft':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
+
           this.editor.moveLeftRight('left')
           break
         case 'ArrowRight':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
+
           this.editor.moveLeftRight('right')
           break
         /* Editing */
@@ -406,10 +423,17 @@ export default defineComponent({
       if (this.editor.cursor.rhythmMode) return this.keypressRhythmHandler(e)
 
       switch (e.code) {
+        case 'Escape':
+          this.editor.discardSelection()
+          return
         case 'Home':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
           e.ctrlKey ? this.editor.move('chapter', 0, 0) : this.editor.moveHome()
           break
         case 'End':
+          if (!e.shiftKey) this.editor.discardSelection()
+          else if (!this.editor.isSelecting) this.editor.createSelection()
           e.ctrlKey
             ? this.editor.move('chapter', -1, -1)
             : this.editor.moveEnd()

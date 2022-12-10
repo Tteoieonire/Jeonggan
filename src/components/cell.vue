@@ -10,6 +10,7 @@
       <el
         v-for="(x, c) in row"
         :key="c"
+        :anchor="anchor"
         :content="x"
         :coord="coordWith(r, c)"
         :cursor="cursor"
@@ -30,6 +31,7 @@ import { Cell, Row } from '@/music'
 
 export default defineComponent({
   props: {
+    anchor: { type: Object as PropType<Cursor> },
     cell: { type: Object as PropType<Cell> },
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },

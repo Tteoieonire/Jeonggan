@@ -1,12 +1,12 @@
-import { Player, instrument, InstrumentName } from 'soundfont-player'
+import { instrument, InstrumentName, Player } from 'soundfont-player'
 
 import Cursor, { Level } from './cursor'
 import {
   Note,
-  Sori,
   pitchToScaleIdx,
   renderNote,
   scaleIdxToPitch,
+  Sori,
 } from './renderer'
 import { MainEntry, ModifierEntry } from './symbols'
 import { clamp, clone, getID, inRange, sleep, wrappedIdx } from './utils'
@@ -471,7 +471,58 @@ export class MusicPlayer extends MusicViewer {
   }
 }
 
-export class MusicEditor extends MusicViewer {
+export class MusicSelector extends MusicViewer {
+  anchor?: Cursor
+
+  get isSelecting() {
+    return this.anchor != null
+  }
+  createSelection() {
+    this.anchor = this.cursor.clone()
+    console.log('create selection')
+  }
+  discardSelection() {
+    this.anchor = undefined
+    console.log('discard selection')
+  }
+
+  async stop() {
+    this.playing = false
+    const player = await getPlayer()
+    player.stop()
+  }
+}
+
+export class MusicSelector extends MusicViewer {
+  anchor?: Cursor
+
+  get isSelecting() {
+    return this.anchor != null
+  }
+  createSelection() {
+    this.anchor = this.cursor.clone()
+    console.log('create selection')
+  }
+  discardSelection() {
+    this.anchor = undefined
+    console.log('discard selection')
+  }
+
+  move(
+    what: keyof typeof PARENT_OF,
+    where: number,
+    snap: SNAP = SNAP.FRONT
+  ): UndoOp {
+    if (this.anchor?.rhythmMode === true) return idOp
+    return super.move(what, where, snap)
+  }
+  protected moveRhythm(cell: number): void {
+    if (this.anchor?.rhythmMode === false) return
+    super.moveRhythm(cell)
+  }
+}
+
+export class MusicEditor extends MusicSelector {
   get<K extends Level>(what: K): ElementOf[K] {
     // This one makes sure you DO get something valid.
     const music = this.music

@@ -31,6 +31,7 @@
         :key="getID(cell) ?? -i"
       >
         <cell
+          :anchor="anchor"
           :cell="cell"
           :coord="coord(false, i)"
           :cursor="cursor"
@@ -53,6 +54,7 @@ import cell from './cell.vue'
 
 export default defineComponent({
   props: {
+    anchor: { type: Object as PropType<Cursor> },
     cursor: { type: Object as PropType<Cursor> },
     gak: { type: Object as PropType<Gak>, required: true },
   },

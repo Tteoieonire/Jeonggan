@@ -1,5 +1,5 @@
 <template>
-  <div @click.stop="moveTo" :class="{ cur: isCur }" class="col">
+  <div @click.stop="moveTo" :class="{ cur: isCur, sel: isSel }" class="col">
     <span class="gugak">{{ main }}</span>
     <span v-if="content?.modifier" class="gugak modifier">{{
       'text' in content?.modifier
@@ -17,6 +17,7 @@ import { Col } from '@/music'
 
 export default defineComponent({
   props: {
+    anchor: { type: Object as PropType<Cursor> },
     content: { type: Object as PropType<Col> },
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
@@ -35,6 +36,10 @@ export default defineComponent({
       if (this.cursor == null) return false
       return this.cursor.isEqualTo(this.coord)
     },
+    isSel(): boolean {
+      if (this.anchor == null || this.cursor == null) return false
+      return this.coord.isBetween(this.anchor, this.cursor)
+    },
   },
 })
 </script>
@@ -49,6 +54,10 @@ export default defineComponent({
 
 .cur {
   background-color: #aaf;
+}
+
+.sel:not(.cur) {
+  background-color: #ddf;
 }
 
 .modifier {
