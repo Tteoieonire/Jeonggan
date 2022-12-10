@@ -1,84 +1,86 @@
 <template>
-  <b-container style="height: 100%">
-    <b-row
-      v-for="(row, r) in cell"
-      :key="getID(row) ?? -r"
+  <div class="container">
+    <div
+      v-for="(row, r) in rows"
+      :key="r"
       :style="getRowStyle(row)"
       align-v="center"
       class="myrow"
     >
-      <b-col
-        v-for="(col, c) in row"
-        :key="getID(col) ?? -c"
-        :class="{ cur: thisCol(r, c) }"
-        @click.stop="move(r, c)"
+      <el
+        v-for="(x, c) in row"
+        :key="c"
+        :content="x"
+        :coord="coordWith(r, c)"
+        :cursor="cursor"
+        @moveTo="moveTo"
+        class="mycol"
       >
-        <span class="gugak">{{ getMain(col) }}</span>
-        <span v-if="col && col.modifier" class="gugak modifier">{{
-          'text' in col.modifier ? col.modifier.text : col.modifier.texts[0]
-        }}</span>
-      </b-col>
-    </b-row>
-  </b-container>
+      </el>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
-import Cursor from '@/cursor'
 import { defineComponent, PropType } from 'vue'
 
-import { Cell, Row, Col } from '../music'
-import { getID } from '../utils'
+import col from './col.vue'
+import Cursor from '@/cursor'
+import { Cell, Row } from '@/music'
 
 export default defineComponent({
   props: {
-    thisCell: { type: Boolean, required: true },
-    cursor: { type: Cursor },
-    cell: { type: Object as PropType<Cell>, required: true },
+    cell: { type: Object as PropType<Cell> },
+    coord: { type: Object as PropType<Cursor>, required: true },
+    cursor: { type: Object as PropType<Cursor> },
   },
-  emits: { move: (row: number, col: number) => true },
+  emits: { moveTo: (coord: Cursor) => true },
   methods: {
     getRowStyle(row?: Row) {
-      const longest = Math.max(this.cell.length, row ? row.length : 1)
+      const longest = Math.max(this.rows.length, row?.length ?? 1)
       return {
-        fontSize: 1.5 * Math.exp(-0.2 * longest) + 'em',
-        height: 100 / this.cell.length + '%',
+        fontSize: 1.5 * Math.exp(-0.2 * longest) + 'rem',
+        // height: 100 / this.cell.length + '%',
       }
     },
-    getMain(col?: Col) {
-      return col && col.main ? col.main.text : '-'
+    coordWith(r: number, c: number): Cursor {
+      const coord = this.coord.clone()
+      coord.row = r
+      coord.col = c
+      return coord
     },
-    move(r: number, c: number) {
-      this.$emit('move', r, c)
+    moveTo(coord: Cursor) {
+      this.$emit('moveTo', coord)
     },
-    thisCol(r: number, c: number) {
-      if (!this.thisCell) return false
-      return this.cursor?.row === r && this.cursor?.col === c
+  },
+  computed: {
+    rows() {
+      return this.cell ?? [new Array(1)]
     },
-    getID,
+  },
+  components: {
+    el: col,
   },
 })
 </script>
 
 <style scoped>
+.container {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
 .myrow {
-  width: 3rem;
+  display: flex;
+  flex-direction: row;
+
+  flex-grow: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-  /**/
 }
 
-.myrow > * {
-  padding: 0 !important;
-}
-
-.cur {
-  background-color: darkblue;
-}
-
-.modifier {
-  font-size: 70%;
-  vertical-align: 15%;
+.mycol {
+  flex-grow: 1;
 }
 </style>

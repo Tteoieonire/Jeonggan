@@ -92,8 +92,34 @@ class Cursor implements Position {
     this._move({ rhythmMode: true, chapter, cell, row: 0, col: 0 })
   }
 
-  moveTo(other: Cursor) {
+  moveTo(other: Position) {
     this._move(other)
+  }
+
+  isLessThan(other: Cursor) {
+    if (this.rhythmMode !== other.rhythmMode)
+      throw Error('Cannot compare cursors of different rhythmMode.')
+
+    if (this.chapter !== other.chapter) return this.chapter < other.chapter
+    if (this.cell !== other.cell) return this.cell < other.cell
+    if (this.row !== other.row) return this.row < other.row
+    return this.col < other.col
+  }
+
+  isEqualTo(other: Cursor) {
+    return (
+      this.rhythmMode === other.rhythmMode &&
+      this.chapter === other.chapter &&
+      this.cell === other.cell &&
+      this.row === other.row &&
+      this.col === other.col
+    )
+  }
+
+  isBetween(a: Cursor, b: Cursor) {
+    // Check if min{a, b} <= this <= max{a, b}
+    const [min, max] = a.isLessThan(b) ? [a, b] : [b, a]
+    return !(this.isLessThan(min) || max.isLessThan(this))
   }
 }
 

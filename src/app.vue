@@ -36,8 +36,7 @@
       :aria-label="canvasLabel"
       :cursor="player?.cursor || editor.cursor"
       :gaks="gaks"
-      @move="move"
-      @moveRhythm="moveRhythm"
+      @moveTo="moveTo"
       id="workspace"
     ></canvaspanel>
   </div>
@@ -60,30 +59,29 @@ import { writeMidi } from 'midi-file'
 import { defineComponent } from 'vue'
 import { InstrumentName } from 'soundfont-player'
 
+import canvaspanel from './components/canvaspanel.vue'
 import keypanel from './components/keypanel.vue'
 import menupanel from './components/menupanel.vue'
-import canvaspanel from './components/canvaspanel.vue'
 
-import initmodal from './components/initmodal.vue'
-import globalmodal from './components/globalmodal.vue'
 import configmodal from './components/configmodal.vue'
+import globalmodal from './components/globalmodal.vue'
+import initmodal from './components/initmodal.vue'
 
+import { REST_OBJ, RHYTHM_OBJ, YUL_OBJ } from './constants'
+import { convertToMidi } from './converter'
 import Cursor, { CoordLevel } from './cursor'
+import IME from './ime'
 import {
-  Config,
   Chapter,
+  Config,
   Music,
   MusicEditor,
   MusicPlayer,
   UndoOp,
 } from './music'
-import IME from './ime'
-import { querySymbol, TrillState } from './symbols'
-import { RHYTHM_OBJ, YUL_OBJ, REST_OBJ } from './constants'
-import { serializeMusic, deserializeMusic } from './serializer'
-import { EntryOf } from './symbols'
-import { convertToMidi } from './converter'
-import { inRange, wrappedIdx } from './utils'
+import { deserializeMusic, serializeMusic } from './serializer'
+import { EntryOf, querySymbol, TrillState } from './symbols'
+import { inRange } from './utils'
 
 /**
  * Controller
@@ -144,7 +142,7 @@ export default defineComponent({
       const chapters = [new Chapter(INIT_CONFIG)]
       this.music = new Music(chapters)
       this.editor = this.music.getEditor()
-      this.move(0, 0, 0, 0)
+      this.editor.cursor.move(0, 0, 0, 0)
       this.write('main', YUL_OBJ[this.octave][0])
       this.editor.add('cell')
       this.init()
@@ -193,16 +191,9 @@ export default defineComponent({
     updateChapter() {
       this.config = this.editor.get('chapter').config
     },
-    move(chapter: number, cell: number, row: number, col: number) {
+    moveTo(coord: Cursor) {
       if (this.player != null) return
-      this.editor.cursor.move(chapter, cell, row, col)
-    },
-    moveRhythm(chapter: number, cell: number) {
-      if (this.player != null) return
-      chapter = wrappedIdx(chapter, this.editor.getLength('music'))
-      cell = wrappedIdx(cell, this.config.rhythm.length)
-      this.editor.cursor.moveRhythm(chapter, cell)
-      this.updateRhythm()
+      this.editor.cursor.moveTo(coord)
     },
     write<K extends keyof EntryOf>(
       where: K,

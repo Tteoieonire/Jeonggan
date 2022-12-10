@@ -5,8 +5,7 @@
       :key="`${gak.chapterID}_${gak.gakIndex}`"
       :cursor="cursor"
       :gak="gak"
-      @move="move"
-      @moveRhythm="moveRhythm"
+      @moveTo="moveTo"
     ></gak>
   </div>
 </template>
@@ -20,19 +19,15 @@ import gak from './gak.vue'
 
 export default defineComponent({
   props: {
-    cursor: { type: Object as PropType<Cursor | undefined>, required: true },
+    cursor: { type: Object as PropType<Cursor> },
     gaks: { type: Object as PropType<Gak[]>, required: true },
   },
   emits: {
-    move: (chapter: number, cell: number, row: number, col: number) => true,
-    moveRhythm: (chapter: number, cell: number) => true,
+    moveTo: (coord: Cursor) => true,
   },
   methods: {
-    move(chapter: number, cell: number, row: number, col: number) {
-      this.$emit('move', chapter, cell, row, col)
-    },
-    moveRhythm(chapter: number, cell: number) {
-      this.$emit('moveRhythm', chapter, cell)
+    moveTo(coord: Cursor) {
+      this.$emit('moveTo', coord)
     },
   },
   components: { gak },

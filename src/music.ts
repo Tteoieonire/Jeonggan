@@ -504,7 +504,7 @@ export class MusicEditor extends MusicViewer {
   }
 
   trim() {
-    const el = this.get('cell')
+    const el = this.tryGet('cell')
     if (!isEmptyCell(el)) return
     this.get('chapter').splice(this.cursor.cell, 1, undefined)
   }
@@ -656,7 +656,7 @@ export class MusicEditor extends MusicViewer {
   }
 }
 
-function isEmptyCell(cell: Cell | undefined) {
+function isEmptyCell(cell?: Cell | null) {
   if (!cell) return true
   if (cell.length > 1) return false
   if (!cell[0]) return true

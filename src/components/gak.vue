@@ -11,7 +11,7 @@
       <b-list-group-item
         v-for="(tick, i) in gak.content"
         :key="i"
-        :active="thisCell(i, true)"
+        :active="cursor?.isEqualTo(coord(true, i))"
         @click="moveRhythm(i)"
         class="gugak"
         variant="info"
@@ -29,16 +29,15 @@
       <b-list-group-item
         v-for="(cell, i) in gak.content"
         :key="getID(cell) ?? -i"
-        :active="thisCell(i, false)"
-        @click="move(i, 0, 0)"
       >
         <cell
-          v-if="cell"
-          :thisCell="thisCell(i, false)"
-          :cursor="cursor"
           :cell="cell"
-          @move="(r, c) => move(i, r, c)"
-        ></cell>
+          :coord="coord(false, i)"
+          :cursor="cursor"
+          @moveTo="moveTo"
+          class="cell"
+        >
+        </cell>
       </b-list-group-item>
     </b-list-group>
   </div>
@@ -47,10 +46,10 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import cell from './cell.vue'
 import Cursor from '@/cursor'
 import { Gak } from '@/music'
 import { getID } from '../utils'
+import cell from './cell.vue'
 
 export default defineComponent({
   props: {
@@ -58,28 +57,29 @@ export default defineComponent({
     gak: { type: Object as PropType<Gak>, required: true },
   },
   emits: {
-    move: (gak: number, cell: number, row: number, col: number) => true,
-    moveRhythm: (gak: number, cell: number) => true,
+    moveTo: (coord: Cursor) => true,
   },
   methods: {
-    thisCell(cell: number, rhythmMode: boolean) {
+    coord(
+      rhythmMode: boolean,
+      cell: number,
+      row: number = 0,
+      col: number = 0
+    ): Cursor {
       if (!rhythmMode) {
         cell += this.gak.gakIndex * this.gak.measure
         if (this.gak.gakIndex > 0) cell -= this.gak.padding
       }
-      return (
-        this.cursor?.rhythmMode === rhythmMode &&
-        this.cursor?.chapter === this.gak.chapterIndex &&
-        this.cursor?.cell === cell
-      )
+      return new Cursor(rhythmMode, this.gak.chapterIndex, cell, row, col)
     },
     move(cell: number, row: number, col: number) {
-      cell += this.gak.gakIndex * this.gak.measure
-      if (this.gak.gakIndex > 0) cell -= this.gak.padding
-      this.$emit('move', this.gak.chapterIndex, cell, row, col)
+      this.$emit('moveTo', this.coord(false, cell, row, col))
     },
     moveRhythm(cell: number) {
-      this.$emit('moveRhythm', this.gak.chapterIndex, cell)
+      this.$emit('moveTo', this.coord(true, cell))
+    },
+    moveTo(coord: Cursor) {
+      this.$emit('moveTo', coord)
     },
     getID,
   },
@@ -133,12 +133,17 @@ export default defineComponent({
 
 .gak > * {
   height: 3.5rem;
-  padding: 0 !important;
 }
 
 .rhythm > * {
   font-size: 1.5rem;
   line-height: 3.5rem;
   text-align: center;
+}
+</style>
+
+<style>
+.gak * {
+  padding: 0;
 }
 </style>
