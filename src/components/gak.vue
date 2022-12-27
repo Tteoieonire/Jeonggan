@@ -26,10 +26,7 @@
       :aria-label="label"
       :style="{ paddingTop: padding }"
     >
-      <b-list-group-item
-        v-for="(cell, i) in gak.content"
-        :key="getID(cell) ?? -i"
-      >
+      <b-list-group-item v-for="(cell, i) in gak.content" :key="cell.id">
         <cell
           :anchor="anchor"
           :cell="cell"

@@ -1,10 +1,10 @@
 <template>
   <div @click.stop="moveTo" :class="{ cur: isCur, sel: isSel }" class="col">
     <span class="gugak">{{ main }}</span>
-    <span v-if="content?.modifier" class="gugak modifier">{{
-      'text' in content?.modifier
-        ? content?.modifier.text
-        : content?.modifier.texts[0]
+    <span v-if="content.data.modifier" class="gugak modifier">{{
+      'text' in content.data.modifier
+        ? content.data.modifier.text
+        : content.data.modifier.texts[0]
     }}</span>
   </div>
 </template>
@@ -18,7 +18,7 @@ import { Col } from '@/music'
 export default defineComponent({
   props: {
     anchor: { type: Object as PropType<Cursor> },
-    content: { type: Object as PropType<Col> },
+    content: { type: Object as PropType<Col>, required: true },
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
   },
@@ -30,7 +30,7 @@ export default defineComponent({
   },
   computed: {
     main() {
-      return this.content?.main?.text || '-'
+      return this.content.data.main?.text || '-'
     },
     isCur(): boolean {
       if (this.cursor == null) return false

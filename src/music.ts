@@ -9,7 +9,15 @@ import {
   Sori,
 } from './renderer'
 import { MainEntry, ModifierEntry } from './symbols'
-import { clamp, clone, getID, inRange, sleep, wrappedIdx } from './utils'
+import {
+  clamp,
+  clone,
+  getID,
+  inRange,
+  sleep,
+  WithID,
+  wrappedIdx,
+} from './utils'
 
 const idOp: UndoOp = () => {}
 const enum SNAP {
@@ -36,24 +44,31 @@ export type Gak = {
   padding: number
 } & (
   | { rhythm: true; content: Array<string> }
-  | { rhythm: false; content: Array<Cell | undefined> }
+  | { rhythm: false; content: Array<Cell> }
 )
 
-export type Col = { main?: MainEntry; modifier?: ModifierEntry }
-export type Row = (Col | undefined)[]
-export type Cell = (Row | undefined)[]
+export type Entry = { main?: MainEntry; modifier?: ModifierEntry }
+export type Col = WithID<Entry>
+export type Row = WithID<Col[]>
+export type Cell = WithID<Row[]>
 
-export class Chapter extends Array<Cell | undefined> {
+function _make<K extends 'col' | 'row' | 'cell'>(what: K): ElementOf[K] {
+  const col: Col = { id: getID(), data: {} }
+  if (what === 'col') return col as any
+  const row: Row = { id: getID(), data: [col] }
+  if (what === 'row') return row as any
+  const cell: Cell = { id: getID(), data: [row] }
+  return cell as any
+}
+
+export class Chapter {
+  id: number
   config: Config
-  constructor(config: Config, cells?: (Cell | undefined)[]) {
-    cells = cells || [undefined]
-    super(...cells)
+  data: Cell[]
+  constructor(config: Config, cells?: Cell[]) {
+    this.id = getID()
     this.config = config
-  }
-
-  static get [Symbol.species]() {
-    // Prevents weird behaviors when using native Array methods
-    return Array
+    this.data = cells || [_make('cell')]
   }
 
   setConfig(config: Config) {
@@ -61,13 +76,12 @@ export class Chapter extends Array<Cell | undefined> {
   }
 
   asGaks(chapterIndex: number): Gak[] {
-    const ID = getID(this)
     let gaks: Gak[] = []
     const measure = this.config.measure
     if (!this.config.hideRhythm) {
       gaks.push({
         title: this.config.name,
-        chapterID: ID,
+        chapterID: this.id,
         chapterIndex,
         gakIndex: -1,
         rhythm: true,
@@ -77,12 +91,12 @@ export class Chapter extends Array<Cell | undefined> {
       })
     }
 
-    const numGaks = Math.ceil(this.length / measure)
+    const numGaks = Math.ceil(this.data.length / measure)
     for (let i = 0; i < numGaks; i++) {
-      const sliced = this.slice(i * measure, (i + 1) * measure)
+      const sliced = this.data.slice(i * measure, (i + 1) * measure)
       gaks.push({
         title: this.config.name,
-        chapterID: ID,
+        chapterID: this.id,
         chapterIndex,
         gakIndex: i,
         rhythm: false,
@@ -95,21 +109,16 @@ export class Chapter extends Array<Cell | undefined> {
   }
 }
 
-export class Music extends Array<Chapter> {
+export class Music {
   private _editor?: MusicEditor
+  data: Chapter[]
 
   constructor(chapters?: Chapter[]) {
-    chapters = chapters || []
-    super(...chapters)
-  }
-
-  static get [Symbol.species]() {
-    // Prevents weird behaviors when using native Array methods
-    return Array
+    this.data = chapters || []
   }
 
   asGaks() {
-    return this.flatMap((chapter, i) => chapter.asGaks(i))
+    return this.data.flatMap((chapter, i) => chapter.asGaks(i))
   }
 
   getViewer() {
@@ -170,30 +179,25 @@ export class MusicViewer {
   }
 
   /* Operations */
-  tryGet<K extends Level>(what: K): ElementOf[K] | null {
+  get<K extends Level>(what: K): ElementOf[K] {
     const music = this.music
     if (what === 'music') return music as any
 
-    const chapter = music[this.cursor.chapter]
-    if (chapter == null) throw new Error('Invalid chapter index')
+    const chapter = music.data[this.cursor.chapter]
     if (what === 'chapter') return chapter as any
 
-    let cell = chapter[this.cursor.cell]
-    if (cell == null) return null
+    const cell = chapter.data[this.cursor.cell]
     if (what === 'cell') return cell as any
 
-    let row = cell[this.cursor.row]
-    if (row == null) return null
+    const row = cell.data[this.cursor.row]
     if (what === 'row') return row as any
 
-    let col = row[this.cursor.col]
-    if (col == null) return null
+    const col = row.data[this.cursor.col]
     return col as any
   }
 
   getLength(what: keyof typeof CHILD_OF): number {
-    const el = this.tryGet(what)
-    return el == null ? 1 : el.length
+    return this.get(what).data.length
   }
 
   move(
@@ -215,7 +219,7 @@ export class MusicViewer {
 
   protected moveRhythm(cell: number): void {
     const chapter = this.cursor.chapter
-    cell = clamp(cell, this.music[chapter].config.measure)
+    cell = clamp(cell, this.music.data[chapter].config.measure)
     this.cursor.moveRhythm(chapter, cell)
   }
 
@@ -259,14 +263,14 @@ export class MusicViewer {
 
   stepChapter(delta: 1 | -1 = +1): boolean {
     const destPos = this.cursor.chapter + delta
-    if (!inRange(destPos, this.music)) return false
+    if (!inRange(destPos, this.music.data)) return false
     const snap = delta > 0 ? SNAP.FRONT : SNAP.BACK
     this.move('chapter', destPos, snap)
     return true
   }
 
   colDuration(ticksPerCell = 0) {
-    const tempo = this.music[this.cursor.chapter].config.tempo
+    const tempo = this.music.data[this.cursor.chapter].config.tempo
     if (!ticksPerCell) ticksPerCell = 60000 / tempo // milliseconds
     const numRows = this.getLength('cell')
     const numCols = this.getLength('row')
@@ -279,7 +283,7 @@ export class MusicViewer {
     let lastPitch = null
     let distance = 0
     do {
-      const pitch = viewer.tryGet('col')?.main?.pitch
+      const pitch = viewer.get('col').data.main?.pitch
       if (typeof pitch === 'number') {
         lastPitch = pitch + 51
         break
@@ -293,11 +297,11 @@ export class MusicViewer {
       distance--
       if (distance === 0) return lastPitch
 
-      const pitch = viewer.tryGet('col')?.main?.pitch
+      const pitch = viewer.get('col').data.main?.pitch
       if (pitch == null) continue
       if (typeof pitch === 'number') break
 
-      const scale = viewer.music[viewer.cursor.chapter].config.scale
+      const scale = viewer.music.data[viewer.cursor.chapter].config.scale
       const offset = +pitch[pitch.length - 1] - 3
       const scaleIdx = pitchToScaleIdx(lastPitch, scale)
       lastPitch = scaleIdxToPitch(scaleIdx + offset, scale)
@@ -306,11 +310,11 @@ export class MusicViewer {
   }
 
   protected _gak(cell: number) {
-    const config = this.music[this.cursor.chapter].config
+    const config = this.music.data[this.cursor.chapter].config
     return Math.floor((cell + config.padding) / config.measure)
   }
   protected _jeong(cell: number) {
-    const config = this.music[this.cursor.chapter].config
+    const config = this.music.data[this.cursor.chapter].config
     return (cell + config.padding) % config.measure
   }
   moveHome() {
@@ -318,7 +322,7 @@ export class MusicViewer {
     this.move('cell', this.cursor.cell - jeong, SNAP.FRONT)
   }
   moveEnd() {
-    const measure = this.music[this.cursor.chapter].config.measure
+    const measure = this.music.data[this.cursor.chapter].config.measure
     const jeong = this._jeong(this.cursor.cell)
     this.move('cell', this.cursor.cell - jeong + (measure - 1), SNAP.BACK)
   }
@@ -336,7 +340,7 @@ export class MusicViewer {
     this.move('col', Math.floor(src * this.getLength('row')))
   }
   moveLeftRight(direction: 'left' | 'right'): void {
-    let chapter = this.music[this.cursor.chapter]
+    let chapter = this.music.data[this.cursor.chapter]
     let config = chapter.config
     let delta = direction === 'right' ? +1 : -1
     const snap = direction === 'right' ? SNAP.FRONT : SNAP.BACK
@@ -353,7 +357,7 @@ export class MusicViewer {
       return
     }
 
-    if (inRange(this._gak(destPos), this._gak(chapter.length - 1) + 1))
+    if (inRange(this._gak(destPos), this._gak(chapter.data.length - 1) + 1))
       this.moveClamp('cell', destPos, snap)
     else if (!config.hideRhythm && direction === 'right')
       this.moveRhythm(this.cursor.cell + config.padding)
@@ -361,17 +365,17 @@ export class MusicViewer {
   }
   private _moveLeftRightRhythm(direction: 'left' | 'right'): void {
     if (direction === 'left') {
-      let chapter = this.music[this.cursor.chapter]
+      let chapter = this.music.data[this.cursor.chapter]
       let config = chapter.config
       this.moveClamp('cell', this.cursor.cell - config.padding, SNAP.BACK)
     } else if (this.cursor.chapter > 0) {
       const srcPos = this.cursor.cell
       this.move('chapter', this.cursor.chapter - 1)
 
-      let chapter = this.music[this.cursor.chapter]
+      let chapter = this.music.data[this.cursor.chapter]
       let config = chapter.config
-      const tail = (chapter.length + config.padding) % config.measure
-      this.moveClamp('cell', chapter.length - tail + srcPos, SNAP.FRONT)
+      const tail = (chapter.data.length + config.padding) % config.measure
+      this.moveClamp('cell', chapter.data.length - tail + srcPos, SNAP.FRONT)
     }
   }
   private _moveLeftRightChapter(direction: 'left' | 'right'): void {
@@ -383,13 +387,13 @@ export class MusicViewer {
 
     // set chapter
     if (!this.moveClamp('chapter', this.cursor.chapter + delta, snap)) return
-    const chapter = this.music[this.cursor.chapter]
+    const chapter = this.music.data[this.cursor.chapter]
     const config = chapter.config
 
     // set cell
     if (!config.hideRhythm && direction === 'left')
       return this.moveRhythm(srcJeong)
-    const head = chapter.length - this._jeong(chapter.length)
+    const head = chapter.data.length - this._jeong(chapter.data.length)
     const destPos = srcJeong + (direction === 'left' ? -config.padding : head)
     if (!this.moveClamp('cell', destPos, snap)) return
 
@@ -418,7 +422,7 @@ export class MusicPlayer extends MusicViewer {
   }
 
   render(sori: Sori) {
-    const scale = this.music[this.cursor.chapter].config.scale
+    const scale = this.music.data[this.cursor.chapter].config.scale
     try {
       return renderNote(sori, scale, this.lastPitch)
     } catch (e) {
@@ -435,17 +439,17 @@ export class MusicPlayer extends MusicViewer {
     let lastPitch: number | undefined = undefined
     do {
       this.lastPitch = lastPitch ?? this.lastPitch
-      const cur = this.tryGet('col')
+      const cur = this.get('col')
       const duration = this.colDuration()
 
-      if (cur?.main) {
+      if (cur?.data?.main) {
         this._player?.stop()
-        if (cur.main.pitch) {
+        if (cur.data.main.pitch) {
           const sori: Sori = {
             time: 0,
             duration,
-            main: cur.main,
-            modifier: cur.modifier,
+            main: cur.data.main,
+            modifier: cur.data.modifier,
             headDuration: duration,
           }
 
@@ -523,60 +527,27 @@ export class MusicSelector extends MusicViewer {
 }
 
 export class MusicEditor extends MusicSelector {
-  get<K extends Level>(what: K): ElementOf[K] {
-    // This one makes sure you DO get something valid.
-    const music = this.music
-    if (what === 'music') return music as any
-
-    const chapter = music[this.cursor.chapter]
-    if (chapter == null) throw new Error('Invalid chapter index')
-    if (what === 'chapter') return chapter as any
-
-    let cell = chapter[this.cursor.cell]
-    if (cell == null) {
-      cell = [new Array(1)]
-      chapter.splice(this.cursor.cell, 1, cell)
-    }
-    if (what === 'cell') return cell as any
-
-    let row = cell[this.cursor.row]
-    if (row == null) {
-      row = new Array(1)
-      cell.splice(this.cursor.row, 1, row)
-    }
-    if (what === 'row') return row as any
-
-    let col = row[this.cursor.col]
-    if (col == null) {
-      col = {}
-      row.splice(this.cursor.col, 1, col)
-    }
-    return col as any
-  }
-
-  trim() {
-    const el = this.tryGet('cell')
-    if (!isEmptyCell(el)) return
-    this.get('chapter').splice(this.cursor.cell, 1, undefined)
-  }
-
   /* Button action */
   add<T extends keyof typeof PARENT_OF>(what: T, obj?: ElementOf[T]): UndoOp {
     const destPos = this.cursor[what] + 1
-    if (what === 'chapter' && obj == null) {
-      const config = newConfigFrom(this.get('chapter').config)
-      obj = new Chapter(config) as any
+    if (obj == null) {
+      if (what === 'chapter') {
+        const config = newConfigFrom(this.get('chapter').config)
+        obj = new Chapter(config) as any
+      } else {
+        obj = _make(what) as any
+      }
     }
-    this.get(PARENT_OF[what]).splice(destPos, 0, obj as any)
+    this.get(PARENT_OF[what]).data.splice(destPos, 0, obj as any)
     const undo = this.move(what, destPos)
     return () => {
       undo()
-      this.get(PARENT_OF[what]).splice(destPos, 1)
+      this.get(PARENT_OF[what]).data.splice(destPos, 1)
     }
   }
 
   del(what: keyof typeof PARENT_OF): UndoOp {
-    const arr = this.get(PARENT_OF[what])
+    const arr = this.get(PARENT_OF[what]).data
     const idx = this.cursor[what]
     if (arr.length === 1) return this.erase(what)
 
@@ -584,27 +555,27 @@ export class MusicEditor extends MusicSelector {
       idx === arr.length - 1 ? this.move(what, idx - 1, SNAP.BACK) : idOp
     const old = arr.splice(idx, 1)[0]
     return () => {
-      this.get(PARENT_OF[what]).splice(idx, 0, old as any)
+      this.get(PARENT_OF[what]).data.splice(idx, 0, old as any)
       undo()
     }
   }
 
-  write<T extends keyof typeof PARENT_OF>(what: T, obj?: ElementOf[T]): UndoOp {
-    const arr = this.get(PARENT_OF[what])
+  write<T extends keyof typeof PARENT_OF>(what: T, obj: ElementOf[T]): UndoOp {
+    const arr = this.get(PARENT_OF[what]).data
     const idx = this.cursor[what]
     const old = arr.splice(idx, 1, obj as any)[0]
     return () => {
-      this.get(PARENT_OF[what]).splice(idx, 1, old as any)
+      this.get(PARENT_OF[what]).data.splice(idx, 1, old as any)
     }
   }
 
   erase(what: keyof typeof PARENT_OF = 'col'): UndoOp {
-    if (what !== 'chapter') return this.write(what, undefined)
+    if (what !== 'chapter') return this.write(what, _make(what))
 
-    const chapter = this.get('chapter')
-    const old = chapter.splice(0, chapter.length, undefined)
+    const cells = this.get('chapter').data
+    const old = cells.splice(0, cells.length, _make('cell'))
     return () => {
-      this.get('chapter').splice(0, 1, ...old)
+      this.get('chapter').data.splice(0, 1, ...old)
     }
   }
 
@@ -614,35 +585,37 @@ export class MusicEditor extends MusicSelector {
     const preyPos = this.cursor[what] + 1
     const parentLevel = PARENT_OF[what]
     const parent = this.get(parentLevel)
-    if (!inRange(preyPos, parent)) return idOp
+    if (!inRange(preyPos, parent.data)) return idOp
 
-    const obj = parent.splice(preyPos, 1)
-    const children = obj[0]
+    const obj = parent.data.splice(preyPos, 1)
+    const children = obj[0]?.data
     const numChildren = children?.length
     const config = (children as any)?.config
-    if (children) this.get(what).push(...(children as any))
+    if (numChildren) this.get(what).data.push(...(children as any))
     const undo = this.mergeLater(CHILD_OF[what])
 
     return () => {
       undo()
-      const parent = this.get(parentLevel)
+      const parent = this.get(parentLevel).data
       if (numChildren) {
-        const el = this.get(what)
+        const el = this.get(what).data
         const tail = el.splice(el.length - numChildren, numChildren)
         if (what === 'chapter')
           parent.push(new Chapter(config, tail as any) as any)
         else parent.push(tail as any)
       } else {
-        parent.splice(preyPos, 0, undefined)
+        if (what === 'chapter') throw 'No empty chapter'
+        parent.splice(preyPos, 0, _make(what) as any)
       }
     }
   }
 
   getDelimiter(direction: 1 | -1 = +1): keyof typeof PARENT_OF | null {
-    if (this.get('col').main) return null
-    if (inRange(this.cursor.col + direction, this.get('row'))) return 'col'
-    if (inRange(this.cursor.row + direction, this.get('cell'))) return 'row'
-    if (inRange(this.cursor.cell + direction, this.get('chapter')))
+    if (this.get('col').data.main) return null
+    if (inRange(this.cursor.col + direction, this.get('row').data)) return 'col'
+    if (inRange(this.cursor.row + direction, this.get('cell').data))
+      return 'row'
+    if (inRange(this.cursor.cell + direction, this.get('chapter').data))
       return 'cell'
     return 'chapter'
   }
@@ -652,9 +625,9 @@ export class MusicEditor extends MusicSelector {
     if (delim == null) return this.erase()
     this.stepCol(-1) || this.stepChapter(-1)
     const undo = this.mergeLater(delim)
-    const old = this.get('row').splice(this.cursor.col + 1, 1)[0]
+    const old = this.get('row').data.splice(this.cursor.col + 1, 1)[0]
     return () => {
-      this.get('row').splice(this.cursor.col + 1, 0, old)
+      this.get('row').data.splice(this.cursor.col + 1, 0, old)
       undo()
       this.stepCol(+1) || this.stepChapter(+1)
     }
@@ -664,30 +637,39 @@ export class MusicEditor extends MusicSelector {
     const delim = this.getDelimiter(+1)
     if (delim == null) return this.erase()
     const undo = this.mergeLater(delim)
-    const old = this.get('row').splice(this.cursor.col, 1)[0]
+    const old = this.get('row').data.splice(this.cursor.col, 1)[0]
     return () => {
-      this.get('row').splice(this.cursor.col, 0, old)
+      this.get('row').data.splice(this.cursor.col, 0, old)
       undo()
     }
   }
 
   colbreak(): UndoOp {
-    this.add('col')
+    this.add('col', _make('col'))
     return () => this.backspace()
   }
 
   rowbreak(): UndoOp {
-    const newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
+    const newrow: Row = {
+      id: getID(),
+      data: this.get('row').data.splice(this.cursor.col + 1),
+    }
+    newrow.data.unshift(_make('col'))
     this.add('row', newrow)
     return () => this.backspace()
   }
 
   cellbreak(): UndoOp {
-    const newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
-    const newcell = this.get('cell').splice(this.cursor.row + 1)
-    newcell.unshift(newrow)
+    const newrow: Row = {
+      id: getID(),
+      data: this.get('row').data.splice(this.cursor.col + 1),
+    }
+    newrow.data.unshift(_make('col'))
+    const newcell: Cell = {
+      id: getID(),
+      data: this.get('cell').data.splice(this.cursor.row + 1),
+    }
+    newcell.data.unshift(_make('row'))
     this.add('cell', newcell)
     return () => this.backspace()
   }
@@ -696,24 +678,21 @@ export class MusicEditor extends MusicSelector {
     const chapter = this.get('chapter')
     if (!config) config = newConfigFrom(chapter.config)
 
-    const newrow = this.get('row').splice(this.cursor.col + 1)
-    newrow.unshift(undefined)
-    const newcell = this.get('cell').splice(this.cursor.row + 1)
-    newcell.unshift(newrow)
-    const newcells = chapter.splice(this.cursor.cell + 1)
+    const newrow: Row = {
+      id: getID(),
+      data: this.get('row').data.splice(this.cursor.col + 1),
+    }
+    newrow.data.unshift(_make('col'))
+    const newcell: Cell = {
+      id: getID(),
+      data: this.get('cell').data.splice(this.cursor.row + 1),
+    }
+    newcell.data.unshift(newrow)
+    const newcells = chapter.data.splice(this.cursor.cell + 1)
     newcells.unshift(newcell)
     this.add('chapter', new Chapter(config, newcells))
     return () => this.backspace()
   }
-}
-
-function isEmptyCell(cell?: Cell | null) {
-  if (!cell) return true
-  if (cell.length > 1) return false
-  if (!cell[0]) return true
-  if (cell[0].length > 1) return false
-  if (cell[0][0] && cell[0][0].main) return false
-  return true
 }
 
 function newConfigFrom(config: Config) {

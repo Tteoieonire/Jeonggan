@@ -1,32 +1,33 @@
 /**
  * Serializer
  */
-import YAML from 'yaml'
-import { Cell, Chapter, Col, Config, Music, Row } from './music'
-import { YUL_OBJ, REST_OBJ } from './constants'
-import { MainEntry, querySymbol } from './symbols'
 import { InstrumentName } from 'soundfont-player'
+import YAML from 'yaml'
+import { REST_OBJ, YUL_OBJ } from './constants'
+import { Cell, Chapter, Col, Config, Music, Row } from './music'
+import { MainEntry, querySymbol } from './symbols'
+import { getID, resetID } from './utils'
 
 const INDENT = '  '
 const TABLE = '黃大太夾姑仲蕤林夷南無應'
 
 function serializeCol(col?: Col) {
-  if (!col || !col.main) return '-'
-  const main = col.main.text
-  let _mod = col.modifier
+  if (!col?.data.main) return '-'
+  const main = col.data.main.text
+  let _mod = col.data.modifier
   if (!_mod) return main
   const modifier = 'text' in _mod ? _mod.text : _mod.texts[0]
   return main + ':' + modifier
 }
 
 function serializeRow(row?: Row) {
-  if (!row || row.length === 0) return INDENT + INDENT + '-'
-  return INDENT + INDENT + row.map(serializeCol).join(' ')
+  if (!row || row.data.length === 0) return INDENT + INDENT + '-'
+  return INDENT + INDENT + row.data.map(serializeCol).join(' ')
 }
 
 function serializeCell(cell?: Cell) {
-  if (!cell || cell.length === 0) return INDENT + INDENT + '-'
-  return cell.map(serializeRow).join('\n')
+  if (!cell || cell.data.length === 0) return INDENT + INDENT + '-'
+  return cell.data.map(serializeRow).join('\n')
 }
 
 function serializeScale(scale: number[]) {
@@ -51,7 +52,8 @@ function serializeConfig(config: Config) {
 
 function serializeChapter(chapter: Chapter) {
   return (
-    serializeConfig(chapter.config) + chapter.map(serializeCell).join('\n\n')
+    serializeConfig(chapter.config) +
+    chapter.data.map(serializeCell).join('\n\n')
   )
 }
 
@@ -61,7 +63,7 @@ function serializeMusic(
   instrument: InstrumentName
 ) {
   const header = YAML.stringify({ title, instrument })
-  return '-\n' + header + '-\n' + music.map(serializeChapter).join('\n-\n')
+  return '-\n' + header + '-\n' + music.data.map(serializeChapter).join('\n-\n')
 }
 
 /**
@@ -73,26 +75,32 @@ function _lookup(table: MainEntry[][], query: string): MainEntry | null {
   return found.length ? found[0] : null
 }
 
-function deserializeCol(col: string): Col | undefined {
+function deserializeCol(col: string): Col {
   const [_main, _mod] = col.trim().split(':')
-  if (_main === '-') return
-  if (_main === '△') return { main: REST_OBJ }
+  if (_main === '-') return { id: getID(), data: {} }
+  if (_main === '△') return { id: getID(), data: { main: REST_OBJ } }
   const main = _lookup(YUL_OBJ, _main) || querySymbol('main', _main, 'text')
   const modifier = _mod ? querySymbol('modifier', _mod, 'text') : undefined
-  return { main, modifier }
+  return { id: getID(), data: { main, modifier } }
 }
 
-function deserializeCells(string: string) {
+function deserializeCells(string: string): Cell[] {
   return string
     .trim()
     .split('\n\n')
     .map(function (cell) {
-      return cell
-        .trim()
-        .split('\n')
-        .map(function (row) {
-          return row.trim().split(' ').map(deserializeCol)
-        })
+      return {
+        id: getID(),
+        data: cell
+          .trim()
+          .split('\n')
+          .map(function (row) {
+            return {
+              id: getID(),
+              data: row.trim().split(' ').map(deserializeCol),
+            }
+          }),
+      }
     })
 }
 
@@ -111,6 +119,7 @@ function deserializeHeader(header: string | any): Header {
 }
 
 function deserializeMusic(yaml: string) {
+  resetID()
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {

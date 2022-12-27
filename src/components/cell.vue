@@ -2,14 +2,14 @@
   <div class="container">
     <div
       v-for="(row, r) in rows"
-      :key="r"
+      :key="row.id"
       :style="getRowStyle(row)"
       align-v="center"
       class="myrow"
     >
       <el
-        v-for="(x, c) in row"
-        :key="c"
+        v-for="(x, c) in row.data"
+        :key="x.id"
         :anchor="anchor"
         :content="x"
         :coord="coordWith(r, c)"
@@ -25,21 +25,21 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import col from './col.vue'
 import Cursor from '@/cursor'
 import { Cell, Row } from '@/music'
+import col from './col.vue'
 
 export default defineComponent({
   props: {
     anchor: { type: Object as PropType<Cursor> },
-    cell: { type: Object as PropType<Cell> },
+    cell: { type: Object as PropType<Cell>, required: true },
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
   },
   emits: { moveTo: (coord: Cursor) => true },
   methods: {
-    getRowStyle(row?: Row) {
-      const longest = Math.max(this.rows.length, row?.length ?? 1)
+    getRowStyle(row: Row) {
+      const longest = Math.max(this.rows.length, row.data.length)
       return {
         fontSize: 1.5 * Math.exp(-0.2 * longest) + 'rem',
         // height: 100 / this.cell.length + '%',
@@ -57,7 +57,7 @@ export default defineComponent({
   },
   computed: {
     rows() {
-      return this.cell ?? [new Array(1)]
+      return this.cell.data
     },
   },
   components: {

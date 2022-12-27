@@ -83,7 +83,7 @@ import {
 } from './music'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
-import { inRange } from './utils'
+import { getID, inRange } from './utils'
 
 /**
  * Controller
@@ -169,19 +169,17 @@ export default defineComponent({
       })
       this.editor.cursor.on('afterCellChange', () => this.updateRhythm())
       this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
-      this.editor.cursor.on('beforeCellChange', () => {
-        if (!this.editor.cursor.rhythmMode) this.editor.trim()
-      })
     },
     updateSympad() {
       if (this.editor.cursor.rhythmMode) return
       const el = this.editor.get('col')
       this.sigimShow =
-        !!el.main?.pitch &&
-        (typeof el.main.pitch === 'number' || el.main.pitch.length === 1)
+        !!el.data?.main?.pitch &&
+        (typeof el.data.main.pitch === 'number' ||
+          el.data.main.pitch.length === 1)
       this.trill = {}
-      if (el.modifier && el.modifier.trill) {
-        this.trill = el.modifier.trill
+      if (el.data?.modifier && el.data.modifier.trill) {
+        this.trill = el.data.modifier.trill
       }
     },
     updateRhythm() {
@@ -206,7 +204,10 @@ export default defineComponent({
       resetIME = true
     ) {
       this.doWithBackup(() => {
-        const el = { main: this.editor.get('col').main, [where]: obj }
+        const el = {
+          id: getID(),
+          data: { main: this.editor.get('col').data?.main, [where]: obj },
+        }
         return this.editor.write('col', el)
       })
       if (resetIME) this.ime.reset()
@@ -252,7 +253,7 @@ export default defineComponent({
       })
     },
     trillchange(trill: TrillState) {
-      let query = this.editor.get('col').modifier?.query
+      let query = this.editor.get('col').data?.modifier?.query
       if (query == null) return
       query = query.replace(/~/g, '')
       query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
@@ -539,8 +540,8 @@ export default defineComponent({
       const numRows = this.editor.getLength('cell')
       const numCols = this.editor.getLength('row')
       const col = this.editor.get('col')
-      const main = col.main?.label ?? '빈칸'
-      const modifier = col.modifier?.label ?? ''
+      const main = col.data?.main?.label ?? '빈칸'
+      const modifier = col.data?.modifier?.label ?? ''
       return (
         `${main} ${modifier}, ` +
         `${chapterName} ${gak + 1}각 ${pos + 1}번째 정간, ` +

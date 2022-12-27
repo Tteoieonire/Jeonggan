@@ -1,7 +1,7 @@
 import { MidiData, MidiEvent, MidiHeader } from 'midi-file'
 
 import { Config, MusicViewer } from './music'
-import { render, Note, Sori } from './renderer'
+import { Note, render, Sori } from './renderer'
 
 function chooseTimeSignatureDenominator(numerator: number) {
   if (numerator === 12) return 8
@@ -45,24 +45,24 @@ function convertChapter(
   lastPitch?: number,
   ticksPerCell?: number
 ): [Note[], number, number | undefined] {
-  const chapter = viewer.music[viewer.cursor.chapter]
+  const chapter = viewer.music.data[viewer.cursor.chapter]
   const ticksPerSecond =
     ticksPerCell && (ticksPerCell * chapter.config.tempo) / 60
 
   let soris: Sori[] = []
   let ongoing = false
   do {
-    const cur = viewer.tryGet('col')
+    const cur = viewer.get('col')
     const duration = viewer.colDuration(ticksPerCell)
 
-    if (cur && cur.main) {
-      ongoing = !!cur.main.pitch // no ongoing if rest
+    if (cur?.data?.main) {
+      ongoing = !!cur.data.main.pitch // no ongoing if rest
       if (ongoing) {
         const sori: Sori = {
           time,
           duration,
-          main: cur.main,
-          modifier: cur.modifier,
+          main: cur.data.main,
+          modifier: cur.data.modifier,
           headDuration: duration,
         }
         soris.push(sori)
@@ -131,7 +131,7 @@ export function convertToMidi(viewer: MusicViewer): MidiData {
 
   let lastPitch = viewer.getLastPitch()
   do {
-    const chapter = viewer.tryGet('chapter')
+    const chapter = viewer.get('chapter')
     if (chapter == null) throw ''
     track.push(...convertConfigToMidi(chapter.config))
     let notes: Note[]
