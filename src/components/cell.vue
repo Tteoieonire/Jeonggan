@@ -15,6 +15,7 @@
         :coord="coordWith(r, c)"
         :cursor="cursor"
         @moveTo="moveTo"
+        @selectTo="selectTo"
         class="mycol"
       >
       </el>
@@ -36,7 +37,10 @@ export default defineComponent({
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
   },
-  emits: { moveTo: (coord: Cursor) => true },
+  emits: {
+    moveTo: (coord: Cursor) => true,
+    selectTo: (coord: Cursor) => true,
+  },
   methods: {
     getRowStyle(row: Row) {
       const longest = Math.max(this.rows.length, row.data.length)
@@ -53,6 +57,9 @@ export default defineComponent({
     },
     moveTo(coord: Cursor) {
       this.$emit('moveTo', coord)
+    },
+    selectTo(coord: Cursor) {
+      this.$emit('selectTo', coord)
     },
   },
   computed: {

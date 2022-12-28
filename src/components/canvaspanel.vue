@@ -7,6 +7,7 @@
       :cursor="cursor"
       :gak="gak"
       @moveTo="moveTo"
+      @selectTo="selectTo"
     ></gak>
   </div>
 </template>
@@ -26,10 +27,14 @@ export default defineComponent({
   },
   emits: {
     moveTo: (coord: Cursor) => true,
+    selectTo: (coord: Cursor) => true,
   },
   methods: {
     moveTo(coord: Cursor) {
       this.$emit('moveTo', coord)
+    },
+    selectTo(coord: Cursor) {
+      this.$emit('selectTo', coord)
     },
   },
   components: { gak },

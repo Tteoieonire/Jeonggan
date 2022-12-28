@@ -38,6 +38,7 @@
       :anchor="editor.anchor"
       :gaks="gaks"
       @moveTo="moveTo"
+      @selectTo="selectTo"
       @click="discardSelection"
       id="workspace"
     ></canvaspanel>
@@ -74,6 +75,7 @@ import { convertToMidi } from './converter'
 import Cursor, { CoordLevel } from './cursor'
 import IME from './ime'
 import {
+  Alphabet,
   Chapter,
   Config,
   Music,
@@ -118,6 +120,8 @@ type UndoRecord = {
   redo: () => UndoOp
   oldCursor: Cursor
   newCursor: Cursor
+  oldAnchor?: Cursor
+  newAnchor?: Cursor
 }
 
 export default defineComponent({
@@ -136,6 +140,7 @@ export default defineComponent({
       ime: new IME(),
       undoHistory: [] as Array<UndoRecord>,
       undoTravel: 0,
+      clipboard: undefined as undefined | Alphabet[],
     }
   },
   methods: {
@@ -162,6 +167,7 @@ export default defineComponent({
       this.undoTravel = 0
       this.updateChapter()
       this.updateSympad()
+      this.ime.reset()
 
       this.editor.cursor.on('afterColChange', () => {
         this.updateSympad()
@@ -193,6 +199,14 @@ export default defineComponent({
     },
     moveTo(coord: Cursor) {
       if (this.player != null) return
+      this.editor.discardSelection()
+      this.editor.cursor.moveTo(coord)
+    },
+    selectTo(coord: Cursor) {
+      if (this.player != null) return
+      if (this.editor.cursor.rhythmMode || coord.rhythmMode)
+        this.editor.discardSelection()
+      else if (!this.editor.isSelecting) this.editor.createSelection()
       this.editor.cursor.moveTo(coord)
     },
     discardSelection() {
@@ -269,6 +283,14 @@ export default defineComponent({
     deletechapter() {
       this.doWithBackup(() => this.editor.del('chapter'))
     },
+    deleteSelection() {
+      if (this.editor.isSelecting) {
+        this.doWithBackup(() => {
+          const old = this.editor.cut()
+          return () => this.editor.paste(old)
+        })
+      }
+    },
     async play(command: 'stop' | 'pause' | 'resume') {
       if (command === 'stop') {
         this.player?.stop()
@@ -321,10 +343,19 @@ export default defineComponent({
       this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
 
       const oldCursor = this.editor.cursor.clone()
+      const oldAnchor = this.editor.anchor?.clone()
       const undo = op()
       const newCursor = this.editor.cursor.clone()
+      const newAnchor = this.editor.anchor?.clone()
       this.updateSympad()
-      this.undoHistory.push({ undo, redo: op, oldCursor, newCursor })
+      this.undoHistory.push({
+        undo,
+        redo: op,
+        oldCursor,
+        newCursor,
+        oldAnchor,
+        newAnchor,
+      })
       this.undoTravel += 1
 
       if (this.undoTravel > MAX_HISTORY) {
@@ -336,7 +367,8 @@ export default defineComponent({
       this.ime.reset()
       if (this.undoTravel === 0) return
       this.undoTravel -= 1
-      const { undo, newCursor } = this.undoHistory[this.undoTravel]
+      const { undo, newCursor, newAnchor } = this.undoHistory[this.undoTravel]
+      this.editor.anchor = newAnchor
       this.editor.cursor.moveTo(newCursor)
       undo()
       this.updateSympad()
@@ -344,7 +376,8 @@ export default defineComponent({
     redo() {
       this.ime.reset()
       if (this.undoTravel >= this.undoHistory.length) return
-      const { redo, oldCursor } = this.undoHistory[this.undoTravel]
+      const { redo, oldCursor, oldAnchor } = this.undoHistory[this.undoTravel]
+      this.editor.anchor = oldAnchor
       this.editor.cursor.moveTo(oldCursor)
       redo()
       this.updateSympad()
@@ -382,11 +415,13 @@ export default defineComponent({
         /* Editing */
         case 'Space':
           if (isRhythm) return
+          this.deleteSelection()
           this.doWithBackup(() => this.editor.colbreak())
           break
         case 'Enter':
         case 'NumpadEnter':
           if (isRhythm) return // TODO
+          this.deleteSelection()
           if (e.shiftKey) {
             this.doWithBackup(() => this.editor.rowbreak())
           } else if (e.ctrlKey) {
@@ -410,7 +445,7 @@ export default defineComponent({
           const prefix = e.code.slice(0, -1)
           if (prefix === 'Digit' || prefix === 'Numpad') {
             const idx = +e.code.slice(-1) - 1
-            if (hasNoModifierKey(e) && inRange(idx, RHYTHM_OBJ.length)) {
+            if (!hasModifierKey(e) && inRange(idx, RHYTHM_OBJ.length)) {
               this.tickchange(idx)
               break
             }
@@ -441,7 +476,12 @@ export default defineComponent({
           break
         /* Editing */
         case 'Backspace':
-          if (this.ime.isComposing()) {
+          if (this.editor.isSelecting) {
+            this.doWithBackup(() => {
+              const old = this.editor.cut()
+              return () => this.editor.paste(old)
+            })
+          } else if (this.ime.isComposing()) {
             const where = this.ime.grace ? 'modifier' : 'main'
             const obj = this.ime.backspace()
             this.write(where, obj, false)
@@ -452,13 +492,28 @@ export default defineComponent({
         case 'Minus':
         case 'NumpadSubtract':
           if (hasShiftKeyOnly(e)) {
+            if (this.editor.isSelecting) return
             this.write('modifier', undefined)
-          } else if (hasNoModifierKey(e)) {
-            this.erase()
+          } else if (!hasModifierKey(e)) {
+            if (this.editor.isSelecting) {
+              this.doWithBackup(() => {
+                const old = this.editor.cut()
+                return () => this.editor.paste(old)
+              })
+            } else {
+              this.erase()
+            }
           }
           return
         case 'Delete':
-          this.doWithBackup(() => this.editor.deletekey())
+          if (this.editor.isSelecting) {
+            this.doWithBackup(() => {
+              const old = this.editor.cut()
+              return () => this.editor.paste(old)
+            })
+          } else {
+            this.doWithBackup(() => this.editor.deletekey())
+          }
           return
         case 'Slash':
           this.octavechange(-1)
@@ -467,11 +522,13 @@ export default defineComponent({
           this.octavechange(+1)
           return
         case 'Comma':
+          this.deleteSelection()
           this.write('main', REST_OBJ)
           return
         case 'Equal':
           if (e.ctrlKey || e.altKey || e.metaKey) return
           if (!this.sigimShow) return
+          if (this.editor.isSelecting) return
           this.writeIME(e.code, true)
           break
         case 'Backquote':
@@ -479,27 +536,56 @@ export default defineComponent({
         case 'KeyI':
           if (!hasShiftKeyOnly(e)) return
           if (!this.sigimShow) return
+          if (this.editor.isSelecting) return
           this.writeIME(e.code, true)
           break
         default:
           const prefix = e.code.slice(0, -1)
           if (prefix === 'Digit' || prefix === 'Numpad') {
-            if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
-            this.writeIME(e.code.slice(-1), e.shiftKey)
+            if (hasShiftKeyOnly(e)) {
+              if (this.editor.isSelecting) return
+              this.writeIME(e.code.slice(-1), true)
+            } else if (!hasModifierKey(e)) {
+              this.deleteSelection()
+              this.writeIME(e.code.slice(-1), e.shiftKey)
+            } else return
             break
           }
 
+          if (e.ctrlKey) {
+            if (e.code === 'KeyZ') {
+              if (e.shiftKey) this.redo()
+              else this.undo()
+              break
+            } else if (e.code === 'KeyA' && hasCtrlKeyOnly(e)) {
+              this.editor.selectAll()
+              break
+            } else if (e.code === 'KeyC' && hasCtrlKeyOnly(e)) {
+              this.clipboard = this.editor.copy()
+            } else if (e.code === 'KeyX' && hasCtrlKeyOnly(e)) {
+              this.doWithBackup(() => {
+                const content = this.editor.cut()
+                this.clipboard = content
+                return () => this.editor.paste(content)
+              })
+            } else if (e.code === 'KeyV' && hasCtrlKeyOnly(e)) {
+              if (this.clipboard != null) {
+                const clipboard = this.clipboard
+                this.doWithBackup(() => {
+                  const old = this.editor.paste(clipboard)
+                  return () => this.editor.paste(old)
+                })
+              }
+            }
+            return
+          }
+
+          if (hasModifierKey(e) && !hasShiftKeyOnly(e)) return
           let idxPitch = PITCH2CODE.indexOf(e.code)
           if (idxPitch !== -1) {
-            if (!(hasNoModifierKey(e) || hasShiftKeyOnly(e))) return
+            this.deleteSelection()
             let octave = this.octave + (e.shiftKey ? 1 : 0) // TODO: maybe upto editor settings
             this.write('main', YUL_OBJ[octave][idxPitch])
-            break
-          }
-
-          if (e.ctrlKey && e.code === 'KeyZ') {
-            if (e.shiftKey) this.redo()
-            else this.undo()
             break
           }
           return
@@ -572,8 +658,11 @@ export default defineComponent({
   },
 })
 
-function hasNoModifierKey(e: KeyboardEvent) {
-  return !(e.ctrlKey || e.shiftKey || e.altKey || e.metaKey)
+function hasModifierKey(e: KeyboardEvent) {
+  return e.ctrlKey || e.shiftKey || e.altKey || e.metaKey
+}
+function hasCtrlKeyOnly(e: KeyboardEvent) {
+  return e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey
 }
 function hasShiftKeyOnly(e: KeyboardEvent) {
   return !e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey

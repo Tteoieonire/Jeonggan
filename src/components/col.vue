@@ -1,5 +1,9 @@
 <template>
-  <div @click.stop="moveTo" :class="{ cur: isCur, sel: isSel }" class="col">
+  <div
+    @click.stop="moveOrSelectTo"
+    :class="{ cur: isCur, sel: isSel }"
+    class="col"
+  >
     <span class="gugak">{{ main }}</span>
     <span v-if="content.data.modifier" class="gugak modifier">{{
       'text' in content.data.modifier
@@ -22,10 +26,11 @@ export default defineComponent({
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
   },
-  emits: { moveTo: (coord: Cursor) => true },
+  emits: { moveTo: (coord: Cursor) => true, selectTo: (coord: Cursor) => true },
   methods: {
-    moveTo() {
-      this.$emit('moveTo', this.coord)
+    moveOrSelectTo(e: MouseEvent) {
+      if (e.shiftKey) this.$emit('selectTo', this.coord)
+      else this.$emit('moveTo', this.coord)
     },
   },
   computed: {

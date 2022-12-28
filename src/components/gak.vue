@@ -12,7 +12,7 @@
         v-for="(tick, i) in gak.content"
         :key="i"
         :active="cursor?.isEqualTo(coord(true, i))"
-        @click="moveRhythm(i)"
+        @click="(e: MouseEvent) => moveRhythm(e, i)"
         class="gugak"
         variant="info"
         >{{ tick || '' }}</b-list-group-item
@@ -33,6 +33,7 @@
           :coord="coord(false, i)"
           :cursor="cursor"
           @moveTo="moveTo"
+          @selectTo="selectTo"
           class="cell"
         >
         </cell>
@@ -46,7 +47,6 @@ import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/cursor'
 import { Gak } from '@/music'
-import { getID } from '../utils'
 import cell from './cell.vue'
 
 export default defineComponent({
@@ -57,6 +57,7 @@ export default defineComponent({
   },
   emits: {
     moveTo: (coord: Cursor) => true,
+    selectTo: (coord: Cursor) => true,
   },
   methods: {
     coord(
@@ -74,13 +75,16 @@ export default defineComponent({
     move(cell: number, row: number, col: number) {
       this.$emit('moveTo', this.coord(false, cell, row, col))
     },
-    moveRhythm(cell: number) {
+    moveRhythm(e: MouseEvent, cell: number) {
+      // if (e.shiftKey) TODO
       this.$emit('moveTo', this.coord(true, cell))
     },
     moveTo(coord: Cursor) {
       this.$emit('moveTo', coord)
     },
-    getID,
+    selectTo(coord: Cursor) {
+      this.$emit('selectTo', coord)
+    },
   },
   computed: {
     title() {
