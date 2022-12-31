@@ -4,9 +4,10 @@
 import { InstrumentName } from 'soundfont-player'
 import YAML from 'yaml'
 import { REST_OBJ, YUL_OBJ } from './constants'
-import { Cell, Chapter, Col, Config, Music, Row } from './music'
+import { Music } from './editor'
 import { MainEntry, querySymbol } from './symbols'
 import { getID, resetID } from './utils'
+import { Cell, Chapter, Col, Config, Row } from './viewer'
 
 const INDENT = '  '
 const TABLE = '黃大太夾姑仲蕤林夷南無應'
@@ -36,18 +37,20 @@ function serializeScale(scale: number[]) {
 
 function serializeConfig(config: Config) {
   let serialized = ''
-  for (const [attr, value] of Object.entries(config)) {
+  const name = YAML.stringify(config.name).trim()
+  for (const [attr, value] of Object.entries(config).sort()) {
     let str = ''
-    if (attr === 'scale') {
+    if (attr === 'name') {
+      continue
+    } else if (attr === 'scale') {
       str = serializeScale(config.scale)
     } else if (attr === 'rhythm') {
       str =
-        '|\n' +
-        config.rhythm.map((s: string) => INDENT + INDENT + (s || '')).join('\n')
+        '|\n' + config.rhythm.map((s: string) => INDENT + INDENT + s).join('\n')
     } else str = value.toString()
-    serialized += INDENT + attr + ': ' + str + '\n'
+    serialized += `${INDENT}${attr}: ${str}\n`
   }
-  return serialized + '\n' + INDENT + 'content: |\n'
+  return `${INDENT}name: ${name}\n${serialized}${INDENT}content: |\n`
 }
 
 function serializeChapter(chapter: Chapter) {
@@ -57,12 +60,11 @@ function serializeChapter(chapter: Chapter) {
   )
 }
 
-function serializeMusic(
-  title: string,
-  music: Music,
-  instrument: InstrumentName
-) {
-  const header = YAML.stringify({ title, instrument })
+function serializeMusic(music: Music) {
+  const header = YAML.stringify({
+    title: music.title,
+    instrument: music.instrument,
+  })
   return '-\n' + header + '-\n' + music.data.map(serializeChapter).join('\n-\n')
 }
 
@@ -123,9 +125,7 @@ function deserializeMusic(yaml: string) {
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
-    const rhythm: string[] = content.rhythm
-      .split('\n')
-      .map((s: string) => s || null)
+    const rhythm: string[] = content.rhythm.split('\n')
     rhythm.length = content.measure
     const config: Config = {
       name: content.name,
@@ -142,7 +142,7 @@ function deserializeMusic(yaml: string) {
     const cells = deserializeCells(content.content)
     return new Chapter(config, cells)
   })
-  return { title, chapters, instrument }
+  return new Music(title, chapters, instrument)
 }
 
 export { serializeMusic, deserializeMusic }

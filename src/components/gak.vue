@@ -46,7 +46,7 @@
 import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/cursor'
-import { Gak } from '@/music'
+import { Gak } from '@/viewer'
 import cell from './cell.vue'
 
 export default defineComponent({

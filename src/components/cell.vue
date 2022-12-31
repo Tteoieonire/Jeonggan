@@ -27,7 +27,7 @@
 import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/cursor'
-import { Cell, Row } from '@/music'
+import { Cell, Row } from '@/viewer'
 import col from './col.vue'
 
 export default defineComponent({

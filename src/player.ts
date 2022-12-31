@@ -1,4 +1,8 @@
+import { instrument, InstrumentName, Player } from 'soundfont-player'
+import Cursor from './cursor'
 import { MainEntry, ModifierEntry } from './symbols'
+import { sleep } from './utils'
+import { MusicBase, MusicViewer } from './viewer'
 
 export function scaleIdxToPitch(idx: number, scale: number[]) {
   const oct = Math.floor(idx / scale.length)
@@ -147,4 +151,115 @@ export function render(
     result.push(...rendered)
   }
   return [result, lastPitch]
+}
+
+export class MusicPlayer extends MusicViewer {
+  protected static _ac = new AudioContext()
+  protected static _players: Partial<Record<InstrumentName, Player>> = {}
+
+  protected _player?: Player
+  lastPitch?: number
+  finished = false
+
+  static fromMusicViewer(viewer: {
+    music: MusicBase
+    cursor: Cursor
+  }): MusicPlayer {
+    return new MusicPlayer(viewer.music, viewer.cursor.clone())
+  }
+
+  protected async getPlayer(_instrument: InstrumentName) {
+    if (!(_instrument in MusicPlayer._players)) {
+      MusicPlayer._players[_instrument] = await instrument(
+        MusicPlayer._ac,
+        _instrument
+      )
+    }
+    return MusicPlayer._players[_instrument]
+  }
+
+  getLastPitch(): number | undefined {
+    // TODO: take octave into account!!
+    const viewer = this.clone()
+    let lastPitch = null
+    let distance = 0
+    do {
+      const pitch = viewer.get('col').data.main?.pitch
+      if (typeof pitch === 'number') {
+        lastPitch = pitch + 51
+        break
+      }
+      distance++
+    } while (viewer.stepCol(-1) || viewer.stepChapter(-1))
+    if (lastPitch == null) return undefined
+    if (distance === 0) return undefined
+
+    while (viewer.stepCol(+1) || viewer.stepChapter(+1)) {
+      distance--
+      if (distance === 0) return lastPitch
+
+      const pitch = viewer.get('col').data.main?.pitch
+      if (pitch == null) continue
+      if (typeof pitch === 'number') break
+
+      const scale = viewer.music.data[viewer.cursor.chapter].config.scale
+      const offset = +pitch[pitch.length - 1] - 3
+      const scaleIdx = pitchToScaleIdx(lastPitch, scale)
+      lastPitch = scaleIdxToPitch(scaleIdx + offset, scale)
+    }
+    throw Error('getLastPitch unstable')
+  }
+
+  render(sori: Sori) {
+    const scale = this.music.data[this.cursor.chapter].config.scale
+    try {
+      return renderNote(sori, scale, this.lastPitch)
+    } catch (e) {
+      this.lastPitch = this.getLastPitch()
+      return renderNote(sori, scale, this.lastPitch)
+    }
+  }
+
+  async play() {
+    this.stop()
+    this.finished = false
+    this._player = await this.getPlayer(this.music.instrument)
+    let notes: Note[]
+    let lastPitch: number | undefined = undefined
+    do {
+      this.lastPitch = lastPitch ?? this.lastPitch
+      const cur = this.get('col')
+      const duration = this.colDuration()
+
+      if (cur?.data?.main) {
+        this._player?.stop()
+        if (cur.data.main.pitch) {
+          const sori: Sori = {
+            time: 0,
+            duration,
+            main: cur.data.main,
+            modifier: cur.data.modifier,
+            headDuration: duration,
+          }
+
+          ;[notes, lastPitch] = this.render(sori)
+          for (const note of notes) {
+            if (!this._player) return
+            this._player.stop()
+            this._player.start('' + note.pitch)
+            await sleep(note.duration)
+          }
+          continue
+        }
+      }
+      await sleep(duration)
+    } while (this._player && (this.stepCol() || this.stepChapter()))
+    this.stop()
+    this.finished = true
+  }
+
+  stop() {
+    this._player?.stop()
+    delete this._player
+  }
 }

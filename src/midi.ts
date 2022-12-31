@@ -1,7 +1,7 @@
 import { MidiData, MidiEvent, MidiHeader } from 'midi-file'
 
-import { Config, MusicViewer } from './music'
-import { Note, render, Sori } from './renderer'
+import { MusicPlayer, Note, render, Sori } from './player'
+import { Config } from './viewer'
 
 function chooseTimeSignatureDenominator(numerator: number) {
   if (numerator === 12) return 8
@@ -40,20 +40,20 @@ function chooseKeySignature(scale: number[]) {
 }
 
 function convertChapter(
-  viewer: MusicViewer,
+  player: MusicPlayer,
   time: number,
   lastPitch?: number,
   ticksPerCell?: number
 ): [Note[], number, number | undefined] {
-  const chapter = viewer.music.data[viewer.cursor.chapter]
+  const chapter = player.music.data[player.cursor.chapter]
   const ticksPerSecond =
     ticksPerCell && (ticksPerCell * chapter.config.tempo) / 60
 
   let soris: Sori[] = []
   let ongoing = false
   do {
-    const cur = viewer.get('col')
-    const duration = viewer.colDuration(ticksPerCell)
+    const cur = player.get('col')
+    const duration = player.colDuration(ticksPerCell)
 
     if (cur?.data?.main) {
       ongoing = !!cur.data.main.pitch // no ongoing if rest
@@ -71,7 +71,7 @@ function convertChapter(
       soris[soris.length - 1].duration += duration
     }
     time += duration
-  } while (viewer.stepCol())
+  } while (player.stepCol())
 
   let notes: Note[]
   ;[notes, lastPitch] = render(
@@ -83,15 +83,15 @@ function convertChapter(
   return [notes, time, lastPitch]
 }
 
-export function convertMusic(viewer: MusicViewer): Note[] {
+export function convertMusic(player: MusicPlayer): Note[] {
   let rendered: Note[] = []
   let time = 0
-  let lastPitch = viewer.getLastPitch()
+  let lastPitch = player.getLastPitch()
   do {
     let notes: Note[]
-    ;[notes, time, lastPitch] = convertChapter(viewer, time, lastPitch)
+    ;[notes, time, lastPitch] = convertChapter(player, time, lastPitch)
     rendered = rendered.concat(notes)
-  } while (viewer.stepChapter())
+  } while (player.stepChapter())
   return rendered
 }
 
@@ -123,20 +123,19 @@ function convertConfigToMidi(config: Config): MidiEvent[] {
   return events
 }
 
-export function convertToMidi(viewer: MusicViewer): MidiData {
+export function convertToMidi(player: MusicPlayer): MidiData {
   const header: MidiHeader = { format: 2, ticksPerBeat: 96, numTracks: 1 }
   let time = 0
   let timePlayed = 0
   let track: MidiEvent[] = []
 
-  let lastPitch = viewer.getLastPitch()
+  let lastPitch = player.getLastPitch()
   do {
-    const chapter = viewer.get('chapter')
-    if (chapter == null) throw ''
+    const chapter = player.get('chapter')
     track.push(...convertConfigToMidi(chapter.config))
     let notes: Note[]
     ;[notes, time, lastPitch] = convertChapter(
-      viewer,
+      player,
       time,
       lastPitch,
       header.ticksPerBeat
@@ -159,7 +158,7 @@ export function convertToMidi(viewer: MusicViewer): MidiData {
       })
       timePlayed = note.time + note.duration
     }
-  } while (viewer.stepChapter())
+  } while (player.stepChapter())
   track.push({ type: 'endOfTrack', deltaTime: 0 })
 
   return { header, tracks: [track] }

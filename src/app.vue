@@ -48,10 +48,10 @@
     @configchange="configchange"
     @deletechapter="deletechapter"
   ></configmodal>
-  <initmodal :title="title" @init="create"></initmodal>
+  <initmodal :title="music.title" @init="create"></initmodal>
   <globalmodal
-    :title="title"
-    :instrument="instrument"
+    :title="music.title"
+    :instrument="music.instrument"
     @rename="rename"
   ></globalmodal>
 </template>
@@ -59,8 +59,8 @@
 <script lang="ts">
 import { saveAs } from 'file-saver'
 import { writeMidi } from 'midi-file'
-import { defineComponent } from 'vue'
 import { InstrumentName } from 'soundfont-player'
+import { defineComponent } from 'vue'
 
 import canvaspanel from './components/canvaspanel.vue'
 import keypanel from './components/keypanel.vue'
@@ -71,21 +71,15 @@ import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
 import { REST_OBJ, RHYTHM_OBJ, YUL_OBJ } from './constants'
-import { convertToMidi } from './converter'
 import Cursor, { CoordLevel } from './cursor'
-import IME from './ime'
-import {
-  Alphabet,
-  Chapter,
-  Config,
-  Music,
-  MusicEditor,
-  MusicPlayer,
-  UndoOp,
-} from './music'
+import { Music, MusicEditor } from './editor'
+import { IME } from './ime'
+import { convertToMidi } from './midi'
+import { MusicPlayer } from './player'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
 import { getID, inRange } from './utils'
+import { Alphabet, Chapter, Config, UndoOp } from './viewer'
 
 /**
  * Controller
@@ -127,8 +121,6 @@ type UndoRecord = {
 export default defineComponent({
   data() {
     return {
-      title: '',
-      instrument: 'acoustic_grand_piano' as InstrumentName,
       music: undefined as unknown as Music,
       editor: undefined as unknown as MusicEditor,
       player: undefined as undefined | MusicPlayer,
@@ -145,19 +137,16 @@ export default defineComponent({
   },
   methods: {
     create(title = '') {
-      this.title = title
       const chapters = [new Chapter(INIT_CONFIG)]
-      this.music = new Music(chapters)
+      this.music = new Music(title, chapters)
       this.editor = this.music.getEditor()
       this.editor.cursor.move(0, 0, 0, 0)
       this.write('main', YUL_OBJ[this.octave][0])
       this.editor.add('cell')
       this.init()
     },
-    load(title: string, chapters: Chapter[], instrument: InstrumentName) {
-      this.title = title
-      this.instrument = instrument
-      this.music = new Music(chapters)
+    load(music: Music) {
+      this.music = music
       this.editor = this.music.getEditor()
       this.init()
     },
@@ -298,14 +287,14 @@ export default defineComponent({
       } else if (command === 'pause') {
         this.player?.stop()
       } else if (command === 'resume') {
-        this.player = this.player || this.editor.asPlayer()
-        await this.player.play(this.instrument)
+        this.player = this.player || MusicPlayer.fromMusicViewer(this.editor)
+        await this.player.play()
       }
       if (this.player?.finished) this.player = undefined
     },
     rename(title: string, instrument: InstrumentName) {
-      this.title = title
-      this.instrument = instrument
+      this.music.title = title
+      this.music.instrument = instrument
     },
     open(file: any) {
       // TODO: maybe warn user?
@@ -313,27 +302,27 @@ export default defineComponent({
       reader.addEventListener('load', e => {
         const result = e.target?.result
         if (typeof result !== 'string') return
-        const data = deserializeMusic(result) // TODO: handle error
-        this.load(data.title, data.chapters, data.instrument)
+        const music = deserializeMusic(result) // TODO: handle error
+        this.load(music)
       })
       reader.readAsText(file)
     },
     save() {
-      const data = serializeMusic(this.title, this.music, this.instrument)
+      const data = serializeMusic(this.music)
       const blob = new Blob([data], { type: 'text/x-yaml' })
       let filename =
-        this.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
+        this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
       saveAs(blob, filename)
     },
     exportMidi() {
-      const data = writeMidi(convertToMidi(this.music.getViewer()), {
+      const data = writeMidi(convertToMidi(this.music.getPlayer()), {
         running: true,
       })
       const blob = new Blob([Uint8Array.from(data)], {
         type: 'audio/midi',
       })
       let filename =
-        this.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
+        this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)
     },
     doWithBackup(op: () => UndoOp) {
@@ -623,8 +612,8 @@ export default defineComponent({
       const gak = Math.floor((pos + this.config.padding) / this.config.measure)
       if (gak > 0) pos = (pos + this.config.padding) % this.config.measure
 
-      const numRows = this.editor.getLength('cell')
-      const numCols = this.editor.getLength('row')
+      const numRows = this.editor.get('cell').data.length
+      const numCols = this.editor.get('row').data.length
       const col = this.editor.get('col')
       const main = col.data?.main?.label ?? '빈칸'
       const modifier = col.data?.modifier?.label ?? ''

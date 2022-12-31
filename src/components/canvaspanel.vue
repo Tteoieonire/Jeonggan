@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import Cursor from '@/cursor'
-import { Gak } from '@/music'
+import { Gak } from '@/viewer'
 import { defineComponent, PropType } from 'vue'
 
 import gak from './gak.vue'

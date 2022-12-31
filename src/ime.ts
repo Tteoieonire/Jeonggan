@@ -82,4 +82,4 @@ class IME {
   }
 }
 
-export default IME
+export { IME }

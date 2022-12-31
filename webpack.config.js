@@ -1,6 +1,7 @@
 const production = process.env.NODE_ENV === 'production'
 
 const path = require('path')
+const webpack = require('webpack')
 
 const { VueLoaderPlugin } = require('vue-loader')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
@@ -53,6 +54,10 @@ module.exports = {
     },
   },
   plugins: [
+    new webpack.DefinePlugin({
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: false,
+    }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: './src/index.html',
