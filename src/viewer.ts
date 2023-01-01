@@ -68,15 +68,6 @@ export type ElementOf = {
   music: MusicBase
 }
 
-export type AlphabetOf = {
-  entry: ['entry', Entry]
-  col: ['col', null]
-  row: ['row', null]
-  cell: ['cell', null]
-  chapter: ['chapter', Config]
-}
-export type Alphabet = AlphabetOf[keyof AlphabetOf]
-
 export function _make<K extends 'col' | 'row' | 'cell'>(what: K): ElementOf[K] {
   const col: Col = { id: getID(), data: {} }
   if (what === 'col') return col as any

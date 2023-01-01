@@ -4,11 +4,9 @@ import { deserializeMusic } from './serializer'
 import { querySymbol } from './symbols'
 import { MusicViewer, SNAP } from './viewer'
 
-const SAMPLE_YAML = `
--
-  양청도드리
--
-  name: 초장
+const SAMPLE_YAML = `- title: 양청도드리
+  instrument: acoustic_grand_piano
+- name: 초장
   hideRhythm: false
   measure: 4
   padding: 0
@@ -16,7 +14,7 @@ const SAMPLE_YAML = `
     떵
     덕
     따닥
-    
+    -
   scale: 黃太仲林南
   tempo: 140
   content: |
@@ -56,8 +54,7 @@ const SAMPLE_YAML = `
 
     太
     △
--
-  name: 2장
+- name: 2장
   hideRhythm: true
   measure: 4
   padding: 0
@@ -65,7 +62,7 @@ const SAMPLE_YAML = `
     떵
     덕
     따닥
-    
+    -
   scale: 黃太仲林南
   tempo: 150
   content: |
@@ -122,7 +119,8 @@ const SAMPLE_YAML = `
     㑲:𝆔343
 
     太
-    △`
+    △
+`
 
 export function createSampleMusic() {
   return deserializeMusic(SAMPLE_YAML)

@@ -9,11 +9,10 @@ import { MainEntry, querySymbol } from './symbols'
 import { getID, resetID } from './utils'
 import { Cell, Chapter, Col, Config, Row } from './viewer'
 
-const INDENT = '  '
 const TABLE = '黃大太夾姑仲蕤林夷南無應'
 
-function serializeCol(col?: Col) {
-  if (!col?.data.main) return '-'
+function serializeCol(col: Col): string {
+  if (!col.data.main) return '-'
   const main = col.data.main.text
   let _mod = col.data.modifier
   if (!_mod) return main
@@ -21,51 +20,45 @@ function serializeCol(col?: Col) {
   return main + ':' + modifier
 }
 
-function serializeRow(row?: Row) {
-  if (!row || row.data.length === 0) return INDENT + INDENT + '-'
-  return INDENT + INDENT + row.data.map(serializeCol).join(' ')
+function serializeRow(row: Row): string {
+  if (row.data.length === 0) return '-'
+  return row.data.map(serializeCol).join(' ')
 }
 
-function serializeCell(cell?: Cell) {
-  if (!cell || cell.data.length === 0) return INDENT + INDENT + '-'
+function serializeCell(cell: Cell): string {
+  if (cell.data.length === 0) return '-'
   return cell.data.map(serializeRow).join('\n')
 }
 
-function serializeScale(scale: number[]) {
+function serializeScale(scale: number[]): string {
   return scale.map(pitch => TABLE[pitch]).join('')
 }
 
 function serializeConfig(config: Config) {
-  let serialized = ''
-  const name = YAML.stringify(config.name).trim()
-  for (const [attr, value] of Object.entries(config).sort()) {
-    let str = ''
-    if (attr === 'name') {
-      continue
-    } else if (attr === 'scale') {
-      str = serializeScale(config.scale)
-    } else if (attr === 'rhythm') {
-      str =
-        '|\n' + config.rhythm.map((s: string) => INDENT + INDENT + s).join('\n')
-    } else str = value.toString()
-    serialized += `${INDENT}${attr}: ${str}\n`
+  const serialized: Record<string, string | number | boolean> = {
+    name: config.name,
   }
-  return `${INDENT}name: ${name}\n${serialized}${INDENT}content: |\n`
+  for (const [attr, value] of Object.entries(config).sort()) {
+    if (attr === 'name') continue
+    else if (attr === 'scale') serialized[attr] = serializeScale(config.scale)
+    else if (attr === 'rhythm')
+      serialized[attr] = config.rhythm.map(s => s || '-').join('\n') + '\n'
+    else if (Array.isArray(value)) throw new Error('It cannot be an array.')
+    else serialized[attr] = value
+  }
+  return serialized
 }
 
 function serializeChapter(chapter: Chapter) {
-  return (
-    serializeConfig(chapter.config) +
-    chapter.data.map(serializeCell).join('\n\n')
-  )
+  return {
+    ...serializeConfig(chapter.config),
+    content: chapter.data.map(serializeCell).join('\n\n') + '\n',
+  }
 }
 
 function serializeMusic(music: Music) {
-  const header = YAML.stringify({
-    title: music.title,
-    instrument: music.instrument,
-  })
-  return '-\n' + header + '-\n' + music.data.map(serializeChapter).join('\n-\n')
+  const header = { title: music.title, instrument: music.instrument }
+  return YAML.stringify([header, ...music.data.map(serializeChapter)])
 }
 
 /**
@@ -125,7 +118,9 @@ function deserializeMusic(yaml: string) {
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
-    const rhythm: string[] = content.rhythm.split('\n')
+    const rhythm: string[] = content.rhythm
+      .split('\n')
+      .map((s: string) => (s === '-' ? '' : s))
     rhythm.length = content.measure
     const config: Config = {
       name: content.name,

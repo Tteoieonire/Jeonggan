@@ -17,6 +17,8 @@
 .gugak {
   font-family: 'TteoiJeonggan';
   word-break: keep-all;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @font-face {

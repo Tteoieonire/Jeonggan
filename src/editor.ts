@@ -3,22 +3,23 @@ import Cursor from './cursor'
 import { MusicPlayer } from './player'
 import { getID, inRange } from './utils'
 import {
-  Alphabet,
-  AlphabetOf,
   Cell,
   Chapter,
-  CHILD_OF,
   Config,
   ElementOf,
+  Entry,
   idOp,
   MusicBase,
   MusicViewer,
   PARENT_OF,
-  Row,
   SNAP,
   UndoOp,
   _make,
 } from './viewer'
+
+function debone(cells: Cell[]): Entry[][][] {
+  return cells.map(cell => cell.data.map(row => row.data.map(col => col.data)))
+}
 
 export class Music implements MusicBase {
   private _editor?: MusicEditor
@@ -68,24 +69,32 @@ export class MusicSelector extends MusicViewer {
     return this.anchor != null && !this.anchor.isEqualTo(this.cursor)
   }
   createSelection() {
+    if (this.cursor.rhythmMode) return
+    this.move('cell', this.cursor.cell, SNAP.FRONT)
     this.anchor = this.cursor.clone()
+    this.move('cell', this.cursor.cell, SNAP.BACK)
   }
   discardSelection() {
     this.anchor = undefined
   }
   normalizeSelection() {
-    if (this.anchor == null) return
-    if (this.anchor.isEqualTo(this.cursor)) return this.discardSelection()
-    if (this.anchor.isLessThan(this.cursor)) return
-    const tmp = this.anchor
-    this.anchor = this.cursor
-    this.cursor = tmp
+    if (this.anchor == null) return idOp
+    if (this.anchor.isLessThan(this.cursor)) {
+      this.anchor.move(this.anchor.chapter, this.anchor.cell, 0, 0)
+      this.move('row', -1, SNAP.BACK)
+    } else {
+      const chapter = this.cursor.chapter
+      const cell = this.cursor.cell
+      this.cursor.moveTo(this.anchor)
+      this.move('row', -1, SNAP.BACK)
+      this.anchor.moveTo(this.cursor)
+      this.cursor.move(chapter, cell, 0, 0)
+    }
   }
 
   selectAll() {
-    this.discardSelection()
-    this.move('chapter', 0)
-    this.createSelection()
+    this.move('chapter', 0, SNAP.FRONT)
+    this.anchor = this.cursor.clone()
     this.move('chapter', -1, SNAP.BACK)
   }
 
@@ -101,6 +110,24 @@ export class MusicSelector extends MusicViewer {
     if (this.anchor?.rhythmMode === false) return
     super.moveRhythm(cell)
   }
+  moveUpDown(direction: 'up' | 'down'): void {
+    if (this.isSelecting) {
+      // no rhythm
+      const snap = direction === 'up' ? SNAP.FRONT : SNAP.BACK
+      this.move('cell', this.cursor.cell, snap)
+    }
+    super.moveUpDown(direction)
+    this.normalizeSelection()
+  }
+  moveLeftRight(direction: 'left' | 'right'): void {
+    if (this.isSelecting) {
+      // no rhythm
+      const snap = direction === 'left' ? SNAP.FRONT : SNAP.BACK
+      this.move('row', this.cursor.row, snap)
+    }
+    super.moveLeftRight(direction)
+    this.normalizeSelection()
+  }
 
   protected getDelimiter(direction: 1 | -1 = +1): keyof typeof PARENT_OF {
     if (inRange(this.cursor.col + direction, this.get('row').data)) return 'col'
@@ -111,22 +138,29 @@ export class MusicSelector extends MusicViewer {
     return 'chapter'
   }
 
-  copy(): Alphabet[] {
-    const clone = this.clone()
-    clone.normalizeSelection()
-    if (!clone.isSelecting) clone.createSelection()
-    const items: Alphabet[] = []
-    while (clone.anchor?.isLessThan(clone.cursor)) {
-      const cur = clone.get('col').data
-      if (cur.main) items.push(['entry', cur])
-      const delim = clone.getDelimiter(-1)
-      if (delim !== 'chapter') items.push([delim, null])
-      else items.push(['chapter', clone.get('chapter').config])
-      clone.stepCol(-1) || clone.stepChapter(-1)
-    }
-    const cur = clone.get('col').data
-    if (cur.main) items.push(['entry', cur])
-    return items.reverse()
+  copyEntry(): Entry {
+    if (this.isSelecting) throw Error('Selection found')
+    return this.get('col').data
+  }
+  copyRange(): Entry[][][] {
+    if (this.anchor == null) throw Error('No selected found')
+    const [first, last] = this.anchor.isLessThan(this.cursor)
+      ? [this.anchor, this.cursor]
+      : [this.cursor, this.anchor]
+    return this.music.data
+      .slice(first.chapter, last.chapter + 1)
+      .flatMap(function (chapter, index): Entry[][][] {
+        const cells = chapter.data
+        const start = index === 0 ? first.cell : 0
+        const end =
+          first.chapter + index === last.chapter ? last.cell + 1 : cells.length
+        return debone(cells.slice(start, end))
+      })
+  }
+  copy(): ['Entry', Entry] | ['Range', Entry[][][]] {
+    return this.isSelecting
+      ? ['Range', this.copyRange()]
+      : ['Entry', this.copyEntry()]
   }
 }
 
@@ -184,161 +218,176 @@ export class MusicEditor extends MusicSelector {
   }
 
   /* Complex actions */
-  private merge<T extends keyof typeof PARENT_OF>(
-    what: T
-  ): AlphabetOf[T] | null {
+  private merge(): UndoOp {
+    const what = this.getDelimiter()
     const preyPos = this.cursor[what] + 1
     const parentLevel = PARENT_OF[what]
-    const parent = this.get(parentLevel)
-    if (!inRange(preyPos, parent.data)) return null
+    const parent = this.get(parentLevel).data
+    if (!inRange(preyPos, parent)) return idOp
 
-    if (what === 'chapter') {
-      const prey = this.music.data.splice(preyPos, 1)[0]
-      this.get('chapter').data.push(...prey.data)
-      this.merge('cell')
-      return ['chapter', prey.config] as any
-    }
-
-    const prey = parent.data.splice(preyPos, 1)[0] as unknown as T
+    const prey = parent.splice(preyPos, 1)[0] as any
+    let undo: UndoOp = idOp
     if (what !== 'col') {
-      const children = this.get(what).data as any
-      children.push(...(prey as any).data)
-      this.merge((CHILD_OF as any)[what])
+      this.get(what).data.push(...prey.data)
+      undo = this.merge()
     }
-    return [what, null] as any
-  }
-
-  shift(): Alphabet | null {
-    const entry = this.get('col').data
-    if (entry.main) {
-      this.erase()
-      return ['entry', entry]
-    }
-    return this.merge(this.getDelimiter())
-  }
-
-  unshift(item: Alphabet): void {
-    const [level, data] = item
-    if (level === 'entry') this.write('col', { id: getID(), data })
-    else if (level !== 'chapter') this[`${level}break`]()
-    else this.chapterbreak(data)
-  }
-
-  pop(): Alphabet | null {
-    const entry = this.get('col').data
-    if (entry.main) {
-      this.erase()
-      return ['entry', entry]
-    }
-    this.stepCol(-1) || this.stepChapter(-1)
-    return this.merge(this.getDelimiter())
-  }
-
-  push(item: Alphabet): void {
-    const [level, data] = item
-    if (level === 'entry') {
-      this.write('col', { id: getID(), data })
-    } else if (level !== 'chapter') {
-      this[`${level}break`]()
-    } else {
-      this.chapterbreak(data)
+    return () => {
+      undo()
+      const parent = this.get(parentLevel).data
+      if (what !== 'col')
+        this.get(what).data.splice(-prey.data.length, prey.data.length)
+      parent.splice(preyPos, 0, prey)
     }
   }
 
   /* Keyboard actions */
   backspace(): UndoOp {
-    const old = this.pop()
-    if (old == null) return idOp
-    return () => this.push(old)
+    if (this.get('col').data.main != null) return this.erase()
+
+    this.stepCol(-1) || this.stepChapter(-1)
+    const undo = this.merge()
+    return () => {
+      undo()
+      this.stepCol(+1) || this.stepChapter(+1)
+    }
   }
 
   deletekey(): UndoOp {
-    const old = this.shift()
-    if (old == null) return idOp
-    return () => this.unshift(old)
+    if (this.get('col').data.main != null) return this.erase()
+    return this.merge()
   }
 
   colbreak(): UndoOp {
-    this.add('col', _make('col'))
-    return () => this.merge('col')
+    return this.add('col')
   }
 
   rowbreak(): UndoOp {
-    const newrow: Row = {
-      id: getID(),
-      data: this.get('row').data.splice(this.cursor.col + 1),
-    }
-    newrow.data.unshift(_make('col'))
-    this.add('row', newrow)
-    return () => this.merge('row')
+    this.colbreak()
+    this.stepCol(-1)
+    const data = this.get('row').data.splice(this.cursor.col + 1)
+    this.add('row', { id: getID(), data })
+    return () => this.backspace()
   }
 
   cellbreak(): UndoOp {
-    const newrow: Row = {
-      id: getID(),
-      data: this.get('row').data.splice(this.cursor.col + 1),
-    }
-    newrow.data.unshift(_make('col'))
-    const newcell: Cell = {
-      id: getID(),
-      data: this.get('cell').data.splice(this.cursor.row + 1),
-    }
-    newcell.data.unshift(_make('row'))
-    this.add('cell', newcell)
-    return () => this.merge('cell')
+    this.rowbreak()
+    this.stepCol(-1)
+    const data = this.get('cell').data.splice(this.cursor.row + 1)
+    this.add('cell', { id: getID(), data })
+    return () => this.backspace()
   }
 
   chapterbreak(config?: Config): UndoOp {
     const chapter = this.get('chapter')
     if (!config) config = newConfigFrom(chapter.config)
 
-    const newrow: Row = {
-      id: getID(),
-      data: this.get('row').data.splice(this.cursor.col + 1),
-    }
-    newrow.data.unshift(_make('col'))
-    const newcell: Cell = {
-      id: getID(),
-      data: this.get('cell').data.splice(this.cursor.row + 1),
-    }
-    newcell.data.unshift(newrow)
+    this.cellbreak()
+    this.stepCol(-1)
     const newcells = chapter.data.splice(this.cursor.cell + 1)
-    newcells.unshift(newcell)
     this.add('chapter', new Chapter(config, newcells))
-    return () => this.merge('chapter')
+    return () => this.backspace()
   }
 
   /* Selection actions */
-  cut(): Alphabet[] {
-    this.normalizeSelection()
-    if (!this.isSelecting) this.createSelection()
-    const items: Alphabet[] = []
-    while (this.anchor?.isLessThan(this.cursor)) {
-      const item = this.pop()
-      if (item == null) break
-      items.push(item)
+  cutEntry(): [Entry, UndoOp] {
+    if (this.isSelecting) throw Error('Selection found')
+    const col = this.get('col')
+    const old = col.data
+    col.data = {}
+    return [
+      old,
+      () => {
+        this.get('col').data = old
+      },
+    ]
+  }
+  cutRange(): [Entry[][][], UndoOp] {
+    if (this.anchor == null) throw Error('No selected found')
+    const oldCursor = this.cursor.clone()
+    const [first, last] = this.anchor.isLessThan(oldCursor)
+      ? [this.anchor, oldCursor]
+      : [oldCursor, this.anchor]
+    this.cursor.moveTo(first)
+
+    const entries: Entry[][][] = []
+    const undos: UndoOp[] = []
+    while (true) {
+      const cells = this.get('chapter').data
+      const start = this.cursor.chapter === first.chapter ? first.cell : 0
+      const end =
+        this.cursor.chapter === last.chapter ? last.cell + 1 : cells.length
+
+      const old = cells.splice(start, end - start)
+      entries.push(...debone(old))
+      cells.splice(start, 0, ...old.map(() => _make('cell')))
+      undos.push(() =>
+        this.get('chapter').data.splice(start, end - start, ...old)
+      )
+
+      if (this.cursor.chapter === last.chapter) break
+      undos.push(this.move('chapter', this.cursor.chapter + 1))
     }
-    const cur = this.get('col').data
-    this.erase()
-    if (cur.main) items.push(['entry', cur])
-    this.discardSelection()
-    return items.reverse()
+    undos.reverse()
+
+    this.cursor.moveTo(oldCursor)
+    return [entries, () => undos.forEach(op => op())]
   }
 
-  paste(items: Alphabet[]): Alphabet[] {
-    const old = this.cut()
-    this.createSelection()
-    for (const item of items) this.push(item)
-    return old
+  pasteEntry(entry: Entry): UndoOp {
+    if (this.isSelecting) {
+      if (
+        this.anchor?.chapter === this.cursor.chapter &&
+        this.anchor.cell === this.cursor.cell
+      )
+        return this.pasteRange([[[entry]]])
+      throw Error('Multi-cell selection found')
+    }
+    const col = this.get('col')
+    const old = col.data
+    col.data = entry
+    return () => {
+      this.get('col').data = old
+    }
+  }
+  pasteRange(range: Entry[][][]): UndoOp {
+    if (this.anchor == null) this.createSelection()
+    else if (this.anchor.isLessThan(this.cursor))
+      this.cursor.moveTo(this.anchor)
+    else this.anchor.moveTo(this.cursor)
+
+    const undos: UndoOp[] = []
+    undos.push(this.move('row', 0, SNAP.FRONT))
+    for (const [i, entries] of range.entries()) {
+      const cell: Cell = {
+        id: getID(),
+        data: entries.map(row => ({
+          id: getID(),
+          data: row.map(col => ({ id: getID(), data: col })),
+        })),
+      }
+      undos.push(this.write('cell', cell))
+      if (i === range.length - 1) break
+
+      if (inRange(this.cursor.cell + 1, this.get('chapter').data.length)) {
+        undos.push(this.move('cell', this.cursor.cell + 1))
+      } else if (inRange(this.cursor.chapter + 1, this.music.data.length)) {
+        undos.push(this.move('chapter', this.cursor.chapter + 1))
+        undos.push(this.move('cell', 0))
+      } else {
+        undos.push(this.add('cell'))
+      }
+    }
+    undos.push(this.move('row', -1, SNAP.BACK))
+    undos.reverse()
+    return () => undos.forEach(op => op())
   }
 }
 
-function newConfigFrom(config: Config) {
-  const rhythm = config.rhythm.slice()
+function newConfigFrom(config: Config): Config {
   return {
     ...config,
     name: '새 장',
-    rhythm,
+    rhythm: config.rhythm.slice(),
     hideRhythm: true,
     padding: 0,
   }

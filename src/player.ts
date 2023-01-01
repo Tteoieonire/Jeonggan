@@ -154,12 +154,12 @@ export function render(
 }
 
 export class MusicPlayer extends MusicViewer {
-  protected static _ac = new AudioContext()
+  protected static _ac?: AudioContext
   protected static _players: Partial<Record<InstrumentName, Player>> = {}
 
   protected _player?: Player
   lastPitch?: number
-  finished = false
+  finished = false // playing or paused <-> stopped
 
   static fromMusicViewer(viewer: {
     music: MusicBase
@@ -170,12 +170,17 @@ export class MusicPlayer extends MusicViewer {
 
   protected async getPlayer(_instrument: InstrumentName) {
     if (!(_instrument in MusicPlayer._players)) {
+      if (MusicPlayer._ac == null) MusicPlayer._ac = new AudioContext()
       MusicPlayer._players[_instrument] = await instrument(
         MusicPlayer._ac,
         _instrument
       )
     }
     return MusicPlayer._players[_instrument]
+  }
+
+  get playing(): boolean {
+    return this._player != null // playing <-> paused or stopped
   }
 
   getLastPitch(): number | undefined {
@@ -244,16 +249,17 @@ export class MusicPlayer extends MusicViewer {
 
           ;[notes, lastPitch] = this.render(sori)
           for (const note of notes) {
-            if (!this._player) return
-            this._player.stop()
-            this._player.start('' + note.pitch)
+            this._player?.stop()
+            this._player?.start('' + note.pitch)
             await sleep(note.duration)
+            if (!this._player) return
           }
           continue
         }
       }
       await sleep(duration)
-    } while (this._player && (this.stepCol() || this.stepChapter()))
+      if (!this._player) return
+    } while (this.stepCol() || this.stepChapter())
     this.stop()
     this.finished = true
   }
