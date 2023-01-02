@@ -29,7 +29,7 @@
     "@types/file-saver": "^2.0.5",
     "@vue/compiler-sfc": "^3.2.31",
     "acorn": "^8.7.0",
-    "babel-loader": "^8.2.3",
+    "babel-loader": "^8.3.0",
     "babel-preset-typescript-vue3": "^2.0.16",
     "cross-env": "^7.0.3",
     "css-loader": "^6.6.0",
