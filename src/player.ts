@@ -58,8 +58,10 @@ function renderMain(sori: Sori, scale: number[], lastPitch?: number): Note[] {
   if (typeof sori.main?.pitch === 'number') {
     pitches = [sori.main.pitch + 51]
   } else if (typeof sori.main?.pitch === 'string') {
-    if (lastPitch == null)
-      throw Error('처음 등장하는 음의 높낮이를 파악할 수 없습니다.')
+    if (lastPitch == null) {
+      console.error('처음 등장하는 음의 높낮이를 파악할 수 없습니다.')
+      return []
+    }
     const mapper = buildScaleTable(scale, lastPitch)
     pitches = sori.main.pitch.split('').map((rel: string) => mapper[+rel])
   } else throw Error('renderMain pitch neither number nor string')
@@ -118,9 +120,10 @@ export function renderNote(
   scale: number[],
   lastPitch?: number,
   ticksPerSecond = 1000
-): [Note[], number] {
+): [Note[], number | undefined] {
   const graceCap = ticksPerSecond / 10
   const notes = renderMain(sori, scale, lastPitch)
+  if (notes.length === 0) return [notes, lastPitch]
   lastPitch = notes[notes.length - 1].pitch
   if (!sori.modifier) return [notes, lastPitch]
   if (notes.length === 1) {
