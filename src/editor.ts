@@ -303,6 +303,7 @@ export class MusicEditor extends MusicSelector {
   }
   cutRange(): [Entry[][][], UndoOp] {
     if (this.anchor == null) throw Error('No selected found')
+    this.move('row', 0)
     const oldCursor = this.cursor.clone()
     const [first, last] = this.anchor.isLessThan(oldCursor)
       ? [this.anchor, oldCursor]

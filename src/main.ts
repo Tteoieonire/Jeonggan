@@ -1,12 +1,14 @@
-import './style.css'
-import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+import 'bootstrap/dist/css/bootstrap.css'
+import './style.css'
 
 import BootstrapVue3 from 'bootstrap-vue-3'
 import { createApp } from 'vue'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
+  faClipboard,
+  faCopy,
   faEllipsisV,
   faEraser,
   faFile,
@@ -15,6 +17,7 @@ import {
   faPlay,
   faRedo,
   faSave,
+  faScissors,
   faStop,
   faUndo,
 } from '@fortawesome/free-solid-svg-icons'
@@ -23,6 +26,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import MyApp from './app.vue'
 
 library.add(
+  faClipboard,
+  faCopy,
   faEllipsisV,
   faEraser,
   faFile,
@@ -31,6 +36,7 @@ library.add(
   faPlay,
   faRedo,
   faSave,
+  faScissors,
   faStop,
   faUndo
 )

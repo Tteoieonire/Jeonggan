@@ -5,11 +5,15 @@
       :playing="player?.playing"
       :undoable="undoable"
       :redoable="redoable"
+      :pastable="pastable"
       @addchapter="addchapter"
       @play="play"
       @open="open"
       @save="save"
       @exportMidi="exportMidi"
+      @cut="cut"
+      @copy="copy"
+      @paste="paste"
       @undo="undo"
       @redo="redo"
       id="menubar"
@@ -278,6 +282,31 @@ export default defineComponent({
     deletechapter() {
       this.doWithBackup(() => this.editor.del('chapter'))
     },
+    cut() {
+      this.doWithBackup(() => {
+        if (this.editor.isSelecting) {
+          const [content, undo] = this.editor.cutRange()
+          this.clipboard = ['Range', content]
+          return undo
+        } else {
+          const [content, undo] = this.editor.cutEntry()
+          this.clipboard = ['Entry', content]
+          return undo
+        }
+      })
+    },
+    copy() {
+      this.clipboard = this.editor.copy()
+    },
+    paste() {
+      if (this.clipboard == null) return
+      const [mode, content] = this.clipboard
+      this.doWithBackup(() =>
+        mode === 'Entry'
+          ? this.editor.pasteEntry(content)
+          : this.editor.pasteRange(content)
+      )
+    },
     async play(command: 'stop' | 'pause' | 'resume') {
       if (command === 'stop') {
         this.player?.stop()
@@ -535,29 +564,12 @@ export default defineComponent({
               else this.undo()
             } else if (e.code === 'KeyA' && hasCtrlKeyOnly(e)) {
               this.editor.selectAll()
-            } else if (e.code === 'KeyC' && hasCtrlKeyOnly(e)) {
-              this.clipboard = this.editor.copy()
             } else if (e.code === 'KeyX' && hasCtrlKeyOnly(e)) {
-              this.doWithBackup(() => {
-                if (this.editor.isSelecting) {
-                  const [content, undo] = this.editor.cutEntry()
-                  this.clipboard = ['Entry', content]
-                  return undo
-                } else {
-                  const [content, undo] = this.editor.cutRange()
-                  this.clipboard = ['Range', content]
-                  return undo
-                }
-              })
+              this.cut()
+            } else if (e.code === 'KeyC' && hasCtrlKeyOnly(e)) {
+              this.copy()
             } else if (e.code === 'KeyV' && hasCtrlKeyOnly(e)) {
-              if (this.clipboard != null) {
-                const [mode, content] = this.clipboard
-                this.doWithBackup(() =>
-                  mode === 'Entry'
-                    ? this.editor.pasteEntry(content)
-                    : this.editor.pasteRange(content)
-                )
-              }
+              this.paste()
             }
             break
           }
@@ -584,6 +596,16 @@ export default defineComponent({
     },
     redoable(): boolean {
       return this.player == null && this.undoTravel < this.undoHistory.length
+    },
+    pastable(): boolean {
+      if (this.clipboard == null) return false
+      const mode = this.clipboard[0]
+      if (mode === 'Range') return true
+      if (!this.editor.isSelecting) return true
+      return (
+        this.editor.anchor?.chapter === this.editor.cursor.chapter &&
+        this.editor.anchor?.cell === this.editor.cursor.cell
+      )
     },
     trillShow(): TrillState {
       return {

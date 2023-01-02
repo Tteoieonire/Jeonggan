@@ -21,6 +21,30 @@
     </b-button-group>
 
     <b-button-group class="m-1">
+      <b-button
+        @click="cut"
+        :disabled="rhythmMode || !editable"
+        aria-label="잘라내기"
+      >
+        <font-awesome-icon icon="scissors" />
+      </b-button>
+      <b-button
+        @click="copy"
+        :disabled="rhythmMode || !editable"
+        aria-label="복사"
+      >
+        <font-awesome-icon icon="copy" />
+      </b-button>
+      <b-button
+        @click="paste"
+        :disabled="rhythmMode || !editable || !pastable"
+        aria-label="붙여넣기"
+      >
+        <font-awesome-icon icon="clipboard" />
+      </b-button>
+    </b-button-group>
+
+    <b-button-group class="m-1">
       <b-button @click="undo" :disabled="!undoable" aria-label="실행 취소">
         <font-awesome-icon icon="undo" />
       </b-button>
@@ -92,10 +116,14 @@ export default defineComponent({
     rhythmMode: { type: Boolean, required: true },
     undoable: { type: Boolean, required: true },
     redoable: { type: Boolean, required: true },
+    pastable: { type: Boolean, required: true },
   },
   emits: {
     open: (file: File) => true,
     save: () => true,
+    cut: () => true,
+    copy: () => true,
+    paste: () => true,
     undo: () => true,
     redo: () => true,
     addchapter: () => true,
@@ -128,6 +156,15 @@ export default defineComponent({
     },
     exportMidi() {
       this.$emit('exportMidi')
+    },
+    cut() {
+      this.$emit('cut')
+    },
+    copy() {
+      this.$emit('copy')
+    },
+    paste() {
+      this.$emit('paste')
     },
     undo() {
       this.$emit('undo')

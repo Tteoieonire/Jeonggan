@@ -225,6 +225,7 @@ describe('MusicEditor', () => {
       editor.cursor.move(0, 11, 0, 0)
       editor.createSelection()
       const [entries, undo] = editor.cutRange()
+      expect(editor.cursor.isEqualTo(new Cursor(false, 0, 11, 0, 0))).toBe(true)
       expect(entries).toMatchObject([
         [[{ main: YUL_OBJ[2][0] }], [{}, { main: YUL_OBJ[2][2] }]],
       ])
@@ -241,6 +242,7 @@ describe('MusicEditor', () => {
       editor.createSelection()
       editor.move('cell', 15, SNAP.BACK)
       const [entries, undo] = editor.cutRange()
+      expect(editor.cursor.isEqualTo(new Cursor(false, 0, 15, 0, 0))).toBe(true)
 
       editor.discardSelection()
       editor.cursor.move(1, 20, 0, 0)
@@ -361,6 +363,7 @@ describe('MusicEditor', () => {
       editor.createSelection()
       editor.move('cell', 11, SNAP.BACK)
       const [content, undo1] = editor.cutRange()
+      expect(editor.cursor.isEqualTo(new Cursor(false, 0, 11, 0, 0))).toBe(true)
       editor.discardSelection()
       editor.cursor.move(1, 6, 0, 0)
       editor.createSelection()
