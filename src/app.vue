@@ -82,7 +82,7 @@ import { convertToMidi } from './midi'
 import { MusicPlayer } from './player'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
-import { getID, inRange } from './utils'
+import { getID, inRange, wrappedIdx } from './utils'
 import { Chapter, Config, Entry, UndoOp } from './viewer'
 
 /**
@@ -92,7 +92,7 @@ const INIT_CONFIG: Config = {
   name: '초장',
   tempo: 60,
   measure: 6,
-  rhythm: ['떵', '', '따닥', '쿵', '더러러러', '따'],
+  rhythm: [['떵'], [''], ['따닥'], ['쿵'], ['더러러러'], ['따']],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
   padding: 0,
@@ -171,7 +171,7 @@ export default defineComponent({
         this.updateSympad()
         this.ime.reset()
       })
-      this.editor.cursor.on('afterCellChange', () => this.updateRhythm())
+      this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
       this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
     },
     updateSympad() {
@@ -189,7 +189,7 @@ export default defineComponent({
     updateRhythm() {
       if (this.editor.cursor.rhythmMode)
         this.tickIdx = RHYTHM_OBJ.indexOf(
-          this.config.rhythm[this.editor.cursor.cell]
+          this.config.rhythm[this.editor.cursor.cell][this.editor.cursor.row]
         )
     },
     updateChapter() {
@@ -216,6 +216,7 @@ export default defineComponent({
       obj?: EntryOf[K],
       resetIME = true
     ) {
+      if (this.editor.isSelecting) return
       this.doWithBackup(() => {
         const el = {
           id: getID(),
@@ -226,16 +227,19 @@ export default defineComponent({
       if (resetIME) this.ime.reset()
     },
     erase() {
+      if (this.editor.isSelecting) return
       this.doWithBackup(() => this.editor.erase())
       this.ime.reset()
     },
     writeIME(key: string, shiftKey: boolean) {
+      if (this.editor.isSelecting) return
       if (shiftKey && !this.sigimShow) return
       const where = shiftKey ? 'modifier' : 'main'
       const obj = this.ime.update(key, shiftKey)
       this.write(where, obj, false)
     },
     shapechange(what: CoordLevel, delta: -1 | 1) {
+      if (this.editor.isSelecting) return
       if (delta === +1) {
         this.doWithBackup(() => this.editor.add(what))
       } else {
@@ -250,15 +254,15 @@ export default defineComponent({
       const oldtick = this.tickIdx
       this.doWithBackup(() => {
         this.tickIdx = tickIdx
-        this.config.rhythm.splice(
-          this.editor.cursor.cell,
+        this.config.rhythm[this.editor.cursor.cell].splice(
+          this.editor.cursor.row,
           1,
           RHYTHM_OBJ[this.tickIdx]
         )
         return () => {
           this.tickIdx = oldtick
-          this.config.rhythm.splice(
-            this.editor.cursor.cell,
+          this.config.rhythm[this.editor.cursor.cell].splice(
+            this.editor.cursor.row,
             1,
             RHYTHM_OBJ[this.tickIdx]
           )
@@ -272,15 +276,38 @@ export default defineComponent({
       query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
       this.write('modifier', querySymbol('modifier', query))
     },
-    configchange(config: Config) {
-      this.editor.get('chapter').setConfig(config)
-      this.config = config
+    configchange(config: Config, isVisibleChange: boolean) {
+      if (!isVisibleChange) {
+        this.editor.get('chapter').setConfig(config)
+        this.config = config
+        return
+      }
+      this.doWithBackup(() => {
+        const old = this.config
+        this.editor.get('chapter').setConfig(config)
+        this.config = config
+        return () => {
+          this.editor.get('chapter').setConfig(old)
+          this.config = old
+        }
+      })
     },
     addchapter() {
-      this.doWithBackup(() => this.editor.add('chapter'))
+      this.doWithBackup(() => {
+        this.editor.discardSelection()
+        return this.editor.add('chapter')
+      })
     },
     deletechapter() {
-      this.doWithBackup(() => this.editor.del('chapter'))
+      this.doWithBackup(() => {
+        this.editor.discardSelection()
+        const undo = this.editor.del('chapter')
+        this.updateChapter()
+        return () => {
+          undo()
+          this.updateChapter()
+        }
+      })
     },
     cut() {
       this.doWithBackup(() => {
@@ -433,13 +460,30 @@ export default defineComponent({
           break
         /* Editing */
         case 'Space':
-          if (isRhythm) return
+          if (isRhythm) {
+            const tickIdx = this.tickIdx + (e.shiftKey ? -1 : +1)
+            this.tickchange(wrappedIdx(tickIdx, RHYTHM_OBJ.length))
+            break
+          }
           if (this.editor.isSelecting) return
           this.doWithBackup(() => this.editor.colbreak())
           break
         case 'Enter':
         case 'NumpadEnter':
-          if (isRhythm) return // TODO
+          if (isRhythm) {
+            if (!e.shiftKey) return
+            this.doWithBackup(() => {
+              const rows = this.config.rhythm[this.editor.cursor.cell]
+              rows.splice(this.editor.cursor.row + 1, 0, '')
+              this.editor.moveRhythm('row', this.editor.cursor.row + 1)
+              return () => {
+                this.editor.moveRhythm('row', this.editor.cursor.row - 1)
+                const rows = this.config.rhythm[this.editor.cursor.cell]
+                rows.splice(this.editor.cursor.row + 1, 1)
+              }
+            })
+            return
+          }
           if (this.editor.isSelecting) return
           if (e.shiftKey) {
             this.doWithBackup(() => this.editor.rowbreak())
@@ -458,7 +502,22 @@ export default defineComponent({
       switch (e.code) {
         case 'Backspace':
         case 'Delete':
-          this.tickchange(-1)
+          if (this.tickIdx !== -1) {
+            this.tickchange(-1)
+            break
+          }
+          const delta = e.code === 'Backspace' ? -1 : 0
+          const rows = this.config.rhythm[this.editor.cursor.cell]
+          if (!inRange(this.editor.cursor.row + delta, rows.length - 1)) break
+          this.doWithBackup(() => {
+            const old = rows.splice(this.editor.cursor.row, 1)[0]
+            this.editor.moveRhythm('row', this.editor.cursor.row + delta)
+            return () => {
+              this.editor.moveRhythm('row', this.editor.cursor.row - delta)
+              const rows = this.config.rhythm[this.editor.cursor.cell]
+              rows.splice(this.editor.cursor.row, 0, old)
+            }
+          })
           break
         default:
           const prefix = e.code.slice(0, -1)

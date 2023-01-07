@@ -9,14 +9,18 @@
     <!-- 장단 -->
     <b-list-group v-if="gak.rhythm" class="gak rhythm" :aria-label="label">
       <b-list-group-item
-        v-for="(tick, i) in gak.content"
+        v-for="(ticks, i) in gak.content"
         :key="i"
-        :active="cursor?.isEqualTo(coord(true, i))"
-        @click="(e: MouseEvent) => moveRhythm(e, i)"
-        class="gugak"
         variant="info"
-        >{{ tick || '' }}</b-list-group-item
       >
+        <rhythmcell
+          :ticks="ticks"
+          :coord="coord(true, i)"
+          :cursor="cursor"
+          @moveTo="moveTo"
+        >
+        </rhythmcell>
+      </b-list-group-item>
     </b-list-group>
 
     <!-- 일반 각 -->
@@ -34,7 +38,6 @@
           :cursor="cursor"
           @moveTo="moveTo"
           @selectTo="selectTo"
-          class="cell"
         >
         </cell>
       </b-list-group-item>
@@ -48,6 +51,7 @@ import { defineComponent, PropType } from 'vue'
 import Cursor from '@/cursor'
 import { Gak } from '@/viewer'
 import cell from './cell.vue'
+import rhythmcell from './rhythmcell.vue'
 
 export default defineComponent({
   props: {
@@ -75,9 +79,9 @@ export default defineComponent({
     move(cell: number, row: number, col: number) {
       this.$emit('moveTo', this.coord(false, cell, row, col))
     },
-    moveRhythm(e: MouseEvent, cell: number) {
+    moveRhythm(e: MouseEvent, cell: number, row: number) {
       // if (e.shiftKey) TODO
-      this.$emit('moveTo', this.coord(true, cell))
+      this.$emit('moveTo', this.coord(true, cell, row))
     },
     moveTo(coord: Cursor) {
       this.$emit('moveTo', coord)
@@ -103,6 +107,7 @@ export default defineComponent({
   },
   components: {
     cell,
+    rhythmcell,
   },
 })
 </script>
@@ -139,8 +144,6 @@ export default defineComponent({
 }
 
 .rhythm > * {
-  font-size: 1.5rem;
-  line-height: 3.5rem;
   text-align: center;
 }
 </style>

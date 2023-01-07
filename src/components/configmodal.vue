@@ -74,7 +74,10 @@ const SCALE = YUL_OBJ[2].map(x => x.label)
 
 export default defineComponent({
   props: { config: { type: Object as PropType<Config>, required: true } },
-  emits: { configchange: (config: Config) => true, deletechapter: () => true },
+  emits: {
+    configchange: (config: Config, visible: boolean) => true,
+    deletechapter: () => true,
+  },
   data() {
     return {
       name: '',
@@ -87,6 +90,14 @@ export default defineComponent({
     }
   },
   methods: {
+    isVisibleChange(): boolean {
+      // TODO
+      // if (this.measure !== this.config.measure) return true
+      // if (this.padding !== this.config.padding) return true
+      // if (this.hideRhythm !== this.config.hideRhythm) return true
+      // return false
+      return true
+    },
     confirm() {
       let rhythm = this.config.rhythm.slice()
       rhythm.length = this.measure
@@ -101,7 +112,7 @@ export default defineComponent({
           .sort((a: number, b: number) => a - b),
         rhythm,
       }
-      this.$emit('configchange', config)
+      this.$emit('configchange', config, this.isVisibleChange())
     },
     reset() {
       if (!this.config) return

@@ -42,7 +42,8 @@ function serializeConfig(config: Config) {
     if (attr === 'name') continue
     else if (attr === 'scale') serialized[attr] = serializeScale(config.scale)
     else if (attr === 'rhythm')
-      serialized[attr] = config.rhythm.map(s => s || '-').join('\n') + '\n'
+      serialized[attr] =
+        config.rhythm.map(s => s.map(c => c || '-').join(' ')).join('\n') + '\n'
     else if (Array.isArray(value)) throw new Error('It cannot be an array.')
     else serialized[attr] = value
   }
@@ -118,10 +119,11 @@ function deserializeMusic(yaml: string) {
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
-    const rhythm: string[] = content.rhythm
+    const rhythm: string[][] = content.rhythm
+      .trim()
       .split('\n')
-      .map((s: string) => (s === '-' ? '' : s))
-    rhythm.length = content.measure
+      .map((s: string) => s.split(' ').map((c: string) => (c === '-' ? '' : c)))
+    while (rhythm.length < content.measure) rhythm.push([''])
     const config: Config = {
       name: content.name,
       tempo: content.tempo,

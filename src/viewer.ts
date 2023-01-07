@@ -1,7 +1,7 @@
 import { InstrumentName } from 'soundfont-player'
 import Cursor, { Level } from './cursor'
 import { MainEntry, ModifierEntry } from './symbols'
-import { clamp, getID, inRange, WithID, wrappedIdx } from './utils'
+import { getID, inRange, WithID, wrappedIdx } from './utils'
 
 export type UndoOp = () => void
 export const idOp: UndoOp = () => {}
@@ -18,7 +18,7 @@ export type Config = Readonly<{
   padding: number
   hideRhythm: boolean
   scale: number[]
-  rhythm: string[]
+  rhythm: string[][]
 }>
 
 export type Gak = {
@@ -28,10 +28,7 @@ export type Gak = {
   gakIndex: number
   measure: number
   padding: number
-} & (
-  | { rhythm: true; content: Array<string> }
-  | { rhythm: false; content: Array<Cell> }
-)
+} & ({ rhythm: true; content: string[][] } | { rhythm: false; content: Cell[] })
 
 export type Entry = { main?: MainEntry; modifier?: ModifierEntry }
 export type Col = WithID<Entry>
@@ -87,7 +84,7 @@ export class Chapter {
     this.data = cells || [_make('cell')]
   }
 
-  setConfig(config: Config) {
+  setConfig(config: Config): void {
     this.config = config
   }
 
@@ -179,11 +176,15 @@ export class MusicViewer {
     this.cursor.moveTo(viewer.cursor)
     return () => this.cursor.moveTo(oldPos)
   }
-
-  protected moveRhythm(cell: number): void {
-    const chapter = this.cursor.chapter
-    cell = clamp(cell, this.music.data[chapter].config.measure)
-    this.cursor.moveRhythm(chapter, cell)
+  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): void {
+    const viewer = this.clone()
+    viewer.cursor.rhythmMode = true
+    viewer.cursor[what] = where
+    while (what !== 'row') {
+      what = CHILD_OF[what]
+      viewer.cursor[what] = 0
+    }
+    this.cursor.moveTo(viewer.cursor)
   }
 
   /**
@@ -260,9 +261,21 @@ export class MusicViewer {
   moveUpDown(direction: 'up' | 'down'): void {
     const delta = direction === 'down' ? +1 : -1
     const snap = direction === 'down' ? SNAP.FRONT : SNAP.BACK
-    if (this.cursor.rhythmMode) return this.moveRhythm(this.cursor.cell + delta)
+    if (this.cursor.rhythmMode) {
+      const rhythm = this.get('chapter').config.rhythm
+      if (inRange(this.cursor.row + delta, rhythm[this.cursor.cell].length)) {
+        this.moveRhythm('row', this.cursor.row + delta)
+      } else if (inRange(this.cursor.cell + delta, rhythm.length)) {
+        this.moveRhythm('cell', this.cursor.cell + delta)
+        this.moveRhythm(
+          'row',
+          direction === 'down' ? 0 : rhythm[this.cursor.cell].length - 1
+        )
+      }
+      return
+    }
 
-    const src = this.cursor.col / this.get('row').data.length
+    const src = (this.cursor.col + 0.49) / this.get('row').data.length
 
     if (!this.moveClamp('row', this.cursor.row + delta, snap))
       if (!this.moveClamp('cell', this.cursor.cell + delta, snap))
@@ -282,31 +295,39 @@ export class MusicViewer {
     delta = direction === 'left' ? +1 : -1
     let destPos = this.cursor.cell + delta * config.measure
     if (inRange(destPos, this.get('chapter').data.length)) {
-      const src = this.cursor.row / this.get('cell').data.length
+      const src = (this.cursor.row + 0.49) / this.get('cell').data.length
       this.move('cell', destPos)
       this.move('row', Math.floor(src * this.get('cell').data.length), snap)
       return
     }
 
-    if (inRange(this._gak(destPos), this._gak(chapter.data.length - 1) + 1))
+    if (inRange(this._gak(destPos), this._gak(chapter.data.length - 1) + 1)) {
       this.moveClamp('cell', destPos, snap)
-    else if (!config.hideRhythm && direction === 'right')
-      this.moveRhythm(this.cursor.cell + config.padding)
-    else this._moveLeftRightChapter(direction)
+    } else if (!config.hideRhythm && direction === 'right') {
+      const src = (this.cursor.row + 0.49) / this.get('cell').data.length
+      this.moveRhythm('cell', this.cursor.cell + config.padding)
+      const row = Math.floor(src * config.rhythm[this.cursor.cell].length)
+      this.moveRhythm('row', row)
+    } else {
+      this._moveLeftRightChapter(direction)
+    }
   }
   private _moveLeftRightRhythm(direction: 'left' | 'right'): void {
+    let chapter = this.music.data[this.cursor.chapter]
+    const rhythm = chapter.config.rhythm
+    const src = (this.cursor.row + 0.49) / rhythm[this.cursor.cell].length
     if (direction === 'left') {
-      let chapter = this.music.data[this.cursor.chapter]
-      let config = chapter.config
-      this.moveClamp('cell', this.cursor.cell - config.padding, SNAP.BACK)
+      if (this.moveClamp('cell', this.cursor.cell - chapter.config.padding))
+        this.move('row', Math.floor(src * this.get('cell').data.length))
+      this.move('col', -1)
     } else if (this.cursor.chapter > 0) {
-      const srcPos = this.cursor.cell
+      const srcJeong = this.cursor.cell
       this.move('chapter', this.cursor.chapter - 1)
+      const lastCell = this.music.data[this.cursor.chapter].data.length - 1
 
-      let chapter = this.music.data[this.cursor.chapter]
-      const head =
-        chapter.data.length - 1 - this._jeong(chapter.data.length - 1)
-      this.moveClamp('cell', head + srcPos, SNAP.FRONT)
+      if (this.moveClamp('cell', lastCell - this._jeong(lastCell) + srcJeong))
+        this.move('row', Math.floor(src * this.get('cell').data.length))
+      this.move('col', 0)
     }
   }
   private _moveLeftRightChapter(direction: 'left' | 'right'): void {
@@ -314,7 +335,7 @@ export class MusicViewer {
     let snap = direction === 'left' ? SNAP.FRONT : SNAP.BACK
 
     const srcJeong = this._jeong(this.cursor.cell)
-    const src = this.cursor.row / this.get('cell').data.length
+    const src = (this.cursor.row + 0.49) / this.get('cell').data.length
 
     // set chapter
     if (!this.moveClamp('chapter', this.cursor.chapter + delta, snap)) return
@@ -322,8 +343,12 @@ export class MusicViewer {
     const config = chapter.config
 
     // set cell
-    if (!config.hideRhythm && direction === 'left')
-      return this.moveRhythm(srcJeong)
+    if (!config.hideRhythm && direction === 'left') {
+      this.moveRhythm('cell', srcJeong)
+      const row = Math.floor(src * config.rhythm[srcJeong].length)
+      this.moveRhythm('row', row)
+      return
+    }
     const head = chapter.data.length - 1 - this._jeong(chapter.data.length - 1)
     const destPos = srcJeong + (direction === 'left' ? -config.padding : head)
     if (!this.moveClamp('cell', destPos, snap)) return

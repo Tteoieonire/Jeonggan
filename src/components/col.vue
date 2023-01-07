@@ -58,11 +58,12 @@ export default defineComponent({
 }
 
 .cur {
-  background-color: #aaf;
+  background-color: #26f;
+  color: white;
 }
 
 .sel:not(.cur) {
-  background-color: #ddf;
+  background-color: #acf;
 }
 
 .modifier {

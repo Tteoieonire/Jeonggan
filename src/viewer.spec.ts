@@ -13,7 +13,7 @@ const SAMPLE_YAML = `- title: 양청도드리
   rhythm: |
     떵
     덕
-    따닥
+    덕 덕
     -
   scale: 黃太仲林南
   tempo: 140
@@ -61,7 +61,7 @@ const SAMPLE_YAML = `- title: 양청도드리
   rhythm: |
     떵
     덕
-    따닥
+    덕 덕
     -
   scale: 黃太仲林南
   tempo: 150
@@ -138,7 +138,7 @@ describe('Music', () => {
         chapterIndex: 0,
         gakIndex: -1,
         rhythm: true,
-        content: ['떵', '덕', '따닥', ''],
+        content: [['떵'], ['덕'], ['덕', '덕'], ['']],
         measure: 4,
         padding: 0,
       })
@@ -413,16 +413,16 @@ describe('MusicViewer', () => {
 
     test('from rhythm', () => {
       const viewer = new MusicViewer(musicAlt)
-      viewer.cursor.moveRhythm(0, 0)
+      viewer.cursor.moveRhythm(0, 0, 0)
       viewer.moveUpDown('up')
       expect(viewer.cursor.isEqualTo(new Cursor(true, 0, 0, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(0, 0)
+      viewer.cursor.moveRhythm(0, 0, 0)
       viewer.moveUpDown('down')
       expect(viewer.cursor.isEqualTo(new Cursor(true, 0, 1, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(1, 0)
+      viewer.cursor.moveRhythm(1, 0, 0)
       viewer.moveUpDown('up')
       expect(viewer.cursor.isEqualTo(new Cursor(true, 1, 0, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(1, 0)
+      viewer.cursor.moveRhythm(1, 0, 0)
       viewer.moveUpDown('down')
       expect(viewer.cursor.isEqualTo(new Cursor(true, 1, 1, 0, 0))).toBe(true)
     })
@@ -504,16 +504,16 @@ describe('MusicViewer', () => {
 
     test('from rhythm', () => {
       const viewer = new MusicViewer(musicAlt)
-      viewer.cursor.moveRhythm(0, 0)
+      viewer.cursor.moveRhythm(0, 0, 0)
       viewer.moveLeftRight('left')
       expect(viewer.cursor.isEqualTo(new Cursor(false, 0, 0, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(0, 0)
+      viewer.cursor.moveRhythm(0, 0, 0)
       viewer.moveLeftRight('right')
       expect(viewer.cursor.isEqualTo(new Cursor(true, 0, 0, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(1, 0)
+      viewer.cursor.moveRhythm(1, 0, 0)
       viewer.moveLeftRight('left')
       expect(viewer.cursor.isEqualTo(new Cursor(false, 1, 0, 0, 0))).toBe(true)
-      viewer.cursor.moveRhythm(1, 0)
+      viewer.cursor.moveRhythm(1, 0, 0)
       viewer.moveLeftRight('right')
       expect(viewer.cursor.isEqualTo(new Cursor(false, 0, 12, 0, 0))).toBe(true)
     })

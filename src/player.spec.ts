@@ -10,7 +10,7 @@ const SAMPLE_YAML = `- title: 양청도드리
   rhythm: |
     떵
     덕
-    따닥
+    덕 덕
     -
   scale: 黃太仲林南
   tempo: 140
@@ -58,7 +58,7 @@ const SAMPLE_YAML = `- title: 양청도드리
   rhythm: |
     떵
     덕
-    따닥
+    덕 덕
     -
   scale: 黃太仲林南
   tempo: 150

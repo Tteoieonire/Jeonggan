@@ -88,8 +88,8 @@ class Cursor implements Position {
     this._move({ rhythmMode: false, chapter, cell, row, col })
   }
 
-  moveRhythm(chapter: number, cell: number) {
-    this._move({ rhythmMode: true, chapter, cell, row: 0, col: 0 })
+  moveRhythm(chapter: number, cell: number, row: number) {
+    this._move({ rhythmMode: true, chapter, cell, row, col: 0 })
   }
 
   moveTo(other: Position) {

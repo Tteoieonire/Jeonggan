@@ -5,6 +5,7 @@ import { getID, inRange } from './utils'
 import {
   Cell,
   Chapter,
+  CHILD_OF,
   Config,
   ElementOf,
   Entry,
@@ -106,9 +107,9 @@ export class MusicSelector extends MusicViewer {
     if (this.anchor?.rhythmMode === true) return idOp
     return super.move(what, where, snap)
   }
-  protected moveRhythm(cell: number): void {
+  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): void {
     if (this.anchor?.rhythmMode === false) return
-    super.moveRhythm(cell)
+    super.moveRhythm(what, where)
   }
   moveUpDown(direction: 'up' | 'down'): void {
     if (this.isSelecting) {
@@ -190,7 +191,11 @@ export class MusicEditor extends MusicSelector {
     if (arr.length === 1) return this.erase(what)
 
     const undo =
-      idx === arr.length - 1 ? this.move(what, idx - 1, SNAP.BACK) : idOp
+      idx === arr.length - 1
+        ? this.move(what, idx - 1, SNAP.BACK)
+        : what === 'col'
+        ? idOp
+        : this.move(CHILD_OF[what], 0)
     const old = arr.splice(idx, 1)[0]
     return () => {
       this.get(PARENT_OF[what]).data.splice(idx, 0, old as any)
@@ -244,7 +249,7 @@ export class MusicEditor extends MusicSelector {
   backspace(): UndoOp {
     if (this.get('col').data.main != null) return this.erase()
 
-    this.stepCol(-1) || this.stepChapter(-1)
+    if (!(this.stepCol(-1) || this.stepChapter(-1))) return idOp
     const undo = this.merge()
     return () => {
       undo()
@@ -388,7 +393,7 @@ function newConfigFrom(config: Config): Config {
   return {
     ...config,
     name: '새 장',
-    rhythm: config.rhythm.slice(),
+    rhythm: JSON.parse(JSON.stringify(config.rhythm)),
     hideRhythm: true,
     padding: 0,
   }
