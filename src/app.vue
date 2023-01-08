@@ -35,17 +35,19 @@
       @trillchange="trillchange"
       id="keypanel"
     ></keypanel>
-    <canvaspanel
-      tabIndex="0"
-      :aria-label="canvasLabel"
-      :cursor="player?.cursor || editor.cursor"
-      :anchor="player ? undefined : editor.anchor"
-      :gaks="gaks"
-      @moveTo="moveTo"
-      @selectTo="selectTo"
-      @click="discardSelection"
-      id="workspace"
-    ></canvaspanel>
+    <b-overlay :show="busy" variant="dark">
+      <canvaspanel
+        tabIndex="0"
+        :aria-label="canvasLabel"
+        :cursor="player?.cursor || editor.cursor"
+        :anchor="player ? undefined : editor.anchor"
+        :gaks="gaks"
+        @moveTo="moveTo"
+        @selectTo="selectTo"
+        @click="discardSelection"
+        id="workspace"
+      ></canvaspanel>
+    </b-overlay>
   </div>
   <configmodal
     :config="config"
@@ -80,7 +82,7 @@
 import { saveAs } from 'file-saver'
 import { writeMidi } from 'midi-file'
 import { InstrumentName } from 'soundfont-player'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 
 import canvaspanel from './components/canvaspanel.vue'
 import keypanel from './components/keypanel.vue'
@@ -156,6 +158,7 @@ export default defineComponent({
         | undefined
         | ['Entry', Entry]
         | ['Range', Entry[][][]],
+      busy: false,
       loadingFailed: false,
     }
   },
@@ -367,17 +370,23 @@ export default defineComponent({
       this.music.title = title
       this.music.instrument = instrument
     },
-    open(file: any) {
-      // TODO: maybe warn user?
+    async open(file: any) {
+      this.busy = true
+      await nextTick()
       const reader = new FileReader()
       reader.addEventListener('load', e => {
         const result = e.target?.result
+        if (typeof result !== 'string') {
+          this.busy = false
+          return
+        }
         try {
           const music = deserializeMusic(result)
           this.load(music)
         } catch (error) {
           this.loadingFailed = true
         }
+        this.busy = false
       })
       reader.readAsText(file)
     },
