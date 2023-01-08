@@ -58,6 +58,22 @@
     :instrument="music.instrument"
     @rename="rename"
   ></globalmodal>
+  <b-alert
+    v-model="loadingFailed"
+    class="position-fixed fixed-top mr-0"
+    style="z-index: 1000"
+    variant="warning"
+    dismissible
+  >
+    파일을 열지 못했습니다. 문제가 계속되는 경우
+    <b-link href="https://github.com/Tteoieonire/Jeonggan/issues/new/choose"
+      >게시판</b-link
+    >
+    또는 메일(<b-link
+      href="mailto:ieay4a@gmail.com?subject=[정간보]%20파일%20열기%20문제%20문의"
+      >ieay4a@gmail.com</b-link
+    >)로 문의 주세요.
+  </b-alert>
 </template>
 
 <script lang="ts">
@@ -140,6 +156,7 @@ export default defineComponent({
         | undefined
         | ['Entry', Entry]
         | ['Range', Entry[][][]],
+      loadingFailed: false,
     }
   },
   methods: {
@@ -355,9 +372,12 @@ export default defineComponent({
       const reader = new FileReader()
       reader.addEventListener('load', e => {
         const result = e.target?.result
-        if (typeof result !== 'string') return
-        const music = deserializeMusic(result) // TODO: handle error
-        this.load(music)
+        try {
+          const music = deserializeMusic(result)
+          this.load(music)
+        } catch (error) {
+          this.loadingFailed = true
+        }
       })
       reader.readAsText(file)
     },
