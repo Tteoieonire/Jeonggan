@@ -15,11 +15,13 @@ import {
   faFolderOpen,
   faPause,
   faPlay,
+  faPlus,
   faRedo,
   faSave,
   faScissors,
   faStop,
   faUndo,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -34,11 +36,13 @@ library.add(
   faFolderOpen,
   faPause,
   faPlay,
+  faPlus,
   faRedo,
   faSave,
   faScissors,
   faStop,
-  faUndo
+  faUndo,
+  faXmark
 )
 
 createApp(MyApp)

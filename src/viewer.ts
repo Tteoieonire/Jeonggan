@@ -14,7 +14,7 @@ export const enum SNAP {
 export type Config = Readonly<{
   name: string
   tempo: number
-  measure: number
+  measure: number[]
   padding: number
   hideRhythm: boolean
   scale: number[]
@@ -26,7 +26,8 @@ export type Gak = {
   chapterID: number
   chapterIndex: number
   gakIndex: number
-  measure: number
+  isLast: boolean
+  measure: number[]
   padding: number
 } & ({ rhythm: true; content: string[][] } | { rhythm: false; content: Cell[] })
 
@@ -90,7 +91,6 @@ export class Chapter {
 
   asGaks(chapterIndex: number): Gak[] {
     let gaks: Gak[] = []
-    const measure = this.config.measure
     if (!this.config.hideRhythm) {
       gaks.push({
         title: this.config.name,
@@ -99,14 +99,16 @@ export class Chapter {
         gakIndex: -1,
         rhythm: true,
         content: this.config.rhythm,
-        measure,
+        measure: this.config.measure,
         padding: 0,
+        isLast: false,
       })
     }
 
-    const numGaks = Math.ceil(this.data.length / measure)
+    const gakLength = this.config.rhythm.length
+    const numGaks = Math.ceil(this.data.length / gakLength)
     for (let i = 0; i < numGaks; i++) {
-      const sliced = this.data.slice(i * measure, (i + 1) * measure)
+      const sliced = this.data.slice(i * gakLength, (i + 1) * gakLength)
       gaks.push({
         title: this.config.name,
         chapterID: this.id,
@@ -114,8 +116,9 @@ export class Chapter {
         gakIndex: i,
         rhythm: false,
         content: sliced,
-        measure,
+        measure: this.config.measure,
         padding: this.config.padding,
+        isLast: i === numGaks - 1
       })
     }
     return gaks
@@ -243,18 +246,18 @@ export class MusicViewer {
 
   protected _gak(cell: number) {
     const config = this.music.data[this.cursor.chapter].config
-    return Math.floor((cell + config.padding) / config.measure)
+    return Math.floor((cell + config.padding) / config.rhythm.length)
   }
   protected _jeong(cell: number) {
     const config = this.music.data[this.cursor.chapter].config
-    return (cell + config.padding) % config.measure
+    return (cell + config.padding) % config.rhythm.length
   }
   moveHome() {
     const jeong = this._jeong(this.cursor.cell)
     this.move('cell', this.cursor.cell - jeong, SNAP.FRONT)
   }
   moveEnd() {
-    const measure = this.music.data[this.cursor.chapter].config.measure
+    const measure = this.music.data[this.cursor.chapter].config.rhythm.length
     const jeong = this._jeong(this.cursor.cell)
     this.move('cell', this.cursor.cell - jeong + (measure - 1), SNAP.BACK)
   }
@@ -293,7 +296,7 @@ export class MusicViewer {
     if (this.moveClamp('col', this.cursor.col + delta)) return
 
     delta = direction === 'left' ? +1 : -1
-    let destPos = this.cursor.cell + delta * config.measure
+    let destPos = this.cursor.cell + delta * config.rhythm.length
     if (inRange(destPos, this.get('chapter').data.length)) {
       const src = (this.cursor.row + 0.49) / this.get('cell').data.length
       this.move('cell', destPos)

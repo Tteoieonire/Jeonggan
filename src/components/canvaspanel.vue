@@ -41,10 +41,20 @@ export default defineComponent({
 })
 </script>
 
-<style scoped>
+<style>
 .gaks {
-  display: flex;
-  flex-flow: row-reverse wrap;
-  align-items: flex-start;
+  overflow: hidden;
+  border: 1px solid black;
+  display: grid;
+  direction: rtl;
+  grid-template-columns: repeat(auto-fill, minmax(1.5rem, auto) 3rem);
+}
+
+.gaks * {
+  direction: ltr;
+}
+
+.gaks > :last-child {
+  border-left: 1px solid black;
 }
 </style>

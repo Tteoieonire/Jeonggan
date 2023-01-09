@@ -4,7 +4,8 @@ const SAMPLE_YAML = `- title: 양청도드리
   instrument: acoustic_grand_piano
 - name: 초장
   hideRhythm: false
-  measure: 4
+  measure:
+    - 4
   padding: 0
   rhythm: |
     떵
@@ -52,7 +53,8 @@ const SAMPLE_YAML = `- title: 양청도드리
     △
 - name: 2장
   hideRhythm: true
-  measure: 4
+  measure:
+    - 4
   padding: 0
   rhythm: |
     떵
@@ -128,7 +130,8 @@ describe('Round-trip', () => {
   instrument: acoustic_guitar
 - name: test
   hideRhythm: false
-  measure: 2
+  measure:
+    - 2
   padding: 0
   rhythm: |
     -
@@ -148,7 +151,8 @@ describe('Round-trip', () => {
   instrument: acoustic_guitar
 - name: test
   hideRhythm: false
-  measure: 1
+  measure:
+    - 1
   padding: 0
   rhythm: |
     -

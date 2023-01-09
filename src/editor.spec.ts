@@ -8,7 +8,8 @@ const SAMPLE_YAML = `- title: 양청도드리
   instrument: acoustic_grand_piano
 - name: 초장
   hideRhythm: false
-  measure: 4
+  measure:
+    - 4
   padding: 0
   rhythm: |
     떵
@@ -56,7 +57,8 @@ const SAMPLE_YAML = `- title: 양청도드리
     △
 - name: 2장
   hideRhythm: true
-  measure: 4
+  measure:
+    - 4
   padding: 0
   rhythm: |
     떵

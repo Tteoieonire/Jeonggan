@@ -35,7 +35,7 @@
       @trillchange="trillchange"
       id="keypanel"
     ></keypanel>
-    <b-overlay :show="busy" variant="dark">
+    <b-overlay :show="busy" variant="dark" id="workspace">
       <canvaspanel
         tabIndex="0"
         :aria-label="canvasLabel"
@@ -45,7 +45,6 @@
         @moveTo="moveTo"
         @selectTo="selectTo"
         @click="discardSelection"
-        id="workspace"
       ></canvaspanel>
     </b-overlay>
   </div>
@@ -109,7 +108,7 @@ import { Chapter, Config, Entry, UndoOp } from './viewer'
 const INIT_CONFIG: Config = {
   name: '초장',
   tempo: 60,
-  measure: 6,
+  measure: [6],
   rhythm: [['떵'], [''], ['따닥'], ['쿵'], ['더러러러'], ['따']],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
@@ -207,10 +206,13 @@ export default defineComponent({
       }
     },
     updateRhythm() {
-      if (this.editor.cursor.rhythmMode)
+      if (this.editor.cursor.rhythmMode) {
         this.tickIdx = RHYTHM_OBJ.indexOf(
-          this.config.rhythm[this.editor.cursor.cell][this.editor.cursor.row]
+          this.editor.get('chapter').config.rhythm[this.editor.cursor.cell][
+            this.editor.cursor.row
+          ]
         )
+      }
     },
     updateChapter() {
       this.config = this.editor.get('chapter').config
@@ -706,14 +708,16 @@ export default defineComponent({
       const chapterName = this.config.name
       if (this.editor.cursor.rhythmMode) {
         return (
-          this.config.rhythm[this.editor.cursor.cell] +
+          (this.config.rhythm[this.editor.cursor.cell] || '빈 박') +
           `, ${chapterName} 장단 ${this.editor.cursor.cell + 1}번째 정간`
         )
       }
 
       let pos = this.editor.cursor.cell
-      const gak = Math.floor((pos + this.config.padding) / this.config.measure)
-      if (gak > 0) pos = (pos + this.config.padding) % this.config.measure
+      const gak = Math.floor(
+        (pos + this.config.padding) / this.config.rhythm.length
+      )
+      if (gak > 0) pos = (pos + this.config.padding) % this.config.rhythm.length
 
       const numRows = this.editor.get('cell').data.length
       const numCols = this.editor.get('row').data.length
@@ -777,9 +781,8 @@ function hasShiftKeyOnly(e: KeyboardEvent) {
 }
 
 #workspace {
-  overflow: hidden;
   background: white;
-  padding: 1rem;
-  margin: 4rem 2rem 2rem 2rem;
+  padding: 4rem 3rem;
+  margin: 3rem 0rem;
 }
 </style>

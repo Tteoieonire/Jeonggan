@@ -106,9 +106,9 @@ function convertConfigToMidi(config: Config): MidiEvent[] {
   events.push(event)
   event = {
     type: 'timeSignature',
-    metronome: config.measure,
-    numerator: config.measure,
-    denominator: chooseTimeSignatureDenominator(config.measure),
+    metronome: config.rhythm.length,
+    numerator: config.rhythm.length,
+    denominator: chooseTimeSignatureDenominator(config.rhythm.length),
     thirtyseconds: 0,
     deltaTime: 0,
   }

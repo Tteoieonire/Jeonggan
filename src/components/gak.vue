@@ -1,5 +1,21 @@
 <template>
   <div class="wrapper">
+    <div class="margin"></div>
+    <div
+      style="border-right: 1px solid black"
+      :style="{ height: padding }"
+      :class="{ padding: padding !== '0rem' }"
+    ></div>
+    <div class="gak" style="border-right: 1px solid black">
+      <div
+        v-for="[dummy, info] in grouped(gak.content.map(() => ''))"
+        :key="info.index"
+        class="annotation"
+        :class="{ endsSubdivision: info.endsSubdivision }"
+      ></div>
+    </div>
+  </div>
+  <div class="wrapper">
     <div class="margin">
       <div v-if="gak.gakIndex === 0">
         <span class="title">{{ gak.title }}</span>
@@ -7,41 +23,46 @@
     </div>
 
     <!-- 장단 -->
-    <b-list-group v-if="gak.rhythm" class="gak rhythm" :aria-label="label">
-      <b-list-group-item
-        v-for="(ticks, i) in gak.content"
-        :key="i"
-        variant="info"
+    <div v-if="gak.rhythm" :aria-label="label" class="gak rhythm">
+      <rhythmcell
+        v-for="[ticks, info] in grouped(gak.content)"
+        :key="info.index"
+        :ticks="ticks"
+        :coord="coord(true, info.index)"
+        :cursor="cursor"
+        @moveTo="moveTo"
+        class="main"
+        :class="{
+          endsSubdivision: info.endsSubdivision,
+          endsChapter: info.endsChapter,
+        }"
       >
-        <rhythmcell
-          :ticks="ticks"
-          :coord="coord(true, i)"
-          :cursor="cursor"
-          @moveTo="moveTo"
-        >
-        </rhythmcell>
-      </b-list-group-item>
-    </b-list-group>
+      </rhythmcell>
+    </div>
 
     <!-- 일반 각 -->
-    <b-list-group
-      v-else
-      class="gak"
-      :aria-label="label"
-      :style="{ paddingTop: padding }"
-    >
-      <b-list-group-item v-for="(cell, i) in gak.content" :key="cell.id">
-        <cell
-          :anchor="anchor"
-          :cell="cell"
-          :coord="coord(false, i)"
-          :cursor="cursor"
-          @moveTo="moveTo"
-          @selectTo="selectTo"
-        >
-        </cell>
-      </b-list-group-item>
-    </b-list-group>
+    <div v-else :aria-label="label" class="gak">
+      <div
+        :style="{ height: padding }"
+        :class="{ padding: padding !== '0rem' }"
+      ></div>
+      <cell
+        v-for="[cell, info] in grouped(gak.content)"
+        :key="cell.id"
+        :anchor="anchor"
+        :cell="cell"
+        :coord="coord(false, info.index)"
+        :cursor="cursor"
+        @moveTo="moveTo"
+        @selectTo="selectTo"
+        class="main"
+        :class="{
+          endsSubdivision: info.endsSubdivision,
+          endsChapter: info.endsChapter,
+        }"
+      >
+      </cell>
+    </div>
   </div>
 </template>
 
@@ -52,6 +73,8 @@ import Cursor from '@/cursor'
 import { Gak } from '@/viewer'
 import cell from './cell.vue'
 import rhythmcell from './rhythmcell.vue'
+
+type Info = { index: number; endsSubdivision: boolean; endsChapter: boolean }
 
 export default defineComponent({
   props: {
@@ -71,17 +94,10 @@ export default defineComponent({
       col: number = 0
     ): Cursor {
       if (!rhythmMode) {
-        cell += this.gak.gakIndex * this.gak.measure
+        cell += this.gak.gakIndex * this.gakLength
         if (this.gak.gakIndex > 0) cell -= this.gak.padding
       }
       return new Cursor(rhythmMode, this.gak.chapterIndex, cell, row, col)
-    },
-    move(cell: number, row: number, col: number) {
-      this.$emit('moveTo', this.coord(false, cell, row, col))
-    },
-    moveRhythm(e: MouseEvent, cell: number, row: number) {
-      // if (e.shiftKey) TODO
-      this.$emit('moveTo', this.coord(true, cell, row))
     },
     moveTo(coord: Cursor) {
       this.$emit('moveTo', coord)
@@ -89,8 +105,31 @@ export default defineComponent({
     selectTo(coord: Cursor) {
       this.$emit('selectTo', coord)
     },
+    grouped<T>(content: T[]): [T, Info][] {
+      const numbered = Array.from(content.entries())
+      let idx = this.gak.gakIndex === 0 ? -this.gak.padding : 0
+      const result: [T, Info][] = []
+      for (const subdivision of this.gak.measure) {
+        const sliced = numbered
+          .slice(Math.max(0, idx), Math.max(0, idx + subdivision))
+          .map(([index, data]): [T, Info] => [
+            data,
+            { index, endsSubdivision: false, endsChapter: false },
+          ])
+        if (sliced.length) {
+          sliced[sliced.length - 1][1].endsSubdivision = true
+          result.push(...sliced)
+        }
+        idx += subdivision
+      }
+      result[result.length - 1][1].endsChapter = this.gak.isLast
+      return result
+    },
   },
   computed: {
+    gakLength() {
+      return this.gak.measure.reduce((a, b) => a + b, 0)
+    },
     title() {
       return this.gak.title || this.gak.chapterIndex + 1 + '장'
     },
@@ -114,16 +153,24 @@ export default defineComponent({
 
 <style scoped>
 .wrapper {
-  width: 4rem;
-  background-color: beige;
   overflow: hidden;
+  border-bottom: 1px solid black;
+}
+
+.main {
+  border: 1px solid black;
+  border-bottom: none;
+}
+
+.annotation:first-child,
+.padding {
+  border-top: 1px solid black;
 }
 
 .margin {
   width: 100%;
   height: 5rem;
   text-align: center;
-  background-color: white;
   padding: 0.5rem 0;
 }
 
@@ -134,9 +181,12 @@ export default defineComponent({
   text-orientation: upright;
 }
 
-.gak {
-  width: 3rem;
-  margin: 0 auto;
+.endsSubdivision {
+  border-bottom: 1px solid black;
+}
+
+.endsChapter {
+  border-bottom: 3px double black;
 }
 
 .gak > * {

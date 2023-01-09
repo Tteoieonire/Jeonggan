@@ -62,8 +62,12 @@ export default defineComponent({
   white-space: nowrap;
 }
 
+.container {
+  background-color: #fec;
+}
+
 .cur {
-  background-color: #06a;
+  background-color: #f60;
   color: white;
 }
 </style>

@@ -35,16 +35,13 @@ function serializeScale(scale: number[]): string {
 }
 
 function serializeConfig(config: Config) {
-  const serialized: Record<string, string | number | boolean> = {
-    name: config.name,
-  }
+  const serialized: Record<string, any> = { name: config.name }
   for (const [attr, value] of Object.entries(config).sort()) {
     if (attr === 'name') continue
     else if (attr === 'scale') serialized[attr] = serializeScale(config.scale)
     else if (attr === 'rhythm')
       serialized[attr] =
         config.rhythm.map(s => s.map(c => c || '-').join(' ')).join('\n') + '\n'
-    else if (Array.isArray(value)) throw new Error('It cannot be an array.')
     else serialized[attr] = value
   }
   return serialized
@@ -122,12 +119,20 @@ function deserializeMusic(yaml: string) {
     const rhythm: string[][] = content.rhythm
       .trim()
       .split('\n')
-      .map((s: string) => s.split(' ').map((c: string) => (c === '-' ? '' : c)))
-    while (rhythm.length < content.measure) rhythm.push([''])
+      .map((s: string) =>
+        s === '' ? [''] : s.split(' ').map((c: string) => (c === '-' ? '' : c))
+      )
+    const measure: number[] = Array.isArray(content.measure)
+      ? content.measure
+      : [content.measure]
+    const gakLength = measure.reduce((a: number, b: number) => a + b, 0)
+    if (rhythm.length > gakLength) throw new Error('Too many ticks in rhythm.')
+    while (rhythm.length < gakLength) rhythm.push([''])
+
     const config: Config = {
       name: content.name,
       tempo: content.tempo,
-      measure: content.measure,
+      measure,
       hideRhythm: content.hideRhythm,
       scale: content.scale
         .trim()
