@@ -118,7 +118,7 @@ export class Chapter {
         content: sliced,
         measure: this.config.measure,
         padding: this.config.padding,
-        isLast: i === numGaks - 1
+        isLast: i === numGaks - 1,
       })
     }
     return gaks
@@ -179,7 +179,8 @@ export class MusicViewer {
     this.cursor.moveTo(viewer.cursor)
     return () => this.cursor.moveTo(oldPos)
   }
-  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): void {
+  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): UndoOp {
+    const oldPos = this.cursor.clone()
     const viewer = this.clone()
     viewer.cursor.rhythmMode = true
     viewer.cursor[what] = where
@@ -188,6 +189,7 @@ export class MusicViewer {
       viewer.cursor[what] = 0
     }
     this.cursor.moveTo(viewer.cursor)
+    return () => this.cursor.moveTo(oldPos)
   }
 
   /**

@@ -250,8 +250,19 @@ export default defineComponent({
     },
     erase() {
       if (this.editor.isSelecting) return
-      this.doWithBackup(() => this.editor.erase())
-      this.ime.reset()
+      if (this.editor.cursor.rhythmMode) {
+        this.doWithBackup(() => {
+          const rows = this.config.rhythm[this.editor.cursor.cell]
+          const old = rows.splice(this.editor.cursor.row, 1, '')[0]
+          return () => {
+            const rows = this.config.rhythm[this.editor.cursor.cell]
+            rows.splice(this.editor.cursor.row, 1, old)
+          }
+        })
+      } else {
+        this.doWithBackup(() => this.editor.erase())
+        this.ime.reset()
+      }
     },
     writeIME(key: string, shiftKey: boolean) {
       if (this.editor.isSelecting) return
@@ -262,11 +273,8 @@ export default defineComponent({
     },
     shapechange(what: CoordLevel, delta: -1 | 1) {
       if (this.editor.isSelecting) return
-      if (delta === +1) {
-        this.doWithBackup(() => this.editor.add(what))
-      } else {
-        this.doWithBackup(() => this.editor.del(what))
-      }
+      if (delta === +1) this.doWithBackup(() => this.editor.add(what))
+      else this.doWithBackup(() => this.editor.del(what))
     },
     octavechange(delta: -1 | 1) {
       if (this.octave + delta < 0 || this.octave + delta > 4) return
@@ -503,17 +511,8 @@ export default defineComponent({
         case 'NumpadEnter':
           if (isRhythm) {
             if (!e.shiftKey) return
-            this.doWithBackup(() => {
-              const rows = this.config.rhythm[this.editor.cursor.cell]
-              rows.splice(this.editor.cursor.row + 1, 0, '')
-              this.editor.moveRhythm('row', this.editor.cursor.row + 1)
-              return () => {
-                this.editor.moveRhythm('row', this.editor.cursor.row - 1)
-                const rows = this.config.rhythm[this.editor.cursor.cell]
-                rows.splice(this.editor.cursor.row + 1, 1)
-              }
-            })
-            return
+            this.doWithBackup(() => this.editor.add('row'))
+            break
           }
           if (this.editor.isSelecting) return
           if (e.shiftKey) {
@@ -537,16 +536,15 @@ export default defineComponent({
             this.tickchange(-1)
             break
           }
-          const delta = e.code === 'Backspace' ? -1 : 0
+          const dest = this.editor.cursor.row + (e.code === 'Delete' ? 0 : -1)
           const rows = this.config.rhythm[this.editor.cursor.cell]
-          if (!inRange(this.editor.cursor.row + delta, rows.length - 1)) break
+          if (!inRange(dest, rows.length - 1)) break
           this.doWithBackup(() => {
-            const old = rows.splice(this.editor.cursor.row, 1)[0]
-            this.editor.moveRhythm('row', this.editor.cursor.row + delta)
+            const undoDel = this.editor.del('row')
+            const undoMove = this.editor.moveRhythm('row', dest)
             return () => {
-              this.editor.moveRhythm('row', this.editor.cursor.row - delta)
-              const rows = this.config.rhythm[this.editor.cursor.cell]
-              rows.splice(this.editor.cursor.row, 0, old)
+              undoMove()
+              undoDel()
             }
           })
           break

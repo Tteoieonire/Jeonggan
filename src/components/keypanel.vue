@@ -6,7 +6,7 @@
       <b-button @click="erase" aria-label="지우개" class="m-1">
         <font-awesome-icon icon="eraser" />
       </b-button>
-      <!-- <shapepad for="row" @shapechange="shapechange" /> -->
+      <shapepad for="row" @shapechange="shapechange" />
     </div>
     <div v-else class="flex">
       <yulpad
@@ -60,12 +60,12 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import rhythmpad from './keypads/rhythmpad.vue'
-import yulpad from './keypads/yulpad.vue'
-import sympad from './keypads/sympad.vue'
-import shapepad from './keypads/shapepad.vue'
-import cellpad from './keypads/cellpad.vue'
 import { MainEntry, ModifierEntry, TrillState } from '@/symbols'
+import cellpad from './keypads/cellpad.vue'
+import rhythmpad from './keypads/rhythmpad.vue'
+import shapepad from './keypads/shapepad.vue'
+import sympad from './keypads/sympad.vue'
+import yulpad from './keypads/yulpad.vue'
 
 export default defineComponent({
   props: {

@@ -107,9 +107,9 @@ export class MusicSelector extends MusicViewer {
     if (this.anchor?.rhythmMode === true) return idOp
     return super.move(what, where, snap)
   }
-  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): void {
-    if (this.anchor?.rhythmMode === false) return
-    super.moveRhythm(what, where)
+  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): UndoOp {
+    if (this.anchor?.rhythmMode === false) return idOp
+    return super.moveRhythm(what, where)
   }
   moveUpDown(direction: 'up' | 'down'): void {
     if (this.isSelecting) {
@@ -168,6 +168,7 @@ export class MusicSelector extends MusicViewer {
 export class MusicEditor extends MusicSelector {
   /* Button action */
   add<T extends keyof typeof PARENT_OF>(what: T, obj?: ElementOf[T]): UndoOp {
+    if (this.cursor.rhythmMode && what === 'row') return this.addRhythmRow()
     const destPos = this.cursor[what] + 1
     if (obj == null) {
       if (what === 'chapter') {
@@ -184,8 +185,19 @@ export class MusicEditor extends MusicSelector {
       this.get(PARENT_OF[what]).data.splice(destPos, 1)
     }
   }
+  addRhythmRow(): UndoOp {
+    const rows = this.get('chapter').config.rhythm[this.cursor.cell]
+    rows.splice(this.cursor.row + 1, 0, '')
+    this.moveRhythm('row', this.cursor.row + 1)
+    return () => {
+      this.moveRhythm('row', this.cursor.row - 1)
+      const rows = this.get('chapter').config.rhythm[this.cursor.cell]
+      rows.splice(this.cursor.row + 1, 1)
+    }
+  }
 
   del(what: keyof typeof PARENT_OF): UndoOp {
+    if (this.cursor.rhythmMode && what === 'row') return this.delRhythmRow()
     const arr = this.get(PARENT_OF[what]).data
     const idx = this.cursor[what]
     if (arr.length === 1) return this.erase(what)
@@ -199,6 +211,22 @@ export class MusicEditor extends MusicSelector {
     const old = arr.splice(idx, 1)[0]
     return () => {
       this.get(PARENT_OF[what]).data.splice(idx, 0, old as any)
+      undo()
+    }
+  }
+  delRhythmRow() {
+    const arr = this.get('chapter').config.rhythm[this.cursor.cell]
+    const idx = this.cursor.row
+
+    let undo = idOp
+    const keep = arr.length === 1
+    if (keep) arr.push('')
+    else undo = this.moveRhythm('row', Math.min(idx, arr.length - 2))
+
+    const old = arr.splice(idx, 1)[0]
+    return () => {
+      const arr = this.get('chapter').config.rhythm[this.cursor.cell]
+      arr.splice(idx, keep ? 1 : 0, old)
       undo()
     }
   }
