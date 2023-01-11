@@ -96,30 +96,26 @@ class Cursor implements Position {
     this._move(other)
   }
 
-  isLessThan(other: Cursor) {
+  isLessThan(other: Cursor, upto: Level = 'col'): boolean {
     if (this.rhythmMode !== other.rhythmMode)
       throw Error('Cannot compare cursors of different rhythmMode.')
 
-    if (this.chapter !== other.chapter) return this.chapter < other.chapter
-    if (this.cell !== other.cell) return this.cell < other.cell
-    if (this.row !== other.row) return this.row < other.row
-    return this.col < other.col
+    for (const level of ['chapter', 'cell', 'row', 'col'] as const) {
+      if (this[level] !== other[level]) return this[level] < other[level]
+      if (level === upto) return false
+    }
+    return false
   }
 
-  isEqualTo(other: Cursor) {
-    return (
-      this.rhythmMode === other.rhythmMode &&
-      this.chapter === other.chapter &&
-      this.cell === other.cell &&
-      this.row === other.row &&
-      this.col === other.col
-    )
+  isEqualTo(other: Cursor, upto: Level = 'col'): boolean {
+    if (upto === 'music') return true
+    return !checkChanges(this, other)[upto]
   }
 
-  isBetween(a: Cursor, b: Cursor) {
+  isBetween(a: Cursor, b: Cursor, upto: Level = 'col') {
     // Check if min{a, b} <= this <= max{a, b}
-    const [min, max] = a.isLessThan(b) ? [a, b] : [b, a]
-    return !(this.isLessThan(min) || max.isLessThan(this))
+    const [min, max] = a.isLessThan(b, upto) ? [a, b] : [b, a]
+    return !(this.isLessThan(min, upto) || max.isLessThan(this, upto))
   }
 }
 

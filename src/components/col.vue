@@ -1,9 +1,5 @@
 <template>
-  <div
-    @click.stop="moveOrSelectTo"
-    :class="{ cur: isCur, sel: isSel }"
-    class="col"
-  >
+  <div @click.stop="moveOrSelectTo" :class="{ cur: isCur }" class="col">
     <span class="gugak">{{ main }}</span>
     <span v-if="content.data.modifier" class="gugak modifier">{{
       'text' in content.data.modifier
@@ -29,8 +25,15 @@ export default defineComponent({
   emits: { moveTo: (coord: Cursor) => true, selectTo: (coord: Cursor) => true },
   methods: {
     moveOrSelectTo(e: MouseEvent) {
-      if (e.shiftKey) this.$emit('selectTo', this.coord)
-      else this.$emit('moveTo', this.coord)
+      if (e.shiftKey) {
+        this.$emit('selectTo', this.coord)
+        return
+      }
+      if (this.anchor != null) {
+        if (this.anchor.isEqualTo(this.coord, 'cell')) return
+        if (this.cursor?.isEqualTo(this.coord, 'cell')) return
+      }
+      this.$emit('moveTo', this.coord)
     },
   },
   computed: {
@@ -40,10 +43,6 @@ export default defineComponent({
     isCur(): boolean {
       if (this.cursor == null) return false
       return this.cursor.isEqualTo(this.coord)
-    },
-    isSel(): boolean {
-      if (this.anchor == null || this.cursor == null) return false
-      return this.coord.isBetween(this.anchor, this.cursor)
     },
   },
 })
@@ -60,10 +59,6 @@ export default defineComponent({
 .cur {
   background-color: #06f;
   color: white;
-}
-
-.sel:not(.cur) {
-  background-color: #bdf;
 }
 
 .modifier {

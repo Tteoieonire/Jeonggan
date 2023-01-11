@@ -8,6 +8,8 @@
       :gak="gak"
       @moveTo="moveTo"
       @selectTo="selectTo"
+      @pointer-down="pointerDown"
+      @pointer-over="pointerOver"
     ></gak>
   </div>
 </template>
@@ -28,6 +30,8 @@ export default defineComponent({
   emits: {
     moveTo: (coord: Cursor) => true,
     selectTo: (coord: Cursor) => true,
+    pointerDown: (coord: Cursor) => true,
+    pointerOver: (coord: Cursor) => true,
   },
   methods: {
     moveTo(coord: Cursor) {
@@ -35,6 +39,12 @@ export default defineComponent({
     },
     selectTo(coord: Cursor) {
       this.$emit('selectTo', coord)
+    },
+    pointerDown(coord: Cursor) {
+      this.$emit('pointerDown', coord)
+    },
+    pointerOver(coord: Cursor) {
+      this.$emit('pointerOver', coord)
     },
   },
   components: { gak },

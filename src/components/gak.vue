@@ -55,6 +55,8 @@
         :cursor="cursor"
         @moveTo="moveTo"
         @selectTo="selectTo"
+        @pointer-down="pointerDown"
+        @pointer-over="pointerOver"
         class="main"
         :class="{
           endsSubdivision: info.endsSubdivision,
@@ -85,6 +87,8 @@ export default defineComponent({
   emits: {
     moveTo: (coord: Cursor) => true,
     selectTo: (coord: Cursor) => true,
+    pointerDown: (coord: Cursor) => true,
+    pointerOver: (coord: Cursor) => true,
   },
   methods: {
     coord(
@@ -104,6 +108,12 @@ export default defineComponent({
     },
     selectTo(coord: Cursor) {
       this.$emit('selectTo', coord)
+    },
+    pointerDown(coord: Cursor) {
+      this.$emit('pointerDown', coord)
+    },
+    pointerOver(coord: Cursor) {
+      this.$emit('pointerOver', coord)
     },
     grouped<T>(content: T[]): [T, Info][] {
       const numbered = Array.from(content.entries())

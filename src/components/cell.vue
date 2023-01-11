@@ -1,5 +1,10 @@
 <template>
-  <div class="container">
+  <div
+    class="container"
+    :class="{ sel: isSel, handle: isHandle }"
+    @pointerdown.prevent="pointerDown"
+    @pointerover.prevent="pointerOver"
+  >
     <div
       v-for="(row, r) in rows"
       :key="row.id"
@@ -40,6 +45,8 @@ export default defineComponent({
   emits: {
     moveTo: (coord: Cursor) => true,
     selectTo: (coord: Cursor) => true,
+    pointerDown: (coord: Cursor) => true,
+    pointerOver: (coord: Cursor) => true,
   },
   methods: {
     getRowStyle(row: Row) {
@@ -61,10 +68,27 @@ export default defineComponent({
     selectTo(coord: Cursor) {
       this.$emit('selectTo', coord)
     },
+    pointerDown(e: PointerEvent) {
+      ;(e.target as any).releasePointerCapture(e.pointerId)
+      this.$emit('pointerDown', this.coord)
+    },
+    pointerOver() {
+      this.$emit('pointerOver', this.coord)
+    },
   },
   computed: {
     rows() {
       return this.cell.data
+    },
+    isSel(): boolean {
+      if (this.anchor == null || this.cursor == null) return false
+      return this.coord.isBetween(this.anchor, this.cursor, 'cell')
+    },
+    isHandle(): boolean {
+      return !!(
+        this.anchor?.isEqualTo(this.coord, 'cell') ||
+        this.cursor?.isEqualTo(this.coord, 'cell')
+      )
     },
   },
   components: {
@@ -91,5 +115,13 @@ export default defineComponent({
 
 .mycol {
   flex-grow: 1;
+}
+
+.sel {
+  background-color: #bdf;
+}
+
+.handle {
+  touch-action: pinch-zoom;
 }
 </style>

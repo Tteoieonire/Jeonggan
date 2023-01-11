@@ -44,7 +44,8 @@
         :gaks="gaks"
         @moveTo="moveTo"
         @selectTo="selectTo"
-        @click="discardSelection"
+        @pointer-down="pointerDown"
+        @pointer-over="pointerOver"
       ></canvaspanel>
     </b-overlay>
   </div>
@@ -142,6 +143,7 @@ type UndoRecord = {
 export default defineComponent({
   data() {
     return {
+      dragging: false,
       music: undefined as unknown as Music,
       editor: undefined as unknown as MusicEditor,
       player: undefined as undefined | MusicPlayer,
@@ -179,10 +181,15 @@ export default defineComponent({
       this.init()
     },
     init() {
+      // keep octave & clipboard
+      this.dragging = false
       this.player = undefined
       this.undoHistory = []
       this.undoTravel = 0
+      this.busy = false
+      this.loadingFailed = false
       this.updateChapter()
+      this.updateRhythm()
       this.updateSympad()
       this.ime.reset()
 
@@ -216,6 +223,22 @@ export default defineComponent({
     },
     updateChapter() {
       this.config = this.editor.get('chapter').config
+    },
+    pointerDown(coord: Cursor) {
+      if (this.editor.anchor?.isEqualTo(coord, 'cell')) {
+        this.editor.anchor.moveTo(this.editor.cursor)
+        this.editor.cursor.moveTo(coord)
+        this.editor.normalizeSelection()
+      } else if (!this.editor.cursor.isEqualTo(coord, 'cell')) {
+        return // ignore this event
+      }
+      this.dragging = true
+    },
+    pointerOver(coord: Cursor) {
+      if (this.dragging) this.selectTo(coord)
+    },
+    pointerUp() {
+      this.dragging = false
     },
     moveTo(coord: Cursor) {
       if (this.player != null) return
@@ -734,6 +757,8 @@ export default defineComponent({
     this.create('새 곡')
   },
   mounted() {
+    document.addEventListener('pointerup', this.pointerUp)
+    document.addEventListener('pointercancel', this.pointerUp)
     document
       .getElementById('keypress')
       ?.addEventListener('keydown', this.keypressHandler)
