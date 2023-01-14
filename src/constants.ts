@@ -1,4 +1,4 @@
-const RHYTHM_OBJ = ['떵', '쿵', '덕', '따닥', '더러러러', '따']
+const RHYTHM_OBJ = ['떵', '쿵', '덕', '따닥', '더러러러', '따'] as const
 
 const YULLYEO = [
   [
@@ -45,8 +45,8 @@ const YULLYEO = [
     '㶃',
     '㶝',
   ],
-]
-const OCTAVE = ['하배', '배', '', '청', '중청']
+] as const
+const OCTAVE = ['하배', '배', '', '청', '중청'] as const
 const HANGEUL = [
   '황종',
   '대려',
@@ -60,7 +60,7 @@ const HANGEUL = [
   '남려',
   '무역',
   '응종',
-]
+] as const
 
 const YUL_OBJ = OCTAVE.map(function (oct_label, oct_idx) {
   return YULLYEO[oct_idx].map(function (yul_label, yul_idx) {
@@ -71,6 +71,6 @@ const YUL_OBJ = OCTAVE.map(function (oct_label, oct_idx) {
     }
   })
 })
-const REST_OBJ = { text: '△', label: '쉼표', pitch: undefined }
+const REST_OBJ = { text: '△', label: '쉼표', pitch: undefined } as const
 
 export { RHYTHM_OBJ, YUL_OBJ, REST_OBJ }

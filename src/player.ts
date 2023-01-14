@@ -158,9 +158,11 @@ export function render(
 
 export class MusicPlayer extends MusicViewer {
   protected static _ac?: AudioContext
-  protected static _players: Partial<Record<InstrumentName, Player>> = {}
+  protected static _players: Partial<Record<InstrumentName | '장구', Player>> =
+    {}
 
-  protected _player?: Player
+  protected melodyPlayer?: Player
+  protected rhythmPlayer?: Player
   lastPitch?: number
   finished = false // playing or paused <-> stopped
 
@@ -171,19 +173,28 @@ export class MusicPlayer extends MusicViewer {
     return new MusicPlayer(viewer.music, viewer.cursor.clone())
   }
 
-  protected async getPlayer(_instrument: InstrumentName) {
+  protected async getPlayer(_instrument: InstrumentName | '장구') {
     if (!(_instrument in MusicPlayer._players)) {
       if (MusicPlayer._ac == null) MusicPlayer._ac = new AudioContext()
-      MusicPlayer._players[_instrument] = await instrument(
-        MusicPlayer._ac,
-        _instrument
-      )
+      if (_instrument === '장구') {
+        const { Janggu } = await import('./janggu')
+        MusicPlayer._players[_instrument] = await instrument(
+          MusicPlayer._ac,
+          Janggu as any,
+          { isSoundfontURL: () => true }
+        )
+      } else {
+        MusicPlayer._players[_instrument] = await instrument(
+          MusicPlayer._ac,
+          _instrument
+        )
+      }
     }
     return MusicPlayer._players[_instrument]
   }
 
   get playing(): boolean {
-    return this._player != null // playing <-> paused or stopped
+    return this.melodyPlayer != null // playing <-> paused or stopped
   }
 
   getLastPitch(): number | undefined {
@@ -230,8 +241,54 @@ export class MusicPlayer extends MusicViewer {
 
   async play() {
     this.stop()
+
+    const [melodyPlayer, rhythmPlayer] = await Promise.all([
+      this.getPlayer(this.music.instrument),
+      this.getPlayer('장구'),
+    ])
+    this.melodyPlayer = melodyPlayer
+    this.rhythmPlayer = rhythmPlayer
+
+    await Promise.all([this.playMelody(), this.playRhythm()])
+  }
+
+  async playRhythm() {
+    const viewer = this.clone()
+    viewer.move('row', 0)
+    let msFromCellStart = 0
+    while (!viewer.cursor.isEqualTo(this.cursor))
+      msFromCellStart += viewer.colDuration()
+
+    while (true) {
+      const config = this.get('chapter').config
+      const gakLength = config.measure.reduce((a, b) => a + b, 0)
+      const msPerCell = 60000 / config.tempo
+      const cell =
+        config.rhythm[(this.cursor.cell + config.padding) % gakLength]
+      const duration = msPerCell / cell.length
+
+      let i = Math.ceil(msFromCellStart / duration)
+      await sleep(i * duration - msFromCellStart)
+      if (!this.playing) {
+        this.rhythmPlayer?.stop()
+        return
+      }
+
+      for (; i < cell.length; i++) {
+        if (cell[i]) this.rhythmPlayer?.start(cell[i])
+
+        await sleep(duration)
+        if (!this.playing) {
+          this.rhythmPlayer?.stop()
+          return
+        }
+      }
+      msFromCellStart = 0
+    }
+  }
+
+  async playMelody() {
     this.finished = false
-    this._player = await this.getPlayer(this.music.instrument)
     let notes: Note[]
     let lastPitch: number | undefined = undefined
     do {
@@ -240,7 +297,7 @@ export class MusicPlayer extends MusicViewer {
       const duration = this.colDuration()
 
       if (cur?.data?.main) {
-        this._player?.stop()
+        this.melodyPlayer?.stop()
         if (cur.data.main.pitch) {
           const sori: Sori = {
             time: 0,
@@ -252,23 +309,24 @@ export class MusicPlayer extends MusicViewer {
 
           ;[notes, lastPitch] = this.render(sori)
           for (const note of notes) {
-            this._player?.stop()
-            this._player?.start('' + note.pitch)
+            this.melodyPlayer?.stop()
+            this.melodyPlayer?.start('' + note.pitch)
             await sleep(note.duration)
-            if (!this._player) return
+            if (!this.melodyPlayer) return
           }
           continue
         }
       }
       await sleep(duration)
-      if (!this._player) return
+      if (!this.melodyPlayer) return
     } while (this.stepCol() || this.stepChapter())
     this.stop()
     this.finished = true
   }
 
   stop() {
-    this._player?.stop()
-    delete this._player
+    this.melodyPlayer?.stop()
+    this.rhythmPlayer?.stop()
+    delete this.melodyPlayer
   }
 }

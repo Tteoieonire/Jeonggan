@@ -12,8 +12,9 @@ module.exports = {
   devtool: production ? 'cheap-module-source-map' : 'inline-source-map',
   entry: path.resolve(__dirname, './src/main.ts'),
   output: {
-    path: path.resolve(__dirname, './'),
+    path: path.resolve(__dirname, './docs'),
     filename: 'build.js',
+    clean: true,
   },
   module: {
     rules: [
@@ -22,7 +23,7 @@ module.exports = {
         loader: 'vue-loader',
       },
       {
-        test: /\.js|\.ts$/,
+        test: /\.[jt]s$/,
         exclude: /node_modules/,
         use: [
           {
@@ -41,6 +42,14 @@ module.exports = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.woff2?$/,
+        type: 'asset/resource',
+      },
+      {
+        test: /\.mp3$/,
+        type: 'asset/inline',
+      },
     ],
   },
   resolve: {
@@ -50,7 +59,7 @@ module.exports = {
   },
   devServer: {
     static: {
-      directory: __dirname,
+      directory: path.resolve(__dirname, '/'),
     },
   },
   plugins: [

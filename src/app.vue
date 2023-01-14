@@ -425,19 +425,18 @@ export default defineComponent({
     },
     save() {
       const data = serializeMusic(this.music)
+
       const blob = new Blob([data], { type: 'text/x-yaml' })
-      let filename =
+      const filename =
         this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
       saveAs(blob, filename)
     },
-    exportMidi() {
-      const data = writeMidi(convertToMidi(this.music.getPlayer()), {
-        running: true,
-      })
-      const blob = new Blob([Uint8Array.from(data)], {
-        type: 'audio/midi',
-      })
-      let filename =
+    async exportMidi() {
+      const compiled = convertToMidi(this.music.getPlayer())
+      const data = Uint8Array.from(writeMidi(compiled, { running: true }))
+
+      const blob = new Blob([data], { type: 'audio/midi' })
+      const filename =
         this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)
     },
