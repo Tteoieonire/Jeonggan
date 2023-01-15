@@ -28,7 +28,8 @@ export function inRange<T extends Array<V>, V>(
   return idx >= 0 && idx < (typeof ref === 'number' ? ref : ref.length)
 }
 
-export function sleep(milliseconds: number) {
+export function sleep(milliseconds: number): Promise<void> {
+  if (milliseconds <= 0) return Promise.resolve()
   return new Promise(r => setTimeout(r, milliseconds))
 }
 

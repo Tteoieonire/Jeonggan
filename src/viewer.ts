@@ -213,21 +213,23 @@ export class MusicViewer {
     return true
   }
 
-  stepCol(delta: 1 | -1 = +1): boolean {
-    const _step = (level: Level, delta: 1 | -1): boolean => {
-      if (level === 'music' || level === 'chapter') return false
+  step(level: Level, delta: 1 | -1 = +1): boolean {
+    if (level === 'music') return false
+    if (level === 'chapter') return this.stepChapter(delta)
 
-      const parentLevel = PARENT_OF[level]
-      let numSiblings = this.get(parentLevel).data.length
-      let destPos = this.cursor[level] + delta
-      if (inRange(destPos, numSiblings)) {
-        const snap = delta > 0 ? SNAP.FRONT : SNAP.BACK
-        this.move(level, destPos, snap)
-        return true
-      }
-      return _step(parentLevel, delta)
+    const parentLevel = PARENT_OF[level]
+    let numSiblings = this.get(parentLevel).data.length
+    let destPos = this.cursor[level] + delta
+    if (inRange(destPos, numSiblings)) {
+      const snap = delta > 0 ? SNAP.FRONT : SNAP.BACK
+      this.move(level, destPos, snap)
+      return true
     }
-    return _step('col', delta)
+    return this.step(parentLevel, delta)
+  }
+
+  stepCol(delta: 1 | -1 = +1): boolean {
+    return this.step('col', delta)
   }
 
   stepChapter(delta: 1 | -1 = +1): boolean {

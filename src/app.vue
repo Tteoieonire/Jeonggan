@@ -395,6 +395,9 @@ export default defineComponent({
         this.player?.stop()
       } else if (command === 'resume') {
         this.player = this.player || MusicPlayer.fromMusicViewer(this.editor)
+        this.busy = true
+        await this.player.load()
+        this.busy = false
         await this.player.play()
       }
       if (this.player?.finished) this.player = undefined

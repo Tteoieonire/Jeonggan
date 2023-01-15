@@ -164,6 +164,7 @@ export class MusicPlayer extends MusicViewer {
   protected melodyPlayer?: Player
   protected rhythmPlayer?: Player
   lastPitch?: number
+  playing = false // playing <-> paused or stopped
   finished = false // playing or paused <-> stopped
 
   static fromMusicViewer(viewer: {
@@ -191,10 +192,6 @@ export class MusicPlayer extends MusicViewer {
       }
     }
     return MusicPlayer._players[_instrument]
-  }
-
-  get playing(): boolean {
-    return this.melodyPlayer != null // playing <-> paused or stopped
   }
 
   getLastPitch(): number | undefined {
@@ -239,56 +236,63 @@ export class MusicPlayer extends MusicViewer {
     }
   }
 
-  async play() {
-    this.stop()
-
+  async load() {
     const [melodyPlayer, rhythmPlayer] = await Promise.all([
       this.getPlayer(this.music.instrument),
       this.getPlayer('장구'),
     ])
     this.melodyPlayer = melodyPlayer
     this.rhythmPlayer = rhythmPlayer
-
-    await Promise.all([this.playMelody(), this.playRhythm()])
   }
 
-  async playRhythm() {
+  async play() {
+    this.stop()
+
+    if (MusicPlayer._ac == null) return
+    const time = MusicPlayer._ac.currentTime
+
+    this.playing = true
+    await Promise.all([this.playMelody(time), this.playRhythm(time)])
+  }
+
+  async playRhythm(time: number) {
+    // calculate offset from cell start
+    let msFromCellStart = 0
     const viewer = this.clone()
     viewer.move('row', 0)
-    let msFromCellStart = 0
     while (!viewer.cursor.isEqualTo(this.cursor))
       msFromCellStart += viewer.colDuration()
 
-    while (true) {
-      const config = this.get('chapter').config
+    do {
+      const config = viewer.get('chapter').config
       const gakLength = config.measure.reduce((a, b) => a + b, 0)
       const msPerCell = 60000 / config.tempo
       const cell =
-        config.rhythm[(this.cursor.cell + config.padding) % gakLength]
+        config.rhythm[(viewer.cursor.cell + config.padding) % gakLength]
       const duration = msPerCell / cell.length
 
       let i = Math.ceil(msFromCellStart / duration)
-      await sleep(i * duration - msFromCellStart)
+      time += (i * duration - msFromCellStart) / 1000
+      await this.sleepUntil(time)
       if (!this.playing) {
         this.rhythmPlayer?.stop()
         return
       }
 
       for (; i < cell.length; i++) {
-        if (cell[i]) this.rhythmPlayer?.start(cell[i])
+        if (cell[i]) this.rhythmPlayer?.start(cell[i], 0, { gain: 0.5 })
 
-        await sleep(duration)
-        if (!this.playing) {
-          this.rhythmPlayer?.stop()
-          return
-        }
+        time += duration / 1000
+        await this.sleepUntil(time)
+        if (!this.playing) return
       }
       msFromCellStart = 0
-    }
+    } while (viewer.step('cell') || viewer.stepChapter())
   }
 
-  async playMelody() {
+  async playMelody(time: number) {
     this.finished = false
+
     let notes: Note[]
     let lastPitch: number | undefined = undefined
     do {
@@ -311,22 +315,30 @@ export class MusicPlayer extends MusicViewer {
           for (const note of notes) {
             this.melodyPlayer?.stop()
             this.melodyPlayer?.start('' + note.pitch)
-            await sleep(note.duration)
-            if (!this.melodyPlayer) return
+            time += note.duration / 1000
+            await this.sleepUntil(time)
+            if (!this.playing) return
           }
           continue
         }
       }
-      await sleep(duration)
-      if (!this.melodyPlayer) return
+      time += duration / 1000
+      await this.sleepUntil(time)
+      if (!this.playing) return
     } while (this.stepCol() || this.stepChapter())
     this.stop()
     this.finished = true
   }
 
+  async sleepUntil(time: number) {
+    if (MusicPlayer._ac == null) return
+    const duration = time - MusicPlayer._ac.currentTime
+    await sleep(duration * 1000)
+  }
+
   stop() {
     this.melodyPlayer?.stop()
     this.rhythmPlayer?.stop()
-    delete this.melodyPlayer
+    this.playing = false
   }
 }
