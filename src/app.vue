@@ -1,44 +1,42 @@
 <template>
-  <div id="keypress">
-    <menupanel
-      :rhythmMode="editor.cursor.rhythmMode"
-      :playing="player?.playing"
-      :undoable="undoable"
-      :redoable="redoable"
-      :pastable="pastable"
-      @addchapter="addchapter"
-      @play="play"
-      @open="open"
-      @save="save"
-      @exportMidi="exportMidi"
-      @cut="cut"
-      @copy="copy"
-      @paste="paste"
-      @undo="undo"
-      @redo="redo"
-      id="menubar"
-    ></menupanel>
-    <keypanel
-      v-if="!player"
-      :tickIdx="tickIdx"
-      :rhythmMode="editor.cursor.rhythmMode"
-      :sigimShow="sigimShow"
-      :trillShow="trillShow"
-      :scale="config.scale"
-      :octave="octave"
-      :trill="trill"
-      @write="write"
-      @erase="erase"
-      @shapechange="shapechange"
-      @octavechange="octavechange"
-      @tickchange="tickchange"
-      @trillchange="trillchange"
-      id="keypanel"
-    ></keypanel>
-    <b-overlay :show="busy" variant="dark" id="workspace">
+  <menupanel
+    :rhythmMode="editor.cursor.rhythmMode"
+    :playing="player?.playing"
+    :undoable="undoable"
+    :redoable="redoable"
+    :pastable="pastable"
+    @addchapter="addchapter"
+    @play="play"
+    @open="open"
+    @save="save"
+    @exportMidi="exportMidi"
+    @cut="cut"
+    @copy="copy"
+    @paste="paste"
+    @undo="undo"
+    @redo="redo"
+    id="menubar"
+  ></menupanel>
+  <keypanel
+    v-if="!player"
+    :tickIdx="tickIdx"
+    :rhythmMode="editor.cursor.rhythmMode"
+    :sigimShow="sigimShow"
+    :trillShow="trillShow"
+    :scale="config.scale"
+    :octave="octave"
+    :trill="trill"
+    @write="write"
+    @erase="erase"
+    @shapechange="shapechange"
+    @octavechange="octavechange"
+    @tickchange="tickchange"
+    @trillchange="trillchange"
+    id="keypanel"
+  ></keypanel>
+  <div id="workspace" tabIndex="0" :aria-label="canvasLabel">
+    <b-overlay :show="busy" variant="dark">
       <canvaspanel
-        tabIndex="0"
-        :aria-label="canvasLabel"
         :cursor="player?.cursor || editor.cursor"
         :anchor="player ? undefined : editor.anchor"
         :gaks="gaks"
@@ -53,12 +51,14 @@
     :config="config"
     @configchange="configchange"
     @deletechapter="deletechapter"
+    @keydown.stop
   ></configmodal>
-  <initmodal :title="music.title" @init="create"></initmodal>
+  <initmodal :title="music.title" @init="create" @keydown.stop></initmodal>
   <globalmodal
     :title="music.title"
     :instrument="music.instrument"
     @rename="rename"
+    @keydown.stop
   ></globalmodal>
   <b-alert
     v-model="loadingFailed"
@@ -100,7 +100,7 @@ import { convertToMidi } from './midi'
 import { MusicPlayer } from './player'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
-import { getID, inRange, wrappedIdx } from './utils'
+import { getID, inRange } from './utils'
 import { Chapter, Config, Entry, UndoOp } from './viewer'
 
 /**
@@ -196,6 +196,7 @@ export default defineComponent({
       this.editor.cursor.on('afterColChange', () => {
         this.updateSympad()
         this.ime.reset()
+        this.updateFocus()
       })
       this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
       this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
@@ -214,32 +215,24 @@ export default defineComponent({
     },
     updateRhythm() {
       if (this.editor.cursor.rhythmMode) {
-        this.tickIdx = RHYTHM_OBJ.indexOf(
-          this.editor.get('chapter').config.rhythm[this.editor.cursor.cell][
-            this.editor.cursor.row
-          ]
-        )
+        const rows =
+          this.editor.get('chapter').config.rhythm[this.editor.cursor.cell]
+        const row = rows[this.editor.cursor.row]
+        this.tickIdx = row === '' ? -1 : RHYTHM_OBJ.indexOf(row)
       }
     },
     updateChapter() {
       this.config = this.editor.get('chapter').config
     },
-    pointerDown(coord: Cursor) {
-      if (this.editor.anchor?.isEqualTo(coord, 'cell')) {
-        this.editor.anchor.moveTo(this.editor.cursor)
-        this.editor.cursor.moveTo(coord)
-        this.editor.normalizeSelection()
-      } else if (!this.editor.cursor.isEqualTo(coord, 'cell')) {
-        return // ignore this event
-      }
-      this.dragging = true
+    updateFocus() {
+      this.$nextTick(() => {
+        if ((document.activeElement as any)?.disabled) {
+          document.getElementById('workspace')?.focus()
+        }
+      })
     },
-    pointerOver(coord: Cursor) {
-      if (this.dragging) this.selectTo(coord)
-    },
-    pointerUp() {
-      this.dragging = false
-    },
+
+    /* Interactions by buttons */
     moveTo(coord: Cursor) {
       if (this.player != null) return
       this.editor.discardSelection()
@@ -287,13 +280,6 @@ export default defineComponent({
         this.ime.reset()
       }
     },
-    writeIME(key: string, shiftKey: boolean) {
-      if (this.editor.isSelecting) return
-      if (shiftKey && !this.sigimShow) return
-      const where = shiftKey ? 'modifier' : 'main'
-      const obj = this.ime.update(key, shiftKey)
-      this.write(where, obj, false)
-    },
     shapechange(what: CoordLevel, delta: -1 | 1) {
       if (this.editor.isSelecting) return
       if (delta === +1) this.doWithBackup(() => this.editor.add(what))
@@ -307,18 +293,12 @@ export default defineComponent({
       const oldtick = this.tickIdx
       this.doWithBackup(() => {
         this.tickIdx = tickIdx
-        this.config.rhythm[this.editor.cursor.cell].splice(
-          this.editor.cursor.row,
-          1,
-          RHYTHM_OBJ[this.tickIdx]
-        )
+        const rows = this.config.rhythm[this.editor.cursor.cell]
+        rows.splice(this.editor.cursor.row, 1, RHYTHM_OBJ[this.tickIdx])
         return () => {
           this.tickIdx = oldtick
-          this.config.rhythm[this.editor.cursor.cell].splice(
-            this.editor.cursor.row,
-            1,
-            RHYTHM_OBJ[this.tickIdx]
-          )
+          const rows = this.config.rhythm[this.editor.cursor.cell]
+          rows.splice(this.editor.cursor.row, 1, RHYTHM_OBJ[this.tickIdx])
         }
       })
     },
@@ -443,10 +423,37 @@ export default defineComponent({
         this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
       saveAs(blob, filename)
     },
+    undo() {
+      this.ime.reset()
+      if (this.undoTravel === 0) return
+      this.undoTravel -= 1
+      const { undo, oldCursor, oldAnchor, newCursor, newAnchor } =
+        this.undoHistory[this.undoTravel]
+      this.editor.anchor = newAnchor
+      this.editor.cursor.moveTo(newCursor)
+      undo()
+      this.editor.anchor = oldAnchor
+      this.editor.cursor.moveTo(oldCursor)
+      this.updateSympad()
+      this.updateFocus()
+    },
+    redo() {
+      this.ime.reset()
+      if (this.undoTravel >= this.undoHistory.length) return
+      const { redo, oldCursor, oldAnchor } = this.undoHistory[this.undoTravel]
+      this.editor.anchor = oldAnchor
+      this.editor.cursor.moveTo(oldCursor)
+      redo()
+      this.updateSympad()
+      this.updateFocus()
+      this.undoTravel += 1
+    },
+
+    /* Undo/Redo functionality */
     doWithBackup(op: () => UndoOp) {
       /** op: a function that does the (re)-operation.
-              takes zero args and returns undo function
-       */
+          takes zero args and returns undo function
+   */
       this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
 
       const oldCursor = this.editor.cursor.clone()
@@ -455,6 +462,7 @@ export default defineComponent({
       const newCursor = this.editor.cursor.clone()
       const newAnchor = this.editor.anchor?.clone()
       this.updateSympad()
+      this.updateFocus()
       this.undoHistory.push({
         undo,
         redo: op,
@@ -470,32 +478,49 @@ export default defineComponent({
         this.undoTravel = MAX_HISTORY
       }
     },
-    undo() {
-      this.ime.reset()
-      if (this.undoTravel === 0) return
-      this.undoTravel -= 1
-      const { undo, oldCursor, oldAnchor, newCursor, newAnchor } =
-        this.undoHistory[this.undoTravel]
-      this.editor.anchor = newAnchor
-      this.editor.cursor.moveTo(newCursor)
-      undo()
-      this.editor.anchor = oldAnchor
-      this.editor.cursor.moveTo(oldCursor)
-      this.updateSympad()
+
+    /* Interactions by Keyboards */
+    writeIME(key: string, shiftKey: boolean) {
+      if (this.editor.isSelecting) return
+      if (shiftKey && !this.sigimShow) return
+      const where = shiftKey ? 'modifier' : 'main'
+      const obj = this.ime.update(key, shiftKey)
+      this.write(where, obj, false)
     },
-    redo() {
-      this.ime.reset()
-      if (this.undoTravel >= this.undoHistory.length) return
-      const { redo, oldCursor, oldAnchor } = this.undoHistory[this.undoTravel]
-      this.editor.anchor = oldAnchor
-      this.editor.cursor.moveTo(oldCursor)
-      redo()
-      this.updateSympad()
-      this.undoTravel += 1
+    writeOctave(delta: 1 | -1) {
+      const main = this.editor.get('col').data.main
+      if (main?.pitch == null) return
+      if (typeof main.pitch === 'string') return
+
+      const curOctave = (main.pitch / 12) | 0
+      const destOctave = curOctave + delta
+      if (destOctave < 0 || 4 < destOctave) return
+      this.octave = destOctave
+
+      const yul = main.pitch % 12
+      this.write('main', YUL_OBJ[destOctave][yul])
     },
-    keypressNavHandler(e: KeyboardEvent) {
+
+    /* Event Handlers */
+    pointerDown(coord: Cursor) {
+      if (this.editor.anchor?.isEqualTo(coord, 'cell')) {
+        this.editor.anchor.moveTo(this.editor.cursor)
+        this.editor.cursor.moveTo(coord)
+        this.editor.normalizeSelection()
+      } else if (!this.editor.cursor.isEqualTo(coord, 'cell')) {
+        return // ignore this event
+      }
+      this.dragging = true
+    },
+    pointerOver(coord: Cursor) {
+      if (this.dragging) this.selectTo(coord)
+    },
+    pointerUp() {
+      this.dragging = false
+    },
+    keypressHandler(e: KeyboardEvent) {
       if (this.player) return
-      const isRhythm = this.editor.cursor.rhythmMode
+
       switch (e.code) {
         /* Navigation */
         case 'ArrowUp':
@@ -524,84 +549,34 @@ export default defineComponent({
           break
         /* Editing */
         case 'Space':
-          if (isRhythm) {
-            const tickIdx = this.tickIdx + (e.shiftKey ? -1 : +1)
-            this.tickchange(wrappedIdx(tickIdx, RHYTHM_OBJ.length))
-            break
-          }
           if (this.editor.isSelecting) return
-          this.doWithBackup(() => this.editor.colbreak())
+          if (!e.shiftKey) return
+          if (this.editor.cursor.rhythmMode) return
+          this.shapechange('col', +1)
           break
         case 'Enter':
         case 'NumpadEnter':
-          if (isRhythm) {
-            if (!e.shiftKey) return
-            this.doWithBackup(() => this.editor.add('row'))
-            break
-          }
           if (this.editor.isSelecting) return
-          if (e.shiftKey) {
-            this.doWithBackup(() => this.editor.rowbreak())
-          } else if (e.ctrlKey) {
-            this.doWithBackup(() => this.editor.chapterbreak())
-          } else {
-            this.doWithBackup(() => this.editor.cellbreak())
-          }
-          break
-        default:
-          return
-      }
-      e.preventDefault()
-    },
-    keypressRhythmHandler(e: KeyboardEvent) {
-      switch (e.code) {
-        case 'Backspace':
-        case 'Delete':
-          if (this.tickIdx !== -1) {
-            this.tickchange(-1)
-            break
-          }
-          const dest = this.editor.cursor.row + (e.code === 'Delete' ? 0 : -1)
-          const rows = this.config.rhythm[this.editor.cursor.cell]
-          if (!inRange(dest, rows.length - 1)) break
-          this.doWithBackup(() => {
-            const undoDel = this.editor.del('row')
-            const undoMove = this.editor.moveRhythm('row', dest)
-            return () => {
-              undoMove()
-              undoDel()
-            }
-          })
-          break
-        default:
-          const prefix = e.code.slice(0, -1)
-          if (prefix === 'Digit' || prefix === 'Numpad') {
-            const idx = +e.code.slice(-1) - 1
-            if (!hasModifierKey(e) && inRange(idx, RHYTHM_OBJ.length)) {
-              this.tickchange(idx)
-              break
-            }
-          }
-          return
-      }
-      e.preventDefault()
-    },
-    keypressHandler(e: KeyboardEvent) {
-      if (this.player) return
-      if (this.editor.cursor.rhythmMode) return this.keypressRhythmHandler(e)
 
-      switch (e.code) {
+          if (e.shiftKey) this.shapechange('row', +1)
+          else if (this.editor.cursor.rhythmMode) return
+          else this.shapechange('cell', +1)
+          break
         case 'Escape':
           this.editor.discardSelection()
           return
         case 'Home':
+          if (this.editor.cursor.rhythmMode) return
           if (!e.shiftKey) this.editor.discardSelection()
           else if (!this.editor.isSelecting) this.editor.createSelection()
+
           e.ctrlKey ? this.editor.move('chapter', 0, 0) : this.editor.moveHome()
           break
         case 'End':
+          if (this.editor.cursor.rhythmMode) return
           if (!e.shiftKey) this.editor.discardSelection()
           else if (!this.editor.isSelecting) this.editor.createSelection()
+
           e.ctrlKey
             ? this.editor.move('chapter', -1, -1)
             : this.editor.moveEnd()
@@ -610,6 +585,9 @@ export default defineComponent({
         case 'Backspace':
           if (this.editor.isSelecting) {
             this.doWithBackup(() => this.editor.cutRange()[1])
+          } else if (this.editor.cursor.rhythmMode) {
+            if (this.tickIdx !== -1) this.erase()
+            else this.shapechange('row', -1)
           } else if (this.ime.isComposing()) {
             const where = this.ime.grace ? 'modifier' : 'main'
             const obj = this.ime.backspace()
@@ -620,6 +598,7 @@ export default defineComponent({
           break
         case 'Minus':
         case 'NumpadSubtract':
+          if (this.editor.cursor.rhythmMode) return
           if (hasShiftKeyOnly(e)) {
             if (this.editor.isSelecting) return
             this.write('modifier', undefined)
@@ -634,21 +613,30 @@ export default defineComponent({
         case 'Delete':
           if (this.editor.isSelecting) {
             this.doWithBackup(() => this.editor.cutRange()[1])
+          } else if (this.editor.cursor.rhythmMode) {
+            if (this.tickIdx !== -1) this.erase()
+            else this.shapechange('row', -1)
           } else {
             this.doWithBackup(() => this.editor.deletekey())
           }
           return
         case 'Slash':
-          this.octavechange(-1)
+        case 'KeyQ':
+          if (this.editor.cursor.rhythmMode) return
+          this.writeOctave(-1)
           break
         case 'Semicolon':
-          this.octavechange(+1)
+        case 'KeyC':
+          if (this.editor.cursor.rhythmMode) return
+          this.writeOctave(+1)
           return
         case 'Comma':
+          if (this.editor.cursor.rhythmMode) return
           if (this.editor.isSelecting) return
           this.write('main', REST_OBJ)
           return
         case 'Equal':
+          if (this.editor.cursor.rhythmMode) return
           if (e.ctrlKey || e.altKey || e.metaKey) return
           if (!this.sigimShow) return
           if (this.editor.isSelecting) return
@@ -657,6 +645,7 @@ export default defineComponent({
         case 'Backquote':
         case 'KeyH':
         case 'KeyI':
+          if (this.editor.cursor.rhythmMode) return
           if (!hasShiftKeyOnly(e)) return
           if (!this.sigimShow) return
           if (this.editor.isSelecting) return
@@ -667,7 +656,14 @@ export default defineComponent({
           if (prefix === 'Digit' || prefix === 'Numpad') {
             if (this.editor.isSelecting) return
             if (hasModifierKey(e) && !hasShiftKeyOnly(e)) return
-            this.writeIME(e.code.slice(-1), e.shiftKey)
+            const digit = e.code.slice(-1)
+            if (this.editor.cursor.rhythmMode) {
+              if (e.shiftKey) return
+              if (!inRange(+digit - 1, RHYTHM_OBJ.length)) return
+              this.tickchange(+digit - 1)
+            } else {
+              this.writeIME(digit, e.shiftKey)
+            }
             break
           }
 
@@ -687,12 +683,12 @@ export default defineComponent({
             break
           }
 
+          if (this.editor.cursor.rhythmMode) return
           if (hasModifierKey(e) && !hasShiftKeyOnly(e)) return
           let idxPitch = PITCH2CODE.indexOf(e.code)
           if (idxPitch !== -1) {
             if (this.editor.isSelecting) return
-            let octave = this.octave + (e.shiftKey ? 1 : 0) // TODO: maybe upto editor settings
-            this.write('main', YUL_OBJ[octave][idxPitch])
+            this.write('main', YUL_OBJ[this.octave][idxPitch])
             break
           }
           return
@@ -702,7 +698,7 @@ export default defineComponent({
   },
   computed: {
     gaks() {
-      return (this as any).music.asGaks() // ??
+      return this.music.asGaks()
     },
     undoable(): boolean {
       return this.player == null && this.undoTravel > 0
@@ -761,12 +757,7 @@ export default defineComponent({
   mounted() {
     document.addEventListener('pointerup', this.pointerUp)
     document.addEventListener('pointercancel', this.pointerUp)
-    document
-      .getElementById('keypress')
-      ?.addEventListener('keydown', this.keypressHandler)
-    document
-      .getElementById('workspace')
-      ?.addEventListener('keydown', this.keypressNavHandler)
+    document.addEventListener('keydown', this.keypressHandler)
   },
   components: {
     keypanel,

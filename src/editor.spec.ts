@@ -134,6 +134,13 @@ describe('MusicSelector', () => {
       expect(selector.anchor?.isEqualTo(new Cursor(false, 0, 0, 0, 0))).toBe(
         true
       )
+      expect(selector.cursor.isEqualTo(new Cursor(false, 0, 3, 1, 1))).toBe(
+        true
+      )
+      selector.selectAll()
+      expect(selector.anchor?.isEqualTo(new Cursor(false, 0, 0, 0, 0))).toBe(
+        true
+      )
       expect(selector.cursor.isEqualTo(new Cursor(false, 1, 23, 1, 0))).toBe(
         true
       )

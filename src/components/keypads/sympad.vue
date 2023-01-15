@@ -1,10 +1,11 @@
 <template>
   <b-button-group class="m-1 aaa">
-    <b-dropdown :text="label" dropup :disabled="disabled">
+    <b-dropdown :text="label" dropup :disabled="disabled" @keydown.stop>
       <div v-for="(group, i) in SYMBOL" :key="i" class="sympad-flex">
         <b-dropdown-item-button
           v-for="(obj, j) in group"
           @click="write(obj)"
+          @keydown.stop
           :key="j"
         >
           <div class="gugak" :aria-label="obj.label">

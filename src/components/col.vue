@@ -1,5 +1,5 @@
 <template>
-  <div @click.stop="moveOrSelectTo" :class="{ cur: isCur }" class="col">
+  <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col">
     <span class="gugak">{{ main }}</span>
     <span v-if="content.data.modifier" class="gugak modifier">{{
       'text' in content.data.modifier

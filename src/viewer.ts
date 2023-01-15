@@ -1,4 +1,5 @@
 import { InstrumentName } from 'soundfont-player'
+import { RHYTHM_OBJ } from './constants'
 import Cursor, { Level } from './cursor'
 import { MainEntry, ModifierEntry } from './symbols'
 import { getID, inRange, WithID, wrappedIdx } from './utils'
@@ -18,7 +19,7 @@ export type Config = Readonly<{
   padding: number
   hideRhythm: boolean
   scale: number[]
-  rhythm: string[][]
+  rhythm: (typeof RHYTHM_OBJ[number] | '')[][]
 }>
 
 export type Gak = {
@@ -179,12 +180,12 @@ export class MusicViewer {
     this.cursor.moveTo(viewer.cursor)
     return () => this.cursor.moveTo(oldPos)
   }
-  moveRhythm(what: 'chapter' | 'cell' | 'row', where: number): UndoOp {
+  moveRhythm(what: keyof typeof PARENT_OF, where: number): UndoOp {
     const oldPos = this.cursor.clone()
     const viewer = this.clone()
     viewer.cursor.rhythmMode = true
     viewer.cursor[what] = where
-    while (what !== 'row') {
+    while (what !== 'col') {
       what = CHILD_OF[what]
       viewer.cursor[what] = 0
     }
@@ -345,7 +346,8 @@ export class MusicViewer {
     const src = (this.cursor.row + 0.49) / this.get('cell').data.length
 
     // set chapter
-    if (!this.moveClamp('chapter', this.cursor.chapter + delta, snap)) return
+    if (!inRange(this.cursor.chapter + delta, this.music.data.length)) return
+    this.move('chapter', this.cursor.chapter + delta, snap)
     const chapter = this.music.data[this.cursor.chapter]
     const config = chapter.config
 

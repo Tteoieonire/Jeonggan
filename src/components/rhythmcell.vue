@@ -3,9 +3,9 @@
     <div
       v-for="(tick, i) in ticks"
       :key="i"
-      @click.stop="(e: MouseEvent) => moveRhythm(e, i)"
+      @click="(e: MouseEvent) => moveRhythm(e, i)"
       class="myrow gugak"
-      :class="{ cur: cursor?.isEqualTo(coordWith(i)) }"
+      :class="{ cur: cursor?.isEqualTo(coordWith(i), 'row') }"
       :style="rowStyle"
     >
       {{ tick || '&nbsp;' }}

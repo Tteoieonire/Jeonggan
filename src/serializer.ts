@@ -116,7 +116,7 @@ function deserializeMusic(yaml: string) {
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
-    const rhythm: string[][] = content.rhythm
+    const rhythm = content.rhythm
       .trim()
       .split('\n')
       .map((s: string) =>

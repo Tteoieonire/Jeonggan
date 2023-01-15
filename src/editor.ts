@@ -79,7 +79,7 @@ export class MusicSelector extends MusicViewer {
     this.anchor = undefined
   }
   normalizeSelection() {
-    if (this.anchor == null) return idOp
+    if (this.anchor == null) return
     if (this.anchor.isLessThan(this.cursor)) {
       this.anchor.move(this.anchor.chapter, this.anchor.cell, 0, 0)
       this.move('row', -1, SNAP.BACK)
@@ -94,9 +94,27 @@ export class MusicSelector extends MusicViewer {
   }
 
   selectAll() {
-    this.move('chapter', 0, SNAP.FRONT)
-    this.anchor = this.cursor.clone()
-    this.move('chapter', -1, SNAP.BACK)
+    if (this.cursor.rhythmMode) return
+    this.normalizeSelection()
+    if (this.anchor == null) this.anchor = this.cursor.clone()
+
+    const gakLength = this.get('chapter').config.rhythm.length
+    const head = this.cursor.cell - this._jeong(this.cursor.cell)
+    if (
+      this.anchor.chapter !== this.cursor.chapter ||
+      this.anchor.cell < head ||
+      this.cursor.cell - this.anchor.cell === gakLength - 1
+    ) {
+      // select all chapters
+      this.move('chapter', 0, SNAP.FRONT)
+      this.anchor = this.cursor.clone()
+      this.move('chapter', -1, SNAP.BACK)
+    } else {
+      // select current gak
+      this.moveClamp('cell', head, SNAP.FRONT)
+      this.anchor = this.cursor.clone()
+      this.moveClamp('cell', head + gakLength - 1, SNAP.BACK)
+    }
   }
 
   move(
@@ -287,38 +305,14 @@ export class MusicEditor extends MusicSelector {
 
   deletekey(): UndoOp {
     if (this.get('col').data.main != null) return this.erase()
-    return this.merge()
-  }
 
-  colbreak(): UndoOp {
-    return this.add('col')
-  }
+    for (const level of ['col', 'row', 'cell'] as const) {
+      const arr = this.get(PARENT_OF[level]).data
+      if (inRange(this.cursor[level] + 1, arr.length)) return this.del(level)
+      if (this.cursor[level] > 0) return this.backspace()
+    }
 
-  rowbreak(): UndoOp {
-    this.colbreak()
-    this.stepCol(-1)
-    const data = this.get('row').data.splice(this.cursor.col + 1)
-    this.add('row', { id: getID(), data })
-    return () => this.backspace()
-  }
-
-  cellbreak(): UndoOp {
-    this.rowbreak()
-    this.stepCol(-1)
-    const data = this.get('cell').data.splice(this.cursor.row + 1)
-    this.add('cell', { id: getID(), data })
-    return () => this.backspace()
-  }
-
-  chapterbreak(config?: Config): UndoOp {
-    const chapter = this.get('chapter')
-    if (!config) config = newConfigFrom(chapter.config)
-
-    this.cellbreak()
-    this.stepCol(-1)
-    const newcells = chapter.data.splice(this.cursor.cell + 1)
-    this.add('chapter', new Chapter(config, newcells))
-    return () => this.backspace()
+    return this.del('chapter')
   }
 
   /* Selection actions */

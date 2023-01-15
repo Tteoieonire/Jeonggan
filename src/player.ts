@@ -274,13 +274,13 @@ export class MusicPlayer extends MusicViewer {
       let i = Math.ceil(msFromCellStart / duration)
       time += (i * duration - msFromCellStart) / 1000
       await this.sleepUntil(time)
-      if (!this.playing) {
-        this.rhythmPlayer?.stop()
-        return
-      }
+      if (!this.playing) return
 
       for (; i < cell.length; i++) {
-        if (cell[i]) this.rhythmPlayer?.start(cell[i], 0, { gain: 0.5 })
+        if (cell[i]) {
+          this.rhythmPlayer?.stop()
+          this.rhythmPlayer?.start(cell[i], 0, { gain: 0.5 })
+        }
 
         time += duration / 1000
         await this.sleepUntil(time)
