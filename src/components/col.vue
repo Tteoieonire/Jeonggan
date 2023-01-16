@@ -1,5 +1,5 @@
 <template>
-  <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col">
+  <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col" ref="col">
     <span class="gugak">{{ main }}</span>
     <span v-if="content.data.modifier" class="gugak modifier">{{
       'text' in content.data.modifier
@@ -45,6 +45,15 @@ export default defineComponent({
       return this.cursor.isEqualTo(this.coord)
     },
   },
+  watch: {
+    isCur() {
+      if ('col' in this.$refs)
+        (this.$refs.col as any).scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        })
+    },
+  },
 })
 </script>
 
@@ -54,6 +63,8 @@ export default defineComponent({
   justify-content: center;
   align-items: center;
   overflow: hidden;
+
+  scroll-margin: 5rem 0 9rem;
 }
 
 .cur {

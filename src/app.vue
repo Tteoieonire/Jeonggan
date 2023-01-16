@@ -101,7 +101,7 @@ import { MusicPlayer } from './player'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
 import { getID, inRange } from './utils'
-import { Chapter, Config, Entry, UndoOp } from './viewer'
+import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
 
 /**
  * Controller
@@ -566,14 +566,22 @@ export default defineComponent({
           this.editor.discardSelection()
           return
         case 'Home':
-          if (this.editor.cursor.rhythmMode) return
+          if (this.editor.cursor.rhythmMode) {
+            this.editor.moveRhythm('cell', 0)
+            break
+          }
           if (!e.shiftKey) this.editor.discardSelection()
           else if (!this.editor.isSelecting) this.editor.createSelection()
 
           e.ctrlKey ? this.editor.move('chapter', 0, 0) : this.editor.moveHome()
           break
         case 'End':
-          if (this.editor.cursor.rhythmMode) return
+          if (this.editor.cursor.rhythmMode) {
+            const rhythm = this.config.rhythm
+            this.editor.moveRhythm('cell', rhythm.length - 1)
+            this.editor.moveRhythm('row', rhythm[rhythm.length - 1].length - 1)
+            break
+          }
           if (!e.shiftKey) this.editor.discardSelection()
           else if (!this.editor.isSelecting) this.editor.createSelection()
 
@@ -584,7 +592,14 @@ export default defineComponent({
         /* Editing */
         case 'Backspace':
           if (this.editor.isSelecting) {
-            this.doWithBackup(() => this.editor.cutRange()[1])
+            this.doWithBackup(
+              this.editor.isEmptyRange()
+                ? mergeActions(
+                    () => this.editor.delRange(),
+                    () => this.editor.backspace()
+                  )
+                : () => this.editor.cutRange()[1]
+            )
           } else if (this.editor.cursor.rhythmMode) {
             if (this.tickIdx !== -1) this.erase()
             else this.shapechange('row', -1)
@@ -612,7 +627,14 @@ export default defineComponent({
           return
         case 'Delete':
           if (this.editor.isSelecting) {
-            this.doWithBackup(() => this.editor.cutRange()[1])
+            this.doWithBackup(
+              this.editor.isEmptyRange()
+                ? mergeActions(
+                    () => this.editor.delRange(),
+                    () => this.editor.deletekey()
+                  )
+                : () => this.editor.cutRange()[1]
+            )
           } else if (this.editor.cursor.rhythmMode) {
             if (this.tickIdx !== -1) this.erase()
             else this.shapechange('row', -1)
@@ -790,7 +812,7 @@ function hasShiftKeyOnly(e: KeyboardEvent) {
 }
 
 #menubar {
-  position: fixed;
+  position: sticky;
   top: 0;
   background: black;
   z-index: 9;

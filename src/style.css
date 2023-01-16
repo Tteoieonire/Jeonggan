@@ -5,16 +5,9 @@ html {
   box-sizing: inherit;
 }
 
-#app {
+body {
   background: sienna;
-  padding: 2rem 0;
-}
-
-.footer {
-  font-size: 70%;
-  padding-bottom: 8rem;
-  background: #321;
-  color: white;
+  padding-bottom: 10rem;
 }
 
 .float-right {

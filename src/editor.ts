@@ -95,8 +95,9 @@ export class MusicSelector extends MusicViewer {
 
   selectAll() {
     if (this.cursor.rhythmMode) return
-    this.normalizeSelection()
     if (this.anchor == null) this.anchor = this.cursor.clone()
+    if (this.cursor.isLessThan(this.anchor, 'cell'))
+      Cursor.swap(this.cursor, this.anchor)
 
     const gakLength = this.get('chapter').config.rhythm.length
     const head = this.cursor.cell - this._jeong(this.cursor.cell)
@@ -306,16 +307,59 @@ export class MusicEditor extends MusicSelector {
   deletekey(): UndoOp {
     if (this.get('col').data.main != null) return this.erase()
 
-    for (const level of ['col', 'row', 'cell'] as const) {
-      const arr = this.get(PARENT_OF[level]).data
-      if (inRange(this.cursor[level] + 1, arr.length)) return this.del(level)
-      if (this.cursor[level] > 0) return this.backspace()
-    }
+    for (const level of ['col', 'row', 'cell', 'chapter'] as const) {
+      if (this.cursor[level] + 1 < this.get(PARENT_OF[level]).data.length)
+        return this.del(level)
 
-    return this.del('chapter')
+      if (this.cursor[level] > 0) {
+        const undo = this.del(level)
+        this.stepCol(+1) || this.stepChapter(+1)
+        return () => {
+          this.stepCol(-1) || this.stepChapter(-1)
+          undo()
+        }
+      }
+    }
+    return idOp
   }
 
   /* Selection actions */
+  isEmptyCell(position: Cursor): boolean {
+    const chapter = this.music.data[position.chapter]
+    const cell = chapter.data[position.cell]
+    if (cell.data.length > 1) return false
+    const row = cell.data[0]
+    if (row.data.length > 1) return false
+    const col = row.data[0]
+    return col.data.main == null
+  }
+
+  isEmptyRange(): boolean {
+    const selector = this.clone()
+    if (selector.anchor == null) return false
+    if (selector.cursor.isLessThan(selector.anchor))
+      Cursor.swap(selector.cursor, selector.anchor)
+    while (selector.anchor.isLessThan(selector.cursor)) {
+      if (!this.isEmptyCell(selector.cursor)) return false
+      selector.stepCol(-1) || selector.stepChapter(-1)
+    }
+    return this.isEmptyCell(selector.cursor)
+  }
+
+  delRange(): UndoOp {
+    if (this.anchor == null) throw Error('No selected found')
+    if (this.cursor.isLessThan(this.anchor))
+      Cursor.swap(this.cursor, this.anchor)
+
+    const undos: UndoOp[] = []
+    while (this.anchor.isLessThan(this.cursor, 'cell'))
+      undos.push(this.backspace())
+    undos.reverse()
+
+    this.discardSelection()
+    return () => undos.forEach(op => op())
+  }
+
   cutEntry(): [Entry, UndoOp] {
     if (this.isSelecting) throw Error('Selection found')
     const col = this.get('col')
@@ -330,9 +374,11 @@ export class MusicEditor extends MusicSelector {
   }
   cutRange(): [Entry[][][], UndoOp] {
     if (this.anchor == null) throw Error('No selected found')
+    this.anchor.move(this.anchor.chapter, this.anchor.cell, 0, 0)
     this.move('row', 0)
+
     const oldCursor = this.cursor.clone()
-    const [first, last] = this.anchor.isLessThan(oldCursor)
+    const [first, last] = this.anchor.isLessThan(oldCursor, 'cell')
       ? [this.anchor, oldCursor]
       : [oldCursor, this.anchor]
     this.cursor.moveTo(first)
@@ -358,6 +404,7 @@ export class MusicEditor extends MusicSelector {
     undos.reverse()
 
     this.cursor.moveTo(oldCursor)
+    this.normalizeSelection()
     return [entries, () => undos.forEach(op => op())]
   }
 

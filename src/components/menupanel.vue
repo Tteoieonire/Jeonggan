@@ -1,6 +1,9 @@
 <template>
   <!-- 상단 메뉴바 -->
-  <b-button-toolbar key-nav style="width: 100%; display: block">
+  <b-button-toolbar
+    key-nav
+    style="width: 100%; display: block; overflow: hidden"
+  >
     <b-button-group class="m-1">
       <b-button v-b-modal.init aria-label="새로 만들기">
         <font-awesome-icon icon="file" />

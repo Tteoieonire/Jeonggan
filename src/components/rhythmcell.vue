@@ -5,8 +5,9 @@
       :key="i"
       @click="(e: MouseEvent) => moveRhythm(e, i)"
       class="myrow gugak"
-      :class="{ cur: cursor?.isEqualTo(coordWith(i), 'row') }"
+      :class="{ cur: isCur[i] }"
       :style="rowStyle"
+      ref="row"
     >
       {{ tick || '&nbsp;' }}
     </div>
@@ -45,6 +46,22 @@ export default defineComponent({
         lineHeight: 3.5 / this.ticks.length + 'rem',
       }
     },
+    isCur(): boolean[] {
+      return this.ticks.map(
+        (tick, i) => !!this.cursor?.isEqualTo(this.coordWith(i), 'row')
+      )
+    },
+  },
+  watch: {
+    isCur() {
+      if (!('row' in this.$refs)) return
+      const row = this.isCur.indexOf(true)
+      if (row === -1) return
+      ;(this.$refs.row as any)[row].scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      })
+    },
   },
 })
 </script>
@@ -60,6 +77,8 @@ export default defineComponent({
 .myrow {
   flex-grow: 1;
   white-space: nowrap;
+
+  scroll-margin: 5rem 0 7rem;
 }
 
 .container {

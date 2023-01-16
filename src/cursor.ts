@@ -117,6 +117,12 @@ class Cursor implements Position {
     const [min, max] = a.isLessThan(b, upto) ? [a, b] : [b, a]
     return !(this.isLessThan(min, upto) || max.isLessThan(this, upto))
   }
+
+  static swap(a: Cursor, b: Cursor) {
+    const tmp = a.clone()
+    a.moveTo(b)
+    b.moveTo(tmp)
+  }
 }
 
 export default Cursor
