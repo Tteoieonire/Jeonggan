@@ -1,5 +1,6 @@
 <template>
   <div class="gaks">
+    <div class="title">{{ title }}</div>
     <gak
       v-for="gak in gaks"
       :key="`${gak.chapterID}_${gak.gakIndex}`"
@@ -23,6 +24,7 @@ import gak from './gak.vue'
 
 export default defineComponent({
   props: {
+    title: { type: String, required: true },
     anchor: { type: Object as PropType<Cursor> },
     cursor: { type: Object as PropType<Cursor> },
     gaks: { type: Object as PropType<Gak[]>, required: true },
@@ -66,5 +68,22 @@ export default defineComponent({
 
 .gaks > :last-child {
   border-left: 1px solid black;
+}
+</style>
+
+<style scoped>
+.title {
+  border-left: 1px solid black;
+  border-bottom: 1px solid black;
+  grid-column: 1 / 3;
+
+  font-size: 1.5rem;
+
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

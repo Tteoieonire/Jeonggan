@@ -222,10 +222,7 @@ export class MusicViewer {
     return true
   }
 
-  step(level: Level, delta: 1 | -1 = +1): boolean {
-    if (level === 'music') return false
-    if (level === 'chapter') return this.stepChapter(delta)
-
+  step(level: 'col' | 'row' | 'cell', delta: 1 | -1 = +1): boolean {
     const parentLevel = PARENT_OF[level]
     let numSiblings = this.get(parentLevel).data.length
     let destPos = this.cursor[level] + delta
@@ -234,9 +231,8 @@ export class MusicViewer {
       this.move(level, destPos, snap)
       return true
     }
-    return this.step(parentLevel, delta)
+    return parentLevel !== 'chapter' && this.step(parentLevel, delta)
   }
-
   stepCol(delta: 1 | -1 = +1): boolean {
     return this.step('col', delta)
   }

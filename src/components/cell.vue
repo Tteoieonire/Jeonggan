@@ -103,6 +103,7 @@ export default defineComponent({
 
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .myrow {

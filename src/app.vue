@@ -37,6 +37,7 @@
   <div id="workspace" tabIndex="0" :aria-label="canvasLabel">
     <b-overlay :show="busy" variant="dark">
       <canvaspanel
+        :title="music.title"
         :cursor="player?.cursor || editor.cursor"
         :anchor="player ? undefined : editor.anchor"
         :gaks="gaks"

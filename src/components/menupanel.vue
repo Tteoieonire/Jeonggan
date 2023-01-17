@@ -1,9 +1,6 @@
 <template>
   <!-- 상단 메뉴바 -->
-  <b-button-toolbar
-    key-nav
-    style="width: 100%; display: block; overflow: hidden"
-  >
+  <b-button-toolbar key-nav class="w-100 d-flex">
     <b-button-group class="m-1">
       <b-button v-b-modal.init aria-label="새로 만들기">
         <font-awesome-icon icon="file" />
@@ -56,7 +53,7 @@
       </b-button>
     </b-button-group>
 
-    <div class="float-right">
+    <div style="margin-left: auto">
       <b-button-group class="m-1">
         <b-button
           v-if="playing"
