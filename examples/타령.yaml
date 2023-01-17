@@ -1,18 +1,16 @@
--
-  타령
--
-  name: 초장
+- 타령
+- name: 초장
   tempo: 100
-  measure: 12
+  measure: [3, 3, 3, 3]
   padding: 0
   hideRhythm: false
   scale: 黃太仲林南
   rhythm: |
     떵
-    
-    
+
+
     따닥
-    
+
     따
     떵
 
@@ -241,19 +239,18 @@
     -
 
     △
--
-  name: 2장
+- name: 2장
   tempo: 100
-  measure: 12
+  measure: [3, 3, 3, 3]
   padding: 0
   hideRhythm: true
   scale: 黃太仲林南
   rhythm: |
     떵
-    
-    
+
+
     따닥
-    
+
     따
     떵
 
@@ -611,19 +608,18 @@
     -
 
     汰:𝆔43
--
-  name: 3장
+- name: 3장
   tempo: 100
-  measure: 12
+  measure: [3, 3, 3, 3]
   padding: 0
   hideRhythm: true
   scale: 黃太仲林南
   rhythm: |
     떵
-    
-    
+
+
     따닥
-    
+
     따
     떵
 
@@ -791,19 +787,18 @@
     -
 
     汰:𝆔43
--
-  name: 4장
+- name: 4장
   tempo: 100
-  measure: 12
+  measure: [3, 3, 3, 3]
   padding: 0
   hideRhythm: false
   scale: 黃太仲林南
   rhythm: |
     떵
-    
+
     따
     떵
-    
+
     따
     떵
 
@@ -838,19 +833,18 @@
     太
 
     林
--
-  name: 
+- name:
   tempo: 100
-  measure: 12
+  measure: [3, 3, 3, 3]
   padding: 0
   hideRhythm: false
   scale: 黃太仲林南
   rhythm: |
     떵
-    
-    
+
+
     따닥
-    
+
     따
     떵
 
