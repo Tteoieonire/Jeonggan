@@ -490,8 +490,8 @@ export default defineComponent({
     },
     writeOctave(delta: 1 | -1) {
       const main = this.editor.get('col').data.main
-      if (main?.pitch == null) return
-      if (typeof main.pitch === 'string') return
+      if (main?.pitch == null || typeof main.pitch === 'string')
+        return this.octavechange(delta)
 
       const curOctave = (main.pitch / 12) | 0
       const destOctave = curOctave + delta
@@ -643,20 +643,35 @@ export default defineComponent({
             this.doWithBackup(() => this.editor.deletekey())
           }
           return
+
+        /* Lower octave */
+        case 'KeyV':
+          if (hasCtrlKeyOnly(e)) {
+            this.paste()
+            break
+          }
+        // breakthrough
         case 'Slash':
         case 'KeyQ':
-        case 'KeyV':
         case 'KeyK':
           if (this.editor.cursor.rhythmMode) return
           this.writeOctave(-1)
           break
-        case 'Semicolon':
+
+        /* Raise octave */
         case 'KeyC':
+          if (hasCtrlKeyOnly(e)) {
+            this.copy()
+            break
+          }
+        // breakthrough
+        case 'Semicolon':
         case 'KeyT':
         case 'KeyJ':
           if (this.editor.cursor.rhythmMode) return
           this.writeOctave(+1)
           return
+
         case 'Comma':
           if (this.editor.cursor.rhythmMode) return
           if (this.editor.isSelecting) return
@@ -702,10 +717,6 @@ export default defineComponent({
               this.editor.selectAll()
             } else if (e.code === 'KeyX' && hasCtrlKeyOnly(e)) {
               this.cut()
-            } else if (e.code === 'KeyC' && hasCtrlKeyOnly(e)) {
-              this.copy()
-            } else if (e.code === 'KeyV' && hasCtrlKeyOnly(e)) {
-              this.paste()
             }
             break
           }
