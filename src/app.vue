@@ -645,11 +645,15 @@ export default defineComponent({
           return
         case 'Slash':
         case 'KeyQ':
+        case 'KeyV':
+        case 'KeyK':
           if (this.editor.cursor.rhythmMode) return
           this.writeOctave(-1)
           break
         case 'Semicolon':
         case 'KeyC':
+        case 'KeyT':
+        case 'KeyJ':
           if (this.editor.cursor.rhythmMode) return
           this.writeOctave(+1)
           return
