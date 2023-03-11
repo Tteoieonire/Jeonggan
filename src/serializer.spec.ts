@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { deserializeMusic, serializeMusic } from './serializer'
 
 const SAMPLE_YAML = `- title: 양청도드리

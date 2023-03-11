@@ -23,8 +23,8 @@ body {
 
 @font-face {
   font-family: 'TteoiJeonggan';
-  src: url('../assets/TteoiJeonggan.woff2') format('woff2'),
-    url('../assets/TteoiJeonggan.woff') format('woff');
+  src: url('/TteoiJeonggan.woff2') format('woff2'),
+    url('/TteoiJeonggan.woff') format('woff');
   font-weight: normal;
   font-style: normal;
 }

@@ -355,3 +355,36 @@ export class MusicPlayer extends MusicViewer {
     this.playing = false
   }
 }
+
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest
+  it('scaleIdxToPitch', () => {
+    const scale = [0, 2, 5, 7, 9] // 황태중임남
+    expect(scaleIdxToPitch(-1, scale)).toBe(60)
+    expect(scaleIdxToPitch(0, scale)).toBe(63)
+    expect(scaleIdxToPitch(1, scale)).toBe(65)
+    expect(scaleIdxToPitch(2, scale)).toBe(68)
+    expect(scaleIdxToPitch(3, scale)).toBe(70)
+    expect(scaleIdxToPitch(4, scale)).toBe(72)
+    expect(scaleIdxToPitch(5, scale)).toBe(75)
+    expect(scaleIdxToPitch(6, scale)).toBe(77)
+  })
+  it('approxInScale', () => {
+    const scale = [2, 3, 5, 7, 11]
+    expect(approxInScale(0, scale)).toBe(-1)
+    expect(approxInScale(1, scale)).toBe(0)
+    expect(approxInScale(8, scale)).toBe(3)
+    expect(approxInScale(10, scale)).toBe(4)
+  })
+  it('pitchToScaleIdx', () => {
+    const scale = [0, 2, 5, 7, 9] // 황태중임남
+    expect(pitchToScaleIdx(60, scale)).toBe(-1)
+    expect(pitchToScaleIdx(63, scale)).toBe(0)
+    expect(pitchToScaleIdx(65, scale)).toBe(1)
+    expect(pitchToScaleIdx(68, scale)).toBe(2)
+    expect(pitchToScaleIdx(70, scale)).toBe(3)
+    expect(pitchToScaleIdx(72, scale)).toBe(4)
+    expect(pitchToScaleIdx(75, scale)).toBe(5)
+    expect(pitchToScaleIdx(77, scale)).toBe(6)
+  })
+}

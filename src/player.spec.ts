@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { MusicPlayer } from './player'
 import { deserializeMusic } from './serializer'
 

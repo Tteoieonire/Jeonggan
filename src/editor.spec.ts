@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { REST_OBJ, YUL_OBJ } from './constants'
 import Cursor from './cursor'
 import { MusicEditor, MusicSelector } from './editor'
