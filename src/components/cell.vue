@@ -52,8 +52,8 @@ export default defineComponent({
     getRowStyle(row: Row) {
       const longest = Math.max(this.rows.length, row.data.length)
       return {
-        fontSize: 1.5 * Math.exp(-0.2 * longest) + 'rem',
-        // height: 100 / this.cell.length + '%',
+        fontSize: 2 * Math.exp(-0.3 * longest) + 'rem',
+        height: 100 / this.rows.length + '%',
       }
     },
     coordWith(r: number, c: number): Cursor {

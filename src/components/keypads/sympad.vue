@@ -8,10 +8,8 @@
           @keydown.stop
           :key="j"
         >
-          <div class="gugak" :aria-label="obj.label">
-            <span aria-hidden="true">{{
-              'text' in obj ? obj.text : obj.texts[0]
-            }}</span>
+          <div class="gugak" :aria-label="obj.label" :style="getStyle(obj)">
+            <span aria-hidden="true">{{ obj.text }}</span>
           </div>
         </b-dropdown-item-button>
       </div>
@@ -111,7 +109,7 @@ export default defineComponent({
     trillchange: (trillState: TrillState) => true,
   },
   methods: {
-    write(obj?: MainEntry | ModifierEntry) {
+    write(obj?: MainEntry | ModifierEntry | Record<'text' | 'label', string>) {
       if (obj && !('pitch' in obj) && !('pitches' in obj)) obj = undefined
       this.$emit('write', this.type, obj)
     },
@@ -126,6 +124,11 @@ export default defineComponent({
         before: this.trill?.before,
         after: !this.trill?.after,
       })
+    },
+    getStyle(obj: Record<'text' | 'label', string>) {
+      if (this.type === 'main') return {}
+      if (obj.text === '없애기') return {}
+      return { fontSize: '1.5rem', margin: '-0.25rem 0' }
     },
   },
   computed: {

@@ -9,7 +9,7 @@
       :style="rowStyle"
       ref="row"
     >
-      {{ tick || '&nbsp;' }}
+      {{ tick === '' ? '&nbsp;' : tick + '표' }}
     </div>
   </div>
 </template>

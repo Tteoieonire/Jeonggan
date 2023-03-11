@@ -12,7 +12,7 @@ const SAMPLE_YAML = `- title: 양청도드리
     덕
     덕 덕
     -
-  scale: 黃太仲林南
+  scale: 黃太仲林南
   tempo: 140
   content: |
     汰
@@ -21,17 +21,17 @@ const SAMPLE_YAML = `- title: 양청도드리
 
     〻
 
-    〻:𝆔43
-    - 林
+    〻:앞시김새니레표
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     南
 
@@ -42,12 +42,12 @@ const SAMPLE_YAML = `- title: 양청도드리
     黃
     - 太
 
-    林
+    林
 
     仲
 
     太
-    㑲:𝆔343
+    㑲:앞시김새노니로표
 
     太
     △
@@ -61,44 +61,44 @@ const SAMPLE_YAML = `- title: 양청도드리
     덕
     덕 덕
     -
-  scale: 黃太仲林南
+  scale: 黃太仲林南
   tempo: 150
   content: |
-    林
+    林
 
     南
-    - 林
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
     南
-    - 林
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
     仲
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     南
 
@@ -109,23 +109,23 @@ const SAMPLE_YAML = `- title: 양청도드리
     黃
     - 太
 
-    林
+    林
 
     仲
 
     太
-    㑲:𝆔343
+    㑲:앞시김새노니로표
 
     太
     △
 `
 
 describe('Round-trip', () => {
-  test('yaml to yaml', () => {
+  it('yaml to yaml', () => {
     const reconstructed = serializeMusic(deserializeMusic(SAMPLE_YAML))
     expect(reconstructed).toBe(SAMPLE_YAML)
   })
-  test('short', () => {
+  it('short', () => {
     const yaml = `- title: test
   instrument: acoustic_guitar
 - name: test
@@ -136,7 +136,7 @@ describe('Round-trip', () => {
   rhythm: |
     -
     -
-  scale: 黃太姑林南
+  scale: 黃太姑林南
   tempo: 140
   content: |
     汰
@@ -146,7 +146,7 @@ describe('Round-trip', () => {
     const reconstructed = serializeMusic(deserializeMusic(yaml))
     expect(reconstructed).toBe(yaml)
   })
-  test('very short', () => {
+  it('very short', () => {
     const yaml = `- title: test
   instrument: acoustic_guitar
 - name: test
@@ -156,7 +156,7 @@ describe('Round-trip', () => {
   padding: 0
   rhythm: |
     -
-  scale: 黃太仲林無
+  scale: 黃太仲林無
   tempo: 140
   content: |
     汰

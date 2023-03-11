@@ -6,7 +6,7 @@
       :pressed="thisTick(i)"
       @click="change(i)"
     >
-      {{ item }}
+      {{ item }}표
     </b-button>
   </b-button-group>
 </template>

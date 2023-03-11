@@ -111,7 +111,7 @@ const INIT_CONFIG: Config = {
   name: '초장',
   tempo: 60,
   measure: [6],
-  rhythm: [['떵'], [''], ['따닥'], ['쿵'], ['더러러러'], ['따']],
+  rhythm: [['떵'], [''], ['기덕'], ['쿵'], ['더러러러'], ['더']],
   hideRhythm: false,
   scale: [0, 2, 5, 7, 9],
   padding: 0,
@@ -150,7 +150,7 @@ export default defineComponent({
       player: undefined as undefined | MusicPlayer,
       config: undefined as unknown as Config,
       sigimShow: false, // need update
-      octave: 2,
+      octave: 0,
       trill: {} as TrillState,
       tickIdx: -1,
       ime: new IME(),
@@ -172,7 +172,7 @@ export default defineComponent({
       this.init()
 
       this.editor.cursor.move(0, 0, 0, 0)
-      this.write('main', YUL_OBJ[this.octave][0])
+      this.write('main', YUL_OBJ[3][0])
       this.editor.add('cell')
       this.editor.stepCol(-1)
     },
@@ -206,9 +206,8 @@ export default defineComponent({
       if (this.editor.cursor.rhythmMode) return
       const el = this.editor.get('col')
       this.sigimShow =
-        !!el.data?.main?.pitch &&
-        (typeof el.data.main.pitch === 'number' ||
-          el.data.main.pitch.length === 1)
+        !!el.data?.main &&
+        ('pitch' in el.data.main || el.data.main.pitches.length === 1)
       this.trill = {}
       if (el.data?.modifier && el.data.modifier.trill) {
         this.trill = el.data.modifier.trill
@@ -287,7 +286,7 @@ export default defineComponent({
       else this.doWithBackup(() => this.editor.del(what))
     },
     octavechange(delta: -1 | 1) {
-      if (this.octave + delta < 0 || this.octave + delta > 4) return
+      if (this.octave + delta < -3 || this.octave + delta > 3) return
       this.octave += delta
     },
     tickchange(tickIdx: number) {
@@ -308,7 +307,7 @@ export default defineComponent({
       if (query == null) return
       query = query.replace(/~/g, '')
       query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
-      this.write('modifier', querySymbol('modifier', query))
+      this.write('modifier', querySymbol('modifier', query, 'key'))
     },
     configchange(config: Config, isVisibleChange: boolean) {
       if (!isVisibleChange) {
@@ -490,16 +489,13 @@ export default defineComponent({
     },
     writeOctave(delta: 1 | -1) {
       const main = this.editor.get('col').data.main
-      if (main?.pitch == null || typeof main.pitch === 'string')
-        return this.octavechange(delta)
+      if (main == null || 'pitches' in main) return this.octavechange(delta)
 
-      const curOctave = (main.pitch / 12) | 0
-      const destOctave = curOctave + delta
-      if (destOctave < 0 || 4 < destOctave) return
+      const destOctave = main.octave + delta
+      if (destOctave < -3 || 3 < destOctave) return
       this.octave = destOctave
 
-      const yul = main.pitch % 12
-      this.write('main', YUL_OBJ[destOctave][yul])
+      this.write('main', YUL_OBJ[destOctave + 3][main.yul])
     },
 
     /* Event Handlers */
@@ -726,7 +722,7 @@ export default defineComponent({
           let idxPitch = PITCH2CODE.indexOf(e.code)
           if (idxPitch !== -1) {
             if (this.editor.isSelecting) return
-            this.write('main', YUL_OBJ[this.octave][idxPitch])
+            this.write('main', YUL_OBJ[this.octave + 3][idxPitch])
             break
           }
           return

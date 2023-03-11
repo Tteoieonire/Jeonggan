@@ -94,8 +94,8 @@ import { defineComponent, PropType } from 'vue'
 import { YUL_OBJ } from '../constants'
 import { Config } from '../viewer'
 
-const YULS = YUL_OBJ[2].map(x => ({ text: x.text, value: x.label }))
-const SCALE = YUL_OBJ[2].map(x => x.label)
+const YULS = YUL_OBJ[3].map(x => ({ text: x.text, value: x.label }))
+const SCALE = YUL_OBJ[3].map(x => x.label)
 
 export default defineComponent({
   props: { config: { type: Object as PropType<Config>, required: true } },

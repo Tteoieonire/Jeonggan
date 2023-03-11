@@ -9,14 +9,14 @@ import { MainEntry, querySymbol } from './symbols'
 import { getID, resetID } from './utils'
 import { Cell, Chapter, Col, Config, Row } from './viewer'
 
-const TABLE = '黃大太夾姑仲蕤林夷南無應'
+const TABLE = '黃大太夾姑仲㽔林夷南無應'
 
 function serializeCol(col: Col): string {
   if (!col.data.main) return '-'
   const main = col.data.main.text
   let _mod = col.data.modifier
   if (!_mod) return main
-  const modifier = 'text' in _mod ? _mod.text : _mod.texts[0]
+  const modifier = _mod.text
   return main + ':' + modifier
 }
 
@@ -63,16 +63,21 @@ function serializeMusic(music: Music) {
  * Deserializer
  */
 
-function _lookup(table: MainEntry[][], query: string): MainEntry | null {
-  let found = table.flat().filter(node => (node?.text === query ? node : null))
-  return found.length ? found[0] : null
+function lookupYul(query: string): MainEntry | null {
+  const yulMap: Record<string, MainEntry> = {
+    // also accept compatible characters
+    蕤: YUL_OBJ[3][6],
+    林: YUL_OBJ[3][7],
+  }
+  for (const yulObj of YUL_OBJ.flat()) yulMap[yulObj.text] = yulObj
+  return yulMap[query] ?? null
 }
 
 function deserializeCol(col: string): Col {
   const [_main, _mod] = col.trim().split(':')
   if (_main === '-') return { id: getID(), data: {} }
   if (_main === '△') return { id: getID(), data: { main: REST_OBJ } }
-  const main = _lookup(YUL_OBJ, _main) || querySymbol('main', _main, 'text')
+  const main = lookupYul(_main) || querySymbol('main', _main, 'text')
   const modifier = _mod ? querySymbol('modifier', _mod, 'text') : undefined
   return { id: getID(), data: { main, modifier } }
 }

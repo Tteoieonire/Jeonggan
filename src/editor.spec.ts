@@ -16,7 +16,7 @@ const SAMPLE_YAML = `- title: 양청도드리
     덕
     덕 덕
     -
-  scale: 黃太仲林南
+  scale: 黃太仲林南
   tempo: 140
   content: |
     汰
@@ -25,17 +25,17 @@ const SAMPLE_YAML = `- title: 양청도드리
 
     〻
 
-    〻:𝆔43
-    - 林
+    〻:앞시김새니레표
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     南
 
@@ -46,12 +46,12 @@ const SAMPLE_YAML = `- title: 양청도드리
     黃
     - 太
 
-    林
+    林
 
     仲
 
     太
-    㑲:𝆔343
+    㑲:앞시김새노니로표
 
     太
     △
@@ -65,44 +65,44 @@ const SAMPLE_YAML = `- title: 양청도드리
     덕
     덕 덕
     -
-  scale: 黃太仲林南
+  scale: 黃太仲林南
   tempo: 150
   content: |
-    林
+    林
 
     南
-    - 林
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
     南
-    - 林
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
     仲
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     潢
 
-    〻:𝆔43
+    〻:앞시김새니레표
 
-    林
+    林
 
-    南:𝆔43
-    - 林
+    南:앞시김새니레표
+    - 林
 
     南
 
@@ -113,12 +113,12 @@ const SAMPLE_YAML = `- title: 양청도드리
     黃
     - 太
 
-    林
+    林
 
     仲
 
     太
-    㑲:𝆔343
+    㑲:앞시김새노니로표
 
     太
     △
@@ -127,7 +127,7 @@ const SAMPLE_YAML = `- title: 양청도드리
 describe('MusicSelector', () => {
   const music = deserializeMusic(SAMPLE_YAML)
   describe('selection', () => {
-    test('selectAll', () => {
+    it('selectAll', () => {
       const selector = new MusicSelector(music)
       selector.move('cell', 1)
       selector.selectAll()
@@ -192,8 +192,8 @@ describe('MusicSelector', () => {
       selector.createSelection()
       selector.move('chapter', 1)
       expect(selector.copyRange()).toMatchObject([
-        [[{ main: YUL_OBJ[2][2] }], [{ main: REST_OBJ }]],
-        [[{ main: YUL_OBJ[2][7] }]],
+        [[{ main: YUL_OBJ[3][2] }], [{ main: REST_OBJ }]],
+        [[{ main: YUL_OBJ[3][7] }]],
       ])
     })
   })
@@ -219,7 +219,7 @@ describe('MusicEditor', () => {
       const editor = new MusicEditor(music)
       editor.cursor.move(0, 7, 1, 1)
       const [entry, undo] = editor.cutEntry()
-      expect(entry).toMatchObject({ main: YUL_OBJ[2][7] })
+      expect(entry).toMatchObject({ main: YUL_OBJ[3][7] })
 
       const target = lines.slice()
       target[line1 + 16] = '    - -'
@@ -236,7 +236,7 @@ describe('MusicEditor', () => {
       const [entries, undo] = editor.cutRange()
       expect(editor.cursor.isEqualTo(new Cursor(false, 0, 11, 0, 0))).toBe(true)
       expect(entries).toMatchObject([
-        [[{ main: YUL_OBJ[2][0] }], [{}, { main: YUL_OBJ[2][2] }]],
+        [[{ main: YUL_OBJ[3][0] }], [{}, { main: YUL_OBJ[3][2] }]],
       ])
 
       const target = lines.slice()
@@ -276,8 +276,8 @@ describe('MusicEditor', () => {
       editor.move('chapter', 1)
       const [entries, undo] = editor.cutRange()
       expect(entries).toMatchObject([
-        [[{ main: YUL_OBJ[2][2] }], [{ main: REST_OBJ }]],
-        [[{ main: YUL_OBJ[2][7] }]],
+        [[{ main: YUL_OBJ[3][2] }], [{ main: REST_OBJ }]],
+        [[{ main: YUL_OBJ[3][7] }]],
       ])
 
       const target = lines.slice()
@@ -325,7 +325,7 @@ describe('MusicEditor', () => {
       const undo = editor.pasteEntry(content)
 
       const target = lines.slice()
-      target.splice(line1, 1, '    林')
+      target.splice(line1, 1, '    林')
       expect(serializeMusic(music)).toBe(target.join('\n'))
       undo()
       expect(serializeMusic(music)).toBe(SAMPLE_YAML)
@@ -338,7 +338,7 @@ describe('MusicEditor', () => {
       const undo2 = editor.pasteEntry(content)
 
       const target = lines.slice()
-      target.splice(line2, 1, '    林')
+      target.splice(line2, 1, '    林')
       target.splice(line1 + 7, 1, '    - -')
       expect(serializeMusic(music)).toBe(target.join('\n'))
       undo2()
@@ -404,8 +404,8 @@ describe('MusicEditor', () => {
       expect(editor.cursor.isEqualTo(new Cursor(false, 1, 1, 0, 0))).toBe(true)
 
       const target = lines.slice()
-      target.splice(line2, 4, '    太', '    △', '', '    林')
-      target.splice(line1 + 35, 1, '    㑲:𝆔343')
+      target.splice(line2, 4, '    太', '    △', '', '    林')
+      target.splice(line1 + 35, 1, '    㑲:앞시김새노니로표')
       expect(serializeMusic(music)).toBe(target.join('\n'))
       undo()
       expect(serializeMusic(music)).toBe(SAMPLE_YAML)
@@ -425,7 +425,7 @@ describe('MusicEditor', () => {
       expect(editor.cursor.isEqualTo(new Cursor(false, 1, 24, 0, 0))).toBe(true)
 
       const target = lines.slice()
-      target.push('    林', '')
+      target.push('    林', '')
       expect(serializeMusic(music)).toBe(target.join('\n'))
       undo()
       expect(serializeMusic(music)).toBe(SAMPLE_YAML)

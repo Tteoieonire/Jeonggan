@@ -9,6 +9,6 @@
 - 떵: Janggu_1_1.wav
 - 쿵: Janggu_3_2.wav
 - 덕: Janggu_5_2.wav
-- 따닥: Janggu_2_2.wav
+- 기덕: Janggu_2_2.wav
 - 더러러러: Janggu_4_2.wav
-- 따: Janggu_6_2.wav
+- 더: Janggu_6_2.wav

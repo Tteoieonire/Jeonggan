@@ -4,30 +4,36 @@ import { MainEntry, ModifierEntry } from './symbols'
 import { sleep } from './utils'
 import { MusicBase, MusicViewer } from './viewer'
 
-export function scaleIdxToPitch(idx: number, scale: number[]) {
+const REF_PITCH = 63 // Eb4, 황종
+
+function scaleIdxToPitch(idx: number, scale: number[]) {
   const oct = Math.floor(idx / scale.length)
   idx -= oct * scale.length
-  return scale[idx] + 3 + 12 * oct
+  return scale[idx] + 12 * oct + REF_PITCH
 }
 
-function approxInScale(note: number, scale: number[]) {
-  // note & scale both 0-11
+function approxInScale(yul: number, scale: number[]) {
+  // yul & scale both 0~11
   let minIdx = 0
-  let minDist = 15
-  for (let i = -scale.length; i < 2 * scale.length; i++) {
-    const dist = Math.abs(scaleIdxToPitch(i, scale) - 3 - note)
-    if (dist < minDist) {
-      minIdx = i
-      minDist = dist
+  let minDist = 1000
+  for (let oct = -1; oct <= 1; oct++) {
+    for (const [i, cur] of scale.entries()) {
+      const dist = Math.abs(cur + 12 * oct - yul)
+      if (dist < minDist) {
+        minIdx = i + oct * scale.length
+        minDist = dist
+      }
     }
   }
   return minIdx
 }
 
-export function pitchToScaleIdx(pitch: number, scale: number[]) {
-  const oct = Math.floor((pitch - 3) / 12)
-  let idx = scale.indexOf((pitch - 3) % 12)
-  if (idx === -1) idx = approxInScale((pitch - 3) % 12, scale)
+function pitchToScaleIdx(pitch: number, scale: number[]) {
+  const relPitch = pitch - REF_PITCH // 0 = Eb4
+  const oct = Math.floor(relPitch / 12)
+  const yul = relPitch - oct * 12
+  let idx = scale.indexOf(yul)
+  if (idx === -1) idx = approxInScale(yul, scale)
   return idx + oct * scale.length
 }
 
@@ -42,7 +48,7 @@ export type Sori = {
   time: number
   duration: number
   headDuration: number
-  main?: MainEntry
+  main: MainEntry
   modifier?: ModifierEntry
 }
 
@@ -53,18 +59,19 @@ export type Note = {
 }
 
 function renderMain(sori: Sori, scale: number[], lastPitch?: number): Note[] {
-  //scale C=0 ~ B=11, lastPitch in midi
+  // lastPitch in midi
   let pitches: number[] = []
-  if (typeof sori.main?.pitch === 'number') {
-    pitches = [sori.main.pitch + 51]
-  } else if (typeof sori.main?.pitch === 'string') {
+  if ('pitch' in sori.main) {
+    pitches = [sori.main.pitch]
+  } else {
     if (lastPitch == null) {
       console.error('처음 등장하는 음의 높낮이를 파악할 수 없습니다.')
       return []
     }
     const mapper = buildScaleTable(scale, lastPitch)
-    pitches = sori.main.pitch.split('').map((rel: string) => mapper[+rel])
-  } else throw Error('renderMain pitch neither number nor string')
+    pitches = sori.main.pitches.map(rel => mapper[rel])
+  }
+  if (pitches.length === 0) return []
 
   let base_duration = sori.headDuration / pitches.length
   let tail_duration = base_duration + (sori.duration - sori.headDuration)
@@ -84,15 +91,15 @@ function renderModifier(
 ) {
   const refIdx = pitchToScaleIdx(note.pitch, scale)
   const pitches = modifier.pitches.map(part =>
-    part.split('').map(rel => scaleIdxToPitch(+rel - 3 + refIdx, scale))
-  )
+    part.map(rel => scaleIdxToPitch(rel - 3 + refIdx, scale))
+  ) as [number[], number[], number[]]
   const notes = allotGrace(pitches, note.time, headDuration, graceCap)
   notes[notes.length - 1].duration += note.duration - headDuration
   return notes
 }
 
 function allotGrace(
-  pitches: number[][],
+  pitches: [number[], number[], number[]],
   time: number,
   duration: number,
   graceCap: number
@@ -115,7 +122,7 @@ function allotGrace(
   return results
 }
 
-export function renderNote(
+function renderNote(
   sori: Sori,
   scale: number[],
   lastPitch?: number,
@@ -195,14 +202,13 @@ export class MusicPlayer extends MusicViewer {
   }
 
   getLastPitch(): number | undefined {
-    // TODO: take octave into account!!
     const viewer = this.clone()
     let lastPitch = null
     let distance = 0
     do {
-      const pitch = viewer.get('col').data.main?.pitch
-      if (typeof pitch === 'number') {
-        lastPitch = pitch + 51
+      const main = viewer.get('col').data.main
+      if (main != null && 'pitch' in main) {
+        lastPitch = main.pitch
         break
       }
       distance++
@@ -214,12 +220,13 @@ export class MusicPlayer extends MusicViewer {
       distance--
       if (distance === 0) return lastPitch
 
-      const pitch = viewer.get('col').data.main?.pitch
-      if (pitch == null) continue
-      if (typeof pitch === 'number') break
+      const main = viewer.get('col').data.main
+      if (main == null) continue
+      if ('pitch' in main) break
+      if (main.pitches.length === 0) continue
 
       const scale = viewer.music.data[viewer.cursor.chapter].config.scale
-      const offset = +pitch[pitch.length - 1] - 3
+      const offset = main.pitches[main.pitches.length - 1] - 3
       const scaleIdx = pitchToScaleIdx(lastPitch, scale)
       lastPitch = scaleIdxToPitch(scaleIdx + offset, scale)
     }
@@ -308,7 +315,7 @@ export class MusicPlayer extends MusicViewer {
 
       if (cur?.data?.main) {
         this.melodyPlayer?.stop()
-        if (cur.data.main.pitch) {
+        if ('pitch' in cur.data.main || cur.data.main.pitches.length > 0) {
           const sori: Sori = {
             time: 0,
             duration,

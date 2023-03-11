@@ -56,7 +56,8 @@ function convertChapter(
     const duration = player.colDuration(ticksPerCell)
 
     if (cur?.data?.main) {
-      ongoing = !!cur.data.main.pitch // no ongoing if rest
+      // not ongoing when encountered a rest
+      ongoing = !('pitches' in cur.data.main && !cur.data.main.pitches.length)
       if (ongoing) {
         const sori: Sori = {
           time,

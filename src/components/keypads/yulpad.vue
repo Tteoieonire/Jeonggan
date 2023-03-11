@@ -6,7 +6,7 @@
 
     <b-button-group class="m-1" aria-label="율명 입력">
       <b-button
-        :disabled="octave <= 0"
+        :disabled="octave <= -3"
         @click="lower"
         variant="outline-primary"
         aria-label="옥타브 내림"
@@ -20,11 +20,13 @@
         :aria-label="yul.label"
         @click="note(i)"
         v-b-tooltip.hover
+        class="gugak"
+        style="font-size: 1.1rem"
         >{{ yul.text }}</b-button
       >
 
       <b-button
-        :disabled="octave >= 4"
+        :disabled="octave >= 3"
         @click="raise"
         variant="outline-primary"
         aria-label="옥타브 올림"
@@ -37,7 +39,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import { YUL_OBJ, REST_OBJ } from '../../constants'
+import { REST_OBJ, YUL_OBJ } from '../../constants'
 import { MainEntry, ModifierEntry } from '../../symbols'
 
 export default defineComponent({
@@ -56,19 +58,19 @@ export default defineComponent({
       this.$emit('write', 'main', REST_OBJ)
     },
     note(i: number) {
-      let obj = this.yuls[i]
+      const obj = this.yuls[i]
       this.$emit('write', 'main', obj)
     },
     lower() {
-      if (this.octave > 0) this.$emit('octavechange', -1)
+      if (this.octave > -3) this.$emit('octavechange', -1)
     },
     raise() {
-      if (this.octave < 4) this.$emit('octavechange', +1)
+      if (this.octave < 3) this.$emit('octavechange', +1)
     },
   },
   computed: {
     yuls() {
-      const obj = YUL_OBJ[this.octave]
+      const obj = YUL_OBJ[this.octave + 3]
       return this.scale.map(x => obj[x])
     },
   },

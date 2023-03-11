@@ -1,10 +1,8 @@
 <template>
   <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col" ref="col">
     <span class="gugak">{{ main }}</span>
-    <span v-if="content.data.modifier" class="gugak modifier">{{
-      'text' in content.data.modifier
-        ? content.data.modifier.text
-        : content.data.modifier.texts[0]
+    <span v-if="content.data.modifier" class="gugak">{{
+      content.data.modifier.text
     }}</span>
   </div>
 </template>
@@ -70,10 +68,5 @@ export default defineComponent({
 .cur {
   background-color: #06f;
   color: white;
-}
-
-.modifier {
-  font-size: 70%;
-  vertical-align: 15%;
 }
 </style>
