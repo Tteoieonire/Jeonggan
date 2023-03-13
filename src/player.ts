@@ -256,7 +256,8 @@ export class MusicPlayer extends MusicViewer {
     this.stop()
 
     if (MusicPlayer._ac == null) return
-    const time = MusicPlayer._ac.currentTime
+    // TODO: remove this offset
+    const time = MusicPlayer._ac.currentTime + 0.5 // offset for unknown delay
 
     this.playing = true
     await Promise.all([this.playMelody(time), this.playRhythm(time)])

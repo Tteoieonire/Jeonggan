@@ -81,7 +81,7 @@ const frame_modifier = [
   [
     {
       text: '없애기',
-      label: '시김새 없애기',
+      label: '앞시김새 없애기',
     },
   ],
   ['43', '53', '63'],
@@ -140,7 +140,7 @@ export default defineComponent({
       )
     },
     label() {
-      return this.type === 'main' ? '부호' : '시김새'
+      return this.type === 'main' ? '뒷시김새' : '앞시김새'
     },
     disabled() {
       return this.type === 'modifier' && !this.sigimShow

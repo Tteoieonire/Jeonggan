@@ -29,7 +29,6 @@
 
       <div style="order: 1">
         <!-- TODO: 주법 -->
-        <sympad @write="write" type="main" />
         <sympad
           :sigimShow="sigimShow"
           :trillShow="trillShow"
@@ -38,6 +37,7 @@
           @trillchange="trillchange"
           type="modifier"
         />
+        <sympad @write="write" type="main" />
       </div>
     </div>
   </b-button-toolbar>
