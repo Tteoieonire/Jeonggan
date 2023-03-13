@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '',
   build: {
     assetsInlineLimit: 16384, // 16 KB
     outDir: 'docs',
