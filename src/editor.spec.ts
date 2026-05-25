@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { REST_OBJ, YUL_OBJ } from './constants'
+import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor from './cursor'
 import { MusicEditor, MusicSelector } from './editor'
 import { deserializeMusic, serializeMusic } from './serializer'
@@ -205,6 +205,34 @@ describe('MusicEditor', () => {
   const lines = SAMPLE_YAML.split('\n')
   const line1 = lines.indexOf('  content: |') + 1
   const line2 = lines.indexOf('  content: |', line1) + 1
+
+  describe('rhythm tick', () => {
+    it('can write and undo a rhythm tick', () => {
+      const editor = new MusicEditor(music)
+      editor.moveRhythm('cell', 1)
+
+      const undo = editor.writeRhythmTick('쿵')
+      expect(editor.currentRhythmTick()).toBe('쿵')
+      expect(rhythmTickIndex(editor.currentRhythmTick())).toBe(1)
+
+      undo()
+      expect(editor.currentRhythmTick()).toBe('덕')
+      expect(rhythmTickIndex(editor.currentRhythmTick())).toBe(2)
+    })
+
+    it('can erase and undo a rhythm tick', () => {
+      const editor = new MusicEditor(music)
+      editor.moveRhythm('cell', 2)
+      editor.moveRhythm('row', 1)
+
+      const undo = editor.eraseRhythmTick()
+      expect(editor.currentRhythmTick()).toBe('')
+      expect(rhythmTickIndex(editor.currentRhythmTick())).toBe(-1)
+
+      undo()
+      expect(editor.currentRhythmTick()).toBe('덕')
+    })
+  })
 
   describe('cutEntry', () => {
     it('can cut an empty column', () => {

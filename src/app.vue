@@ -95,7 +95,7 @@ import configmodal from './components/configmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
-import { REST_OBJ, RHYTHM_OBJ, YUL_OBJ } from './constants'
+import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
 import { Music, MusicEditor } from './editor'
 import { IME } from './ime'
@@ -141,11 +141,6 @@ type UndoRecord = {
   newCursor: Cursor
   oldAnchor?: Cursor
   newAnchor?: Cursor
-}
-type RhythmTick = (typeof RHYTHM_OBJ)[number] | ''
-
-function rhythmTickIndex(tick: RhythmTick): number {
-  return tick === '' ? -1 : RHYTHM_OBJ.indexOf(tick)
 }
 
 export default defineComponent({
@@ -222,10 +217,7 @@ export default defineComponent({
     },
     updateRhythm() {
       if (this.editor.cursor.rhythmMode) {
-        const rows =
-          this.editor.get('chapter').config.rhythm[this.editor.cursor.cell]
-        const row = rows[this.editor.cursor.row]
-        this.tickIdx = rhythmTickIndex(row)
+        this.tickIdx = rhythmTickIndex(this.editor.currentRhythmTick())
       }
     },
     updateChapter() {
@@ -274,18 +266,7 @@ export default defineComponent({
     erase() {
       if (this.editor.isSelecting) return
       if (this.editor.cursor.rhythmMode) {
-        this.doWithBackup(() => {
-          const cell = this.editor.cursor.cell
-          const row = this.editor.cursor.row
-          const rows = this.config.rhythm[cell]
-          const old = rows.splice(row, 1, '')[0]
-          this.tickIdx = -1
-          return () => {
-            const rows = this.config.rhythm[cell]
-            rows.splice(row, 1, old)
-            this.tickIdx = rhythmTickIndex(old)
-          }
-        })
+        this.doWithBackup(() => this.editor.eraseRhythmTick())
       } else {
         this.doWithBackup(() => this.editor.erase())
         this.ime.reset()
@@ -301,19 +282,7 @@ export default defineComponent({
       this.octave += delta
     },
     tickchange(tickIdx: number) {
-      this.doWithBackup(() => {
-        const cell = this.editor.cursor.cell
-        const row = this.editor.cursor.row
-        const rows = this.config.rhythm[cell]
-        const old = rows[row]
-        this.tickIdx = tickIdx
-        rows.splice(row, 1, RHYTHM_OBJ[tickIdx])
-        return () => {
-          const rows = this.config.rhythm[cell]
-          rows.splice(row, 1, old)
-          this.tickIdx = rhythmTickIndex(old)
-        }
-      })
+      this.doWithBackup(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
     },
     trillchange(trill: TrillState) {
       let query = this.editor.get('col').data?.modifier?.query
@@ -448,6 +417,7 @@ export default defineComponent({
       this.editor.anchor = oldAnchor
       this.editor.cursor.moveTo(oldCursor)
       this.updateSympad()
+      this.updateRhythm()
       this.updateFocus()
     },
     redo() {
@@ -458,6 +428,7 @@ export default defineComponent({
       this.editor.cursor.moveTo(oldCursor)
       redo()
       this.updateSympad()
+      this.updateRhythm()
       this.updateFocus()
       this.undoTravel += 1
     },
@@ -475,6 +446,7 @@ export default defineComponent({
       const newCursor = this.editor.cursor.clone()
       const newAnchor = this.editor.anchor?.clone()
       this.updateSympad()
+      this.updateRhythm()
       this.updateFocus()
       this.undoHistory.push({
         undo,

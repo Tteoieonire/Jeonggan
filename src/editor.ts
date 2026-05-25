@@ -1,4 +1,5 @@
 import { InstrumentName } from 'soundfont-player'
+import type { RhythmTick } from './constants'
 import Cursor from './cursor'
 import { MusicPlayer } from './player'
 import { getID, inRange } from './utils'
@@ -248,6 +249,20 @@ export class MusicEditor extends MusicSelector {
       arr.splice(idx, keep ? 1 : 0, old)
       undo()
     }
+  }
+  currentRhythmTick(): RhythmTick {
+    return this.get('chapter').config.rhythm[this.cursor.cell][this.cursor.row]
+  }
+
+  writeRhythmTick(tick: RhythmTick): UndoOp {
+    const rows = this.get('chapter').config.rhythm[this.cursor.cell]
+    const row = this.cursor.row
+    const old = rows.splice(row, 1, tick)[0]
+    return () => rows.splice(row, 1, old)
+  }
+
+  eraseRhythmTick(): UndoOp {
+    return this.writeRhythmTick('')
   }
 
   write<T extends keyof typeof PARENT_OF>(what: T, obj: ElementOf[T]): UndoOp {
