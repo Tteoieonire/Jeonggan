@@ -2,7 +2,8 @@ import type { InstrumentName } from 'soundfont-player'
 
 import { executeEditorCommand, type EditorCommand } from './editor-command'
 import { createEditorHistory, type EditorHistory } from './editor-history'
-import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from '../domain/constants'
+import { editorCommandFromKeyboard } from './editor-keyboard-command'
+import { rhythmTickIndex, YUL_OBJ } from '../domain/constants'
 import Cursor, { CoordLevel } from '../domain/cursor'
 import { Music, MusicEditor } from '../domain/editor'
 import type { EntryOf, TrillState } from '../domain/symbols'
@@ -15,7 +16,6 @@ import {
 import { makeCanvasLabel } from '../features/canvas-label'
 import { canPaste, type ClipboardData } from '../features/clipboard'
 import { IME } from '../features/ime'
-import { resolveImeWrite } from '../features/ime-write'
 import {
   getKeyboardCommand,
   type KeyboardCommand,
@@ -273,6 +273,17 @@ export class EditorSession {
   }
 
   executeKeyboardCommand(command: KeyboardCommand): void {
+    const editorCommand = editorCommandFromKeyboard(command, {
+      editor: this.editor,
+      ime: this.ime,
+      octave: this.octave,
+      sigimShow: this.sigimShow,
+    })
+    if (editorCommand != null) {
+      this.execute(editorCommand)
+      return
+    }
+
     switch (command.type) {
       case 'ignore':
         return
@@ -283,9 +294,6 @@ export class EditorSession {
       case 'end':
         executeKeyboardNavigation(command, this.editor, this.config)
         return
-      case 'shapeChange':
-        this.changeShape(command.what, command.delta)
-        return
       case 'backspaceSelection':
       case 'backspace':
       case 'deleteSelection':
@@ -293,65 +301,13 @@ export class EditorSession {
       case 'cutSelection':
         this.doWithHistory(getKeyboardEditUndo(command, this.editor))
         return
-      case 'eraseRhythmTick':
-        this.erase()
-        return
-      case 'deleteRhythmRow':
-        this.changeShape('row', -1)
-        return
-      case 'imeBackspace':
-        this.write(command.where, this.ime.backspace(), false)
-        return
-      case 'eraseModifier':
-        this.write('modifier', undefined)
-        return
-      case 'eraseEntry':
-        this.erase()
-        return
-      case 'paste':
-        this.paste()
-        return
-      case 'copy':
-        this.copy()
-        return
       case 'octave':
         this.writeOctave(command.delta)
-        return
-      case 'writeRest':
-        this.write('main', REST_OBJ)
-        return
-      case 'writeIme':
-        this.writeIme(command.key, command.shiftKey)
-        return
-      case 'writeRhythmTick':
-        this.changeTick(command.tickIdx)
-        return
-      case 'undo':
-        this.undo()
-        return
-      case 'redo':
-        this.redo()
         return
       case 'selectAll':
         this.editor.selectAll()
         return
-      case 'cut':
-        this.cut()
-        return
-      case 'writePitch':
-        this.write('main', YUL_OBJ[this.octave + 3][command.pitchIdx])
-        return
     }
-  }
-
-  writeIme(key: string, shiftKey: boolean): void {
-    const write = resolveImeWrite(this.ime, {
-      key,
-      shiftKey,
-      isSelecting: this.editor.isSelecting,
-      sigimShow: this.sigimShow,
-    })
-    if (write.type === 'write') this.write(write.where, write.entry, false)
   }
 
   writeOctave(delta: 1 | -1): void {
