@@ -119,6 +119,7 @@ import {
   startCanvasDrag,
 } from './features/canvas-selection'
 import { canPaste, type ClipboardData } from './features/clipboard'
+import { getEntryWriteUndo } from './features/entry-write'
 import {
   REST_OBJ,
   RHYTHM_OBJ,
@@ -139,7 +140,6 @@ import { resolveOctaveChange } from './features/octave'
 import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
 import { applyModifierTrill } from './features/trill'
-import { getID } from './domain/utils'
 import { Chapter, Config, UndoOp } from './domain/viewer'
 import {
   WORKSPACE_HELP,
@@ -284,14 +284,9 @@ export default defineComponent({
       obj?: EntryOf[K],
       resetIME = true
     ) {
-      if (this.editor.isSelecting) return
-      this.doWithBackup(() => {
-        const el = {
-          id: getID(),
-          data: { main: this.editor.get('col').data?.main, [where]: obj },
-        }
-        return this.editor.write('col', el)
-      })
+      const op = getEntryWriteUndo(this.editor, where, obj)
+      if (op == null) return
+      this.doWithBackup(op)
       if (resetIME) this.ime.reset()
     },
     erase() {
