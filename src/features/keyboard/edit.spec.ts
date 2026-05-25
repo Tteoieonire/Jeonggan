@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Entry, UndoOp } from '../../domain/navigation/viewer'
+import type { EntryRange, UndoOp } from '../../domain/navigation/viewer'
 import {
   getKeyboardEditUndo,
   type KeyboardEditCommand,
@@ -94,7 +94,7 @@ function makeEditor({
       events.push('deletekey')
       return undo('deletekey')
     },
-    cutRange(): [Entry[][][], UndoOp] {
+    cutRange(): [EntryRange, UndoOp] {
       events.push('cutRange')
       return [[], undo('cutRange')]
     },

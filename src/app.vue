@@ -27,12 +27,14 @@
       :scale="config.scale"
       :octave="octave"
       :trill="trill"
+      :breath-marked="breathMarked"
       @write="write"
       @erase="erase"
       @shape-change="shapechange"
       @octave-change="octavechange"
       @tick-change="tickchange"
       @trill-change="trillchange"
+      @breath-mark-toggle="toggleBreathMark"
       id="keypanel"
     ></keypanel>
     <div
@@ -188,6 +190,9 @@ export default defineComponent({
     trillchange(trill: TrillState) {
       this.session.changeTrill(trill)
     },
+    toggleBreathMark() {
+      this.session.toggleBreathMark()
+    },
     configchange(config: Config, isVisibleChange: boolean) {
       this.session.changeConfig(config, isVisibleChange)
     },
@@ -264,6 +269,9 @@ export default defineComponent({
     },
     trill(): TrillState {
       return this.session.trill
+    },
+    breathMarked(): boolean {
+      return this.session.breathMarked
     },
     tickIdx(): number {
       return this.session.tickIdx

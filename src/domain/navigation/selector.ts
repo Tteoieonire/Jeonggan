@@ -3,6 +3,8 @@ import { inRange } from '../utils'
 import {
   Cell,
   Entry,
+  EntryRange,
+  EntryRow,
   idOp,
   type MusicBase,
   MusicViewer,
@@ -11,8 +13,14 @@ import {
   UndoOp,
 } from './viewer'
 
-export function debone(cells: Cell[]): Entry[][][] {
-  return cells.map(cell => cell.data.map(row => row.data.map(col => col.data)))
+export function debone(cells: Cell[]): EntryRange {
+  return cells.map(cell =>
+    cell.data.map(row => {
+      const entries = row.data.map(col => col.data) as EntryRow
+      if (row.breath) entries.breath = true
+      return entries
+    })
+  )
 }
 
 export class MusicSelector<
@@ -142,14 +150,14 @@ export class MusicSelector<
     return this.get('col').data
   }
 
-  copyRange(): Entry[][][] {
+  copyRange(): EntryRange {
     if (this.anchor == null) throw Error('No selected found')
     const [first, last] = this.anchor.isLessThan(this.cursor)
       ? [this.anchor, this.cursor]
       : [this.cursor, this.anchor]
     return this.music.data
       .slice(first.chapter, last.chapter + 1)
-      .flatMap(function (chapter, index): Entry[][][] {
+      .flatMap(function (chapter, index): EntryRange {
         const cells = chapter.data
         const start = index === 0 ? first.cell : 0
         const end =
@@ -158,7 +166,7 @@ export class MusicSelector<
       })
   }
 
-  copy(): ['Entry', Entry] | ['Range', Entry[][][]] {
+  copy(): ['Entry', Entry] | ['Range', EntryRange] {
     return this.isSelecting
       ? ['Range', this.copyRange()]
       : ['Entry', this.copyEntry()]

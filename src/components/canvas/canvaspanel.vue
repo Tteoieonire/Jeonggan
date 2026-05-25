@@ -55,7 +55,7 @@ export default defineComponent({
 
 <style>
 .gaks {
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid black;
   display: grid;
   direction: rtl;

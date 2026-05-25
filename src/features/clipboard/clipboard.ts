@@ -1,7 +1,7 @@
 import Cursor from '../../domain/navigation/cursor'
-import type { Entry } from '../../domain/navigation/viewer'
+import type { Entry, EntryRange } from '../../domain/navigation/viewer'
 
-export type ClipboardData = ['Entry', Entry] | ['Range', Entry[][][]]
+export type ClipboardData = ['Entry', Entry] | ['Range', EntryRange]
 
 export function canPaste(
   clipboard: ClipboardData | undefined,

@@ -31,6 +31,7 @@ export type EditorCommand =
   | WriteEntryCommand
   | { type: 'erase' }
   | { type: 'changeShape'; level: CoordLevel; delta: -1 | 1 }
+  | { type: 'toggleBreathMark' }
   | { type: 'writeRhythmTick'; tickIdx: number }
   | { type: 'cut' }
   | { type: 'copy' }
@@ -51,6 +52,9 @@ export function executeEditorCommand(
       return
     case 'changeShape':
       changeShape(host, command.level, command.delta)
+      return
+    case 'toggleBreathMark':
+      toggleBreathMark(host)
       return
     case 'writeRhythmTick':
       host.history.do(() =>
@@ -105,6 +109,12 @@ function changeShape(
   if (host.editor.isSelecting) return
   if (delta === +1) host.history.do(() => host.editor.add(level))
   else host.history.do(() => host.editor.del(level))
+}
+
+function toggleBreathMark(host: EditorCommandHost): void {
+  if (host.editor.isSelecting || host.editor.cursor.rhythmMode) return
+  host.history.do(() => host.editor.toggleBreathMark())
+  host.ime.reset()
 }
 
 function cut(host: EditorCommandHost): void {

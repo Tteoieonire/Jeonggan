@@ -2,6 +2,10 @@ import type { RhythmTick } from '../constants'
 import type { EditableMusicBase, ScoreFactory } from '../score'
 import Cursor from '../navigation/cursor'
 import {
+  toggleBreathMark as toggleEditorBreathMark,
+  writeBreathMark as writeEditorBreathMark,
+} from './breath-mark-editing'
+import {
   addRhythmRow as addEditorRhythmRow,
   currentRhythmTick as getCurrentEditorRhythmTick,
   delRhythmRow as deleteEditorRhythmRow,
@@ -31,6 +35,7 @@ import { inRange } from '../utils'
 import {
   ElementOf,
   Entry,
+  EntryRange,
   idOp,
   PARENT_OF,
   SNAP,
@@ -62,6 +67,14 @@ export class MusicEditor extends MusicSelector<EditableMusicBase> {
 
   writeRhythmTick(tick: RhythmTick): UndoOp {
     return writeEditorRhythmTick(this, tick)
+  }
+
+  writeBreathMark(breath: boolean): UndoOp {
+    return writeEditorBreathMark(this, breath)
+  }
+
+  toggleBreathMark(): UndoOp {
+    return toggleEditorBreathMark(this)
   }
 
   eraseRhythmTick(): UndoOp {
@@ -145,14 +158,14 @@ export class MusicEditor extends MusicSelector<EditableMusicBase> {
   cutEntry(): [Entry, UndoOp] {
     return cutEditorEntry(this)
   }
-  cutRange(): [Entry[][][], UndoOp] {
+  cutRange(): [EntryRange, UndoOp] {
     return cutEditorRange(this)
   }
 
   pasteEntry(entry: Entry): UndoOp {
     return pasteEditorEntry(this, entry)
   }
-  pasteRange(range: Entry[][][]): UndoOp {
+  pasteRange(range: EntryRange): UndoOp {
     return pasteEditorRange(this, range)
   }
 }

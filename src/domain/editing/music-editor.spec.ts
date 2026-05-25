@@ -209,6 +209,41 @@ describe('MusicEditor', () => {
   const line1 = lines.indexOf('  content: |') + 1
   const line2 = lines.indexOf('  content: |', line1) + 1
 
+  describe('breath mark', () => {
+    it('toggles and undoes the current row breath mark', () => {
+      const music = deserializeMusic(SAMPLE_YAML)
+      const editor = new MusicEditor(music)
+      editor.cursor.move(0, 3, 1, 1)
+
+      const undo = editor.toggleBreathMark()
+      expect(editor.get('row').breath).toBe(true)
+      expect(serializeMusic(music)).toContain('  breath: |\n')
+
+      undo()
+      expect(editor.get('row').breath).toBeUndefined()
+      expect(serializeMusic(music)).toBe(SAMPLE_YAML)
+    })
+
+    it('copies and pastes breath marks with their rows', () => {
+      const music = deserializeMusic(SAMPLE_YAML)
+      const editor = new MusicEditor(music)
+      editor.cursor.move(0, 3, 1, 1)
+      editor.toggleBreathMark()
+      editor.createSelection()
+
+      const content = editor.copyRange()
+      expect(content[0][1].breath).toBe(true)
+
+      editor.discardSelection()
+      editor.move('cell', 4)
+      const undo = editor.pasteRange(content)
+      expect(editor.get('cell').data[1].breath).toBe(true)
+
+      undo()
+      expect(editor.get('cell').data[1]?.breath).toBeUndefined()
+    })
+  })
+
   describe('rhythm tick', () => {
     it('can write and undo a rhythm tick', () => {
       const editor = new MusicEditor(music)

@@ -13,8 +13,10 @@
         style="order: 2"
         :scale="scale"
         :octave="octave"
+        :breath-marked="breathMarked"
         @write="write"
         @octave-change="octavechange"
+        @breath-mark-toggle="breathmarktoggle"
       />
 
       <div style="order: 3">
@@ -28,7 +30,6 @@
       </div>
 
       <div style="order: 1">
-        <!-- TODO: 주법 -->
         <sympad
           :sigim-show="sigimShow"
           :trill-show="trillShow"
@@ -76,6 +77,7 @@ export default defineComponent({
     scale: { type: Object as PropType<number[]>, required: true },
     octave: { type: Number, required: true },
     trill: { type: Object as PropType<TrillState>, required: true },
+    breathMarked: { type: Boolean, required: true },
   },
   emits: {
     write: (where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) =>
@@ -85,6 +87,7 @@ export default defineComponent({
     'octave-change': (delta: 1 | -1) => true,
     'tick-change': (tickIdx: number) => true,
     'trill-change': (trill: TrillState) => true,
+    'breath-mark-toggle': () => true,
   },
   methods: {
     write(where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) {
@@ -104,6 +107,9 @@ export default defineComponent({
     },
     trillchange(trill: TrillState) {
       this.$emit('trill-change', trill)
+    },
+    breathmarktoggle() {
+      this.$emit('breath-mark-toggle')
     },
   },
   components: {

@@ -118,6 +118,10 @@ export class EditorSession {
     }
   }
 
+  get breathMarked(): boolean {
+    return !this.editor.cursor.rhythmMode && !!this.editor.get('row').breath
+  }
+
   canvasLabel(playerActive: boolean): string {
     if (playerActive) return makeCanvasLabel({ playing: true })
     return makeCanvasLabel({
@@ -126,6 +130,7 @@ export class EditorSession {
       numRows: this.editor.get('cell').data.length,
       numCols: this.editor.get('row').data.length,
       col: this.editor.get('col'),
+      breathMarked: this.breathMarked,
     })
   }
 
@@ -197,6 +202,10 @@ export class EditorSession {
       trill
     )
     if (modifier != null) this.write('modifier', modifier)
+  }
+
+  toggleBreathMark(): void {
+    this.execute({ type: 'toggleBreathMark' })
   }
 
   changeConfig(config: Config, isVisibleChange: boolean): void {

@@ -12,6 +12,7 @@ type EditingCanvasLabelInput = {
   numRows: number
   numCols: number
   col: Col
+  breathMarked?: boolean
 }
 
 export type CanvasLabelInput = PlayingCanvasLabelInput | EditingCanvasLabelInput
@@ -31,9 +32,10 @@ export function makeCanvasLabel(input: CanvasLabelInput): string {
   const main = input.col.data?.main?.label ?? '빈칸'
   const modifier = input.col.data?.modifier?.label
   const entry = modifier ? `${main} ${modifier}` : main
+  const content = input.breathMarked ? `${entry}, 숨표` : entry
 
   return (
-    `${entry}, ` +
+    `${content}, ` +
     `${chapterName} ${pos.gak + 1}각 ${pos.cell + 1}번째 정간, ` +
     `${input.numRows}행 중 ${cursor.row + 1}행, ` +
     `${input.numCols}열 중 ${cursor.col + 1}열`

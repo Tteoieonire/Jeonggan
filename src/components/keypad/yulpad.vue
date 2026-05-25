@@ -1,8 +1,20 @@
 <template>
   <div class="d-inline-block">
-    <b-button class="m-1" @click="rest" aria-label="쉼표">
-      <span aria-hidden="true">△</span>
-    </b-button>
+    <b-button-group class="m-1" aria-label="쉼표와 숨표 입력">
+      <b-button @click="rest" aria-label="쉼표">
+        <span aria-hidden="true">△</span>
+      </b-button>
+      <b-button
+        class="gugak breath-button"
+        :pressed="breathMarked"
+        @click="breathmarktoggle"
+        aria-label="숨표"
+        title="숨표"
+        v-b-tooltip.hover.body
+      >
+        <span aria-hidden="true">숨표</span>
+      </b-button>
+    </b-button-group>
 
     <b-button-group class="m-1" aria-label="율명 입력">
       <b-button
@@ -52,16 +64,21 @@ export default defineComponent({
   props: {
     scale: { type: Array as PropType<number[]>, required: true },
     octave: { type: Number, required: true },
+    breathMarked: { type: Boolean, required: true },
   },
   emits: {
     write(where: 'main' | 'modifier', obj: MainEntry | ModifierEntry) {
       return true
     },
     'octave-change': (delta: 1 | -1) => true,
+    'breath-mark-toggle': () => true,
   },
   methods: {
     rest() {
       this.$emit('write', 'main', REST_OBJ)
+    },
+    breathmarktoggle() {
+      this.$emit('breath-mark-toggle')
     },
     note(i: number) {
       const obj = getYulPadEntry(this.scale, this.octave, i)
@@ -87,3 +104,9 @@ export default defineComponent({
   },
 })
 </script>
+
+<style scoped>
+.breath-button {
+  min-width: 2.5rem;
+}
+</style>

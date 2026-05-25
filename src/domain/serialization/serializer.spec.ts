@@ -181,4 +181,36 @@ describe('Round-trip', () => {
     music.getEditor().add('cell')
     expect(music.data[0].data[1].id).toBe(105)
   })
+
+  it('round-trips row breath marks without changing content notation', () => {
+    const yaml = `- title: test
+  instrument: acoustic_guitar
+- name: test
+  hideRhythm: false
+  measure:
+    - 2
+  padding: 0
+  rhythm: |
+    -
+    -
+  scale: 黃太姑林南
+  tempo: 140
+  breath: |
+    숨표
+
+    -
+    숨표
+  content: |
+    汰
+
+    黃
+    太
+`
+    const music = deserializeMusic(yaml)
+
+    expect(music.data[0].data[0].data[0].breath).toBe(true)
+    expect(music.data[0].data[1].data[0].breath).toBeUndefined()
+    expect(music.data[0].data[1].data[1].breath).toBe(true)
+    expect(serializeMusic(music)).toBe(yaml)
+  })
 })

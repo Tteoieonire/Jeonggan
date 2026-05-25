@@ -30,6 +30,18 @@ function serializeCell(cell: Cell): string {
   return cell.data.map(serializeRow).join('\n')
 }
 
+function hasBreathMarks(cells: Cell[]): boolean {
+  return cells.some(cell => cell.data.some(row => row.breath))
+}
+
+function serializeBreathMarks(cells: Cell[]): string {
+  return (
+    cells
+      .map(cell => cell.data.map(row => (row.breath ? '숨표' : '-')).join('\n'))
+      .join('\n\n') + '\n'
+  )
+}
+
 function serializeScale(scale: number[]): string {
   return scale.map(pitch => TABLE[pitch]).join('')
 }
@@ -48,10 +60,13 @@ function serializeConfig(config: Config) {
 }
 
 function serializeChapter(chapter: Chapter) {
-  return {
+  const serialized: Record<string, any> = {
     ...serializeConfig(chapter.config),
-    content: chapter.data.map(serializeCell).join('\n\n') + '\n',
   }
+  if (hasBreathMarks(chapter.data))
+    serialized.breath = serializeBreathMarks(chapter.data)
+  serialized.content = chapter.data.map(serializeCell).join('\n\n') + '\n'
+  return serialized
 }
 
 function serializeMusic(music: Music) {
@@ -93,6 +108,27 @@ function deserializeCells(string: string, score: ScoreFactory): Cell[] {
         .map(row => row.trim().split(' ').map(deserializeEntry))
       return score.cellFromEntries(entries)
     })
+}
+
+function deserializeBreathMarks(string: string | undefined): boolean[][] {
+  if (!string) return []
+  return string
+    .trim()
+    .split('\n\n')
+    .map(cell =>
+      cell
+        .trim()
+        .split('\n')
+        .map(row => row.trim() === '숨표')
+    )
+}
+
+function applyBreathMarks(cells: Cell[], marks: boolean[][]): void {
+  for (const [cellIndex, cell] of cells.entries()) {
+    for (const [rowIndex, row] of cell.data.entries()) {
+      if (marks[cellIndex]?.[rowIndex]) row.breath = true
+    }
+  }
 }
 
 type Header = {
@@ -146,6 +182,7 @@ function deserializeMusic(yaml: string, options: DeserializeMusicOptions = {}) {
       padding: content.padding || 0,
     }
     const cells = deserializeCells(content.content, score)
+    applyBreathMarks(cells, deserializeBreathMarks(content.breath))
     return score.chapter(config, cells)
   })
   return new Music(title, chapters, instrument, score)

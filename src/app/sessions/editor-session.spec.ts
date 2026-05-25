@@ -69,6 +69,28 @@ describe('EditorSession', () => {
     expect(session.canRedo(true)).toBe(false)
   })
 
+  it('announces breath marks as canvas label content', () => {
+    const session = new EditorSession()
+
+    expect(session.breathMarked).toBe(false)
+    session.toggleBreathMark()
+
+    expect(session.breathMarked).toBe(true)
+    expect(session.canvasLabel(false)).toContain(
+      '황종, 숨표, 초장 1각 1번째 정간'
+    )
+
+    session.undo()
+    expect(session.breathMarked).toBe(false)
+    expect(session.canvasLabel(false)).toContain('황종, 초장 1각 1번째 정간')
+
+    session.redo()
+    expect(session.breathMarked).toBe(true)
+    expect(session.canvasLabel(false)).toContain(
+      '황종, 숨표, 초장 1각 1번째 정간'
+    )
+  })
+
   it('refreshes config after immutable rhythm edits', () => {
     const session = new EditorSession()
     session.editor.moveRhythm('cell', 0)

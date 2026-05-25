@@ -52,6 +52,19 @@ describe('makeCanvasLabel', () => {
     ).toBe('빈칸, 초장 1각 2번째 정간, 4행 중 3행, 5열 중 4열')
   })
 
+  it('announces a breath mark on the current row', () => {
+    expect(
+      makeCanvasLabel({
+        cursor: new Cursor(false, 0, 1, 2, 3),
+        config: CONFIG,
+        numRows: 4,
+        numCols: 5,
+        col: emptyCol(),
+        breathMarked: true,
+      })
+    ).toBe('빈칸, 숨표, 초장 1각 2번째 정간, 4행 중 3행, 5열 중 4열')
+  })
+
   it('describes notation entry labels and padding-adjusted gak positions', () => {
     const col: Col = {
       id: 1,

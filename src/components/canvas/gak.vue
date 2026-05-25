@@ -1,18 +1,34 @@
 <template>
-  <div class="wrapper">
+  <div class="wrapper annotation-wrapper">
     <div class="margin"></div>
     <div
       style="border-right: 1px solid black"
       :style="{ height: padding }"
       :class="{ padding: padding !== '0rem' }"
     ></div>
-    <div class="gak" style="border-right: 1px solid black">
-      <div
-        v-for="[dummy, info] in grouped(gak.content.map(() => ''))"
-        :key="info.index"
-        class="annotation"
-        :class="{ endsSubdivision: info.endsSubdivision }"
-      ></div>
+    <div class="gak annotation-gak" style="border-right: 1px solid black">
+      <template v-if="gak.rhythm">
+        <div
+          v-for="[dummy, info] in grouped(gak.content.map(() => ''))"
+          :key="info.index"
+          class="annotation"
+          :class="{ endsSubdivision: info.endsSubdivision }"
+        ></div>
+      </template>
+      <template v-else>
+        <div
+          v-for="[cell, info] in grouped(gak.content)"
+          :key="cell.id"
+          class="annotation annotation-cell"
+          :class="{ endsSubdivision: info.endsSubdivision }"
+        >
+          <div v-for="row in cell.data" :key="row.id" class="annotation-row">
+            <span v-if="row.breath" class="breath-mark gugak" aria-label="숨표"
+              >숨표</span
+            >
+          </div>
+        </div>
+      </template>
     </div>
   </div>
   <div class="wrapper">
@@ -149,6 +165,10 @@ export default defineComponent({
   border-bottom: 1px solid black;
 }
 
+.annotation-wrapper {
+  overflow: visible;
+}
+
 .main {
   border: 1px solid black;
   border-bottom: none;
@@ -157,6 +177,27 @@ export default defineComponent({
 .annotation:first-child,
 .padding {
   border-top: 1px solid black;
+}
+
+.annotation-cell {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.annotation-row {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.breath-mark {
+  position: absolute;
+  left: 0.1rem;
+  bottom: -0.48rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  z-index: 1;
 }
 
 .margin {

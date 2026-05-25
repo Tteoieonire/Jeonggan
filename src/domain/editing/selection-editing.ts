@@ -6,6 +6,7 @@ import { replaceElementRange } from './structure-editing'
 import {
   type ElementOf,
   type Entry,
+  type EntryRange,
   type MusicBase,
   PARENT_OF,
   SNAP,
@@ -42,6 +43,7 @@ export function isEmptyCell(
   const cell = chapter.data[position.cell]
   if (cell.data.length > 1) return false
   const row = cell.data[0]
+  if (row.breath) return false
   if (row.data.length > 1) return false
   const col = row.data[0]
   return col.data.main == null
@@ -86,7 +88,7 @@ export function cutEntry(editor: SelectionEditHost): [Entry, UndoOp] {
   return [old, editor.write('col', { id: col.id, data: {} })]
 }
 
-export function cutRange(editor: SelectionEditHost): [Entry[][][], UndoOp] {
+export function cutRange(editor: SelectionEditHost): [EntryRange, UndoOp] {
   if (editor.anchor == null) throw Error('No selected found')
   editor.anchor = new Cursor(
     false,
@@ -103,7 +105,7 @@ export function cutRange(editor: SelectionEditHost): [Entry[][][], UndoOp] {
     : [oldCursor, editor.anchor]
   editor.cursor.moveTo(first)
 
-  const entries: Entry[][][] = []
+  const entries: EntryRange = []
   const undos: UndoOp[] = []
   while (true) {
     const cells = editor.get('chapter').data
@@ -141,7 +143,7 @@ export function pasteEntry(editor: SelectionEditHost, entry: Entry): UndoOp {
 
 export function pasteRange(
   editor: SelectionEditHost,
-  range: Entry[][][]
+  range: EntryRange
 ): UndoOp {
   if (editor.anchor == null) editor.createSelection()
   else if (editor.anchor.isLessThan(editor.cursor))

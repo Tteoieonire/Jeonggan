@@ -26,8 +26,11 @@ export type Gak = {
 
 export type Entry = { main?: MainEntry; modifier?: ModifierEntry }
 export type Col = WithID<Entry>
-export type Row = WithID<Col[]>
+export type Row = WithID<Col[]> & { breath?: boolean }
 export type Cell = WithID<Row[]>
+export type EntryRow = Entry[] & { breath?: boolean }
+export type EntryCell = EntryRow[]
+export type EntryRange = EntryCell[]
 
 export const PARENT_OF: {
   col: 'row'
@@ -106,24 +109,32 @@ export class Chapter {
 
 export class ScoreFactory {
   readonly col: (data?: Entry) => Col
-  readonly row: (cols?: Col[]) => Row
+  readonly row: (cols?: Col[], breath?: boolean) => Row
   readonly cell: (rows?: Row[]) => Cell
-  readonly cellFromEntries: (entries: Entry[][]) => Cell
+  readonly cellFromEntries: (entries: EntryCell) => Cell
   readonly chapter: (config: Config, cells?: Cell[]) => Chapter
 
   constructor(nextID: NextID) {
     this.col = (data: Entry = {}) => ({ id: nextID(), data })
-    this.row = (cols?: Col[]) => ({ id: nextID(), data: cols ?? [this.col()] })
+    this.row = (cols?: Col[], breath?: boolean) => {
+      const row: Row = { id: nextID(), data: cols ?? [this.col()] }
+      if (breath) row.breath = true
+      return row
+    }
     this.cell = (rows?: Row[]) => ({
       id: nextID(),
       data: rows ?? [this.row()],
     })
-    this.cellFromEntries = (entries: Entry[][]) => ({
+    this.cellFromEntries = (entries: EntryCell) => ({
       id: nextID(),
-      data: entries.map(row => ({
-        id: nextID(),
-        data: row.map(entry => this.col(entry)),
-      })),
+      data: entries.map(row => {
+        const result: Row = {
+          id: nextID(),
+          data: row.map(entry => this.col(entry)),
+        }
+        if (row.breath) result.breath = true
+        return result
+      }),
     })
     this.chapter = (config: Config, cells?: Cell[]) => {
       return new Chapter(nextID(), config, cells ?? [this.cell()])

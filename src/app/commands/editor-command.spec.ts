@@ -73,6 +73,16 @@ describe('editor command executor', () => {
     expect(host.editor.get('chapter').data).toHaveLength(1)
   })
 
+  it('toggles breath marks through history', () => {
+    const host = makeHost()
+
+    executeEditorCommand(host, { type: 'toggleBreathMark' })
+    expect(host.editor.get('row').breath).toBe(true)
+
+    executeEditorCommand(host, { type: 'undo' })
+    expect(host.editor.get('row').breath).toBeUndefined()
+  })
+
   it('copies, cuts, and pastes through a shared clipboard', () => {
     const host = makeHost()
     host.editor.get('col').data.main = YUL_OBJ[3][0]
