@@ -100,7 +100,6 @@
 </template>
 
 <script lang="ts">
-import { saveAs } from 'file-saver'
 import type { InstrumentName } from 'soundfont-player'
 import { defineComponent, nextTick } from 'vue'
 
@@ -114,12 +113,11 @@ import initmodal from './components/initmodal.vue'
 
 import { bindEditorDocumentEvents } from './app/document-listeners'
 import { EditorSession } from './app/editor-session'
+import { FileSession } from './app/file-session'
 import { PlaybackSession } from './app/playback-session'
 import { makeCanvasLabel } from './features/canvas-label'
 import Cursor, { CoordLevel } from './domain/cursor'
 import { Music, MusicEditor } from './domain/editor'
-import { readMusicFile } from './io/file-open'
-import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
 import { EntryOf, TrillState } from './domain/symbols'
 import { Config } from './domain/viewer'
 import {
@@ -133,9 +131,8 @@ export default defineComponent({
     return {
       session: undefined as unknown as EditorSession,
       playback: undefined as unknown as PlaybackSession,
+      files: undefined as unknown as FileSession,
       removeDocumentListeners: undefined as undefined | (() => void),
-      fileBusy: false,
-      loadingFailed: false,
     }
   },
   methods: {
@@ -149,8 +146,7 @@ export default defineComponent({
     },
     resetEditorUiState() {
       this.playback.reset()
-      this.fileBusy = false
-      this.loadingFailed = false
+      this.files.reset()
     },
     updateFocus() {
       this.$nextTick(() => {
@@ -219,24 +215,13 @@ export default defineComponent({
       this.session.rename(title, instrument)
     },
     async open(file: any) {
-      this.fileBusy = true
-      await nextTick()
-      try {
-        const music = await readMusicFile(file)
-        if (music != null) this.load(music)
-      } catch (error) {
-        this.loadingFailed = true
-      } finally {
-        this.fileBusy = false
-      }
+      await this.files.open(file, music => this.load(music))
     },
     save() {
-      const { blob, filename } = makeMusicYamlDownload(this.music)
-      saveAs(blob, filename)
+      this.files.save(this.music)
     },
     async exportMidi() {
-      const { blob, filename } = makeMusicMidiDownload(this.music)
-      saveAs(blob, filename)
+      this.files.exportMidi(this.music)
     },
     undo() {
       this.session.undo()
@@ -289,7 +274,15 @@ export default defineComponent({
       return this.playback.player
     },
     busy(): boolean {
-      return this.fileBusy || this.playback.busy
+      return this.files.busy || this.playback.busy
+    },
+    loadingFailed: {
+      get(): boolean {
+        return this.files.loadingFailed
+      },
+      set(value: boolean) {
+        this.files.loadingFailed = value
+      },
     },
     workspaceLabel(): string {
       return WORKSPACE_LABEL
@@ -331,6 +324,9 @@ export default defineComponent({
       requestFocus: () => this.updateFocus(),
     })
     this.playback = new PlaybackSession()
+    this.files = new FileSession({
+      waitUntilBusyVisible: () => nextTick(),
+    })
   },
   mounted() {
     this.removeDocumentListeners = bindEditorDocumentEvents(document, {
