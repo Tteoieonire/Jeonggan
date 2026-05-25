@@ -112,6 +112,7 @@ import configmodal from './components/configmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
+import { bindEditorDocumentEvents } from './app/document-listeners'
 import { EditorSession } from './app/editor-session'
 import { makeCanvasLabel } from './features/canvas-label'
 import Cursor, { CoordLevel } from './domain/cursor'
@@ -132,6 +133,7 @@ export default defineComponent({
     return {
       session: undefined as unknown as EditorSession,
       player: undefined as undefined | MusicPlayer,
+      removeDocumentListeners: undefined as undefined | (() => void),
       busy: false,
       loadingFailed: false,
     }
@@ -336,9 +338,14 @@ export default defineComponent({
     })
   },
   mounted() {
-    document.addEventListener('pointerup', this.pointerUp)
-    document.addEventListener('pointercancel', this.pointerUp)
-    document.addEventListener('keydown', this.keypressHandler)
+    this.removeDocumentListeners = bindEditorDocumentEvents(document, {
+      pointerUp: () => this.pointerUp(),
+      keydown: event => this.keypressHandler(event),
+    })
+  },
+  unmounted() {
+    this.removeDocumentListeners?.()
+    this.removeDocumentListeners = undefined
   },
   components: {
     keypanel,
