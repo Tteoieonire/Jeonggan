@@ -79,4 +79,27 @@ describe('EditorSession', () => {
 
     expect(requests).toBe(1)
   })
+
+  it('tracks canvas drag selection as session state', () => {
+    const session = new EditorSession()
+
+    session.pointerDown(new Cursor(false, 0, 0, 0, 0))
+    session.pointerOver(new Cursor(false, 0, 1, 0, 0))
+
+    expect(session.isDragging).toBe(true)
+    expect(
+      session.editor.anchor?.isEqualTo(new Cursor(false, 0, 0, 0, 0))
+    ).toBe(true)
+    expect(session.editor.cursor.isEqualTo(new Cursor(false, 0, 1, 0, 0))).toBe(
+      true
+    )
+
+    session.pointerUp()
+    session.pointerOver(new Cursor(false, 0, 0, 0, 0))
+
+    expect(session.isDragging).toBe(false)
+    expect(session.editor.cursor.isEqualTo(new Cursor(false, 0, 1, 0, 0))).toBe(
+      true
+    )
+  })
 })

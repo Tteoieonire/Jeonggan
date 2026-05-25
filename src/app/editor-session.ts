@@ -62,6 +62,7 @@ export class EditorSession {
   ime = new IME()
   history!: ActionHistory<HistoryState>
   clipboard: ClipboardData | undefined
+  private dragging = false
 
   constructor(private readonly hooks: EditorSessionHooks = {}) {
     this.create('새 곡')
@@ -117,8 +118,20 @@ export class EditorSession {
     selectCanvasRange(this.editor, coord)
   }
 
-  startCanvasDrag(coord: Cursor): boolean {
-    return startCanvasDrag(this.editor, coord)
+  get isDragging(): boolean {
+    return this.dragging
+  }
+
+  pointerDown(coord: Cursor): void {
+    this.dragging = startCanvasDrag(this.editor, coord)
+  }
+
+  pointerOver(coord: Cursor): void {
+    if (this.dragging) this.selectTo(coord)
+  }
+
+  pointerUp(): void {
+    this.dragging = false
   }
 
   discardSelection(): void {
@@ -360,6 +373,7 @@ export class EditorSession {
     this.music = music
     this.editor = this.music.getEditor()
     this.history = this.createHistory()
+    this.dragging = false
     this.updateChapter()
     this.updateRhythm()
     this.updateSympad()

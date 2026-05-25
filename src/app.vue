@@ -130,7 +130,6 @@ import {
 export default defineComponent({
   data() {
     return {
-      dragging: false,
       session: undefined as unknown as EditorSession,
       player: undefined as undefined | MusicPlayer,
       busy: false,
@@ -147,7 +146,6 @@ export default defineComponent({
       this.resetEditorUiState()
     },
     resetEditorUiState() {
-      this.dragging = false
       this.player = undefined
       this.busy = false
       this.loadingFailed = false
@@ -259,13 +257,15 @@ export default defineComponent({
 
     /* Event Handlers */
     pointerDown(coord: Cursor) {
-      this.dragging = this.session.startCanvasDrag(coord)
+      if (this.player != null) return
+      this.session.pointerDown(coord)
     },
     pointerOver(coord: Cursor) {
-      if (this.dragging) this.selectTo(coord)
+      if (this.player != null) return
+      this.session.pointerOver(coord)
     },
     pointerUp() {
-      this.dragging = false
+      this.session.pointerUp()
     },
     keypressHandler(e: KeyboardEvent) {
       const command = this.session.getKeyboardCommand(e, this.player != null)
