@@ -101,7 +101,7 @@
 
 <script lang="ts">
 import { saveAs } from 'file-saver'
-import { InstrumentName } from 'soundfont-player'
+import type { InstrumentName } from 'soundfont-player'
 import { defineComponent, nextTick } from 'vue'
 
 import canvaspanel from './components/canvaspanel.vue'
@@ -112,152 +112,45 @@ import configmodal from './components/configmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
+import { EditorSession } from './app/editor-session'
 import { makeCanvasLabel } from './features/canvas-label'
-import {
-  moveCanvasCursor,
-  selectCanvasRange,
-  startCanvasDrag,
-} from './features/canvas-selection'
-import { canPaste, type ClipboardData } from './features/clipboard'
-import { getEntryWriteUndo } from './features/entry-write'
-import {
-  REST_OBJ,
-  RHYTHM_OBJ,
-  rhythmTickIndex,
-  YUL_OBJ,
-} from './domain/constants'
 import Cursor, { CoordLevel } from './domain/cursor'
 import { Music, MusicEditor } from './domain/editor'
 import { readMusicFile } from './io/file-open'
-import { ActionHistory } from './features/history'
-import { IME } from './features/ime'
-import { resolveImeWrite } from './features/ime-write'
-import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
-import { getKeyboardEditUndo } from './features/keyboard-edit'
-import { executeKeyboardNavigation } from './features/keyboard-navigation'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
-import { resolveOctaveChange } from './features/octave'
 import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
-import { applyModifierTrill } from './features/trill'
-import { Chapter, Config, UndoOp } from './domain/viewer'
+import { Config } from './domain/viewer'
 import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,
   workspaceKeyShortcuts as formatWorkspaceKeyShortcuts,
 } from './features/workspace-accessibility'
 
-/**
- * Controller
- */
-const INIT_CONFIG: Config = {
-  name: '초장',
-  tempo: 60,
-  measure: [6],
-  rhythm: [['떵'], [''], ['기덕'], ['쿵'], ['더러러러'], ['더']],
-  hideRhythm: false,
-  scale: [0, 2, 5, 7, 9],
-  padding: 0,
-}
-const MAX_HISTORY = 100
-
-type HistoryState = {
-  cursor: Cursor
-  anchor?: Cursor
-}
-
 export default defineComponent({
   data() {
     return {
       dragging: false,
-      music: undefined as unknown as Music,
-      editor: undefined as unknown as MusicEditor,
+      session: undefined as unknown as EditorSession,
       player: undefined as undefined | MusicPlayer,
-      config: undefined as unknown as Config,
-      sigimShow: false, // need update
-      octave: 0,
-      trill: {} as TrillState,
-      tickIdx: -1,
-      ime: new IME(),
-      history: undefined as unknown as ActionHistory<HistoryState>,
-      clipboard: undefined as undefined | ClipboardData,
       busy: false,
       loadingFailed: false,
     }
   },
   methods: {
     create(title = '') {
-      const chapters = [new Chapter(INIT_CONFIG)]
-      this.music = new Music(title, chapters)
-      this.editor = this.music.getEditor()
-      this.init()
-
-      this.editor.cursor.move(0, 0, 0, 0)
-      this.write('main', YUL_OBJ[3][0])
-      this.editor.add('cell')
-      this.editor.stepCol(-1)
+      this.session.create(title)
+      this.resetEditorUiState()
     },
     load(music: Music) {
-      this.music = music
-      this.editor = this.music.getEditor()
-      this.init()
+      this.session.load(music)
+      this.resetEditorUiState()
     },
-    init() {
-      // keep octave & clipboard
+    resetEditorUiState() {
       this.dragging = false
       this.player = undefined
-      this.history = this.createHistory()
       this.busy = false
       this.loadingFailed = false
-      this.updateChapter()
-      this.updateRhythm()
-      this.updateSympad()
-      this.ime.reset()
-
-      this.editor.cursor.on('afterColChange', () => {
-        this.updateSympad()
-        this.ime.reset()
-        this.updateFocus()
-      })
-      this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
-      this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
-    },
-    createHistory() {
-      return new ActionHistory(
-        () => ({
-          cursor: this.editor.cursor.clone(),
-          anchor: this.editor.anchor?.clone(),
-        }),
-        state => {
-          this.editor.anchor = state.anchor?.clone()
-          this.editor.cursor.moveTo(state.cursor)
-        },
-        () => {
-          this.updateSympad()
-          this.updateRhythm()
-          this.updateFocus()
-        },
-        MAX_HISTORY
-      )
-    },
-    updateSympad() {
-      if (this.editor.cursor.rhythmMode) return
-      const el = this.editor.get('col')
-      this.sigimShow =
-        !!el.data?.main &&
-        ('pitch' in el.data.main || el.data.main.pitches.length === 1)
-      this.trill = {}
-      if (el.data?.modifier && el.data.modifier.trill) {
-        this.trill = el.data.modifier.trill
-      }
-    },
-    updateRhythm() {
-      if (this.editor.cursor.rhythmMode) {
-        this.tickIdx = rhythmTickIndex(this.editor.currentRhythmTick())
-      }
-    },
-    updateChapter() {
-      this.config = this.editor.get('chapter').config
     },
     updateFocus() {
       this.$nextTick(() => {
@@ -270,110 +163,54 @@ export default defineComponent({
     /* Interactions by buttons */
     moveTo(coord: Cursor) {
       if (this.player != null) return
-      moveCanvasCursor(this.editor, coord)
+      this.session.moveTo(coord)
     },
     selectTo(coord: Cursor) {
       if (this.player != null) return
-      selectCanvasRange(this.editor, coord)
+      this.session.selectTo(coord)
     },
     discardSelection() {
-      this.editor.discardSelection()
+      this.session.discardSelection()
     },
     write<K extends keyof EntryOf>(
       where: K,
       obj?: EntryOf[K],
       resetIME = true
     ) {
-      const op = getEntryWriteUndo(this.editor, where, obj)
-      if (op == null) return
-      this.doWithBackup(op)
-      if (resetIME) this.ime.reset()
+      this.session.write(where, obj, resetIME)
     },
     erase() {
-      if (this.editor.isSelecting) return
-      if (this.editor.cursor.rhythmMode) {
-        this.doWithBackup(() => this.editor.eraseRhythmTick())
-      } else {
-        this.doWithBackup(() => this.editor.erase())
-        this.ime.reset()
-      }
+      this.session.erase()
     },
     shapechange(what: CoordLevel, delta: -1 | 1) {
-      if (this.editor.isSelecting) return
-      if (delta === +1) this.doWithBackup(() => this.editor.add(what))
-      else this.doWithBackup(() => this.editor.del(what))
+      this.session.shapechange(what, delta)
     },
     octavechange(delta: -1 | 1) {
-      if (this.octave + delta < -3 || this.octave + delta > 3) return
-      this.octave += delta
+      this.session.octavechange(delta)
     },
     tickchange(tickIdx: number) {
-      this.doWithBackup(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
+      this.session.tickchange(tickIdx)
     },
     trillchange(trill: TrillState) {
-      const modifier = applyModifierTrill(
-        this.editor.get('col').data?.modifier,
-        trill
-      )
-      if (modifier != null) this.write('modifier', modifier)
+      this.session.trillchange(trill)
     },
     configchange(config: Config, isVisibleChange: boolean) {
-      if (!isVisibleChange) {
-        this.editor.get('chapter').setConfig(config)
-        this.config = config
-        return
-      }
-      this.doWithBackup(() => {
-        const old = this.config
-        this.editor.get('chapter').setConfig(config)
-        this.config = config
-        return () => {
-          this.editor.get('chapter').setConfig(old)
-          this.config = old
-        }
-      })
+      this.session.configchange(config, isVisibleChange)
     },
     addchapter() {
-      this.doWithBackup(() => {
-        this.editor.discardSelection()
-        return this.editor.add('chapter')
-      })
+      this.session.addchapter()
     },
     deletechapter() {
-      this.doWithBackup(() => {
-        this.editor.discardSelection()
-        const undo = this.editor.del('chapter')
-        this.updateChapter()
-        return () => {
-          undo()
-          this.updateChapter()
-        }
-      })
+      this.session.deletechapter()
     },
     cut() {
-      this.doWithBackup(() => {
-        if (this.editor.isSelecting) {
-          const [content, undo] = this.editor.cutRange()
-          this.clipboard = ['Range', content]
-          return undo
-        } else {
-          const [content, undo] = this.editor.cutEntry()
-          this.clipboard = ['Entry', content]
-          return undo
-        }
-      })
+      this.session.cut()
     },
     copy() {
-      this.clipboard = this.editor.copy()
+      this.session.copy()
     },
     paste() {
-      if (this.clipboard == null) return
-      const [mode, content] = this.clipboard
-      this.doWithBackup(() =>
-        mode === 'Entry'
-          ? this.editor.pasteEntry(content)
-          : this.editor.pasteRange(content)
-      )
+      this.session.paste()
     },
     async play(command: 'stop' | 'pause' | 'resume') {
       if (command === 'stop') {
@@ -391,8 +228,7 @@ export default defineComponent({
       if (this.player?.finished) this.player = undefined
     },
     rename(title: string, instrument: InstrumentName) {
-      this.music.title = title
-      this.music.instrument = instrument
+      this.session.rename(title, instrument)
     },
     async open(file: any) {
       this.busy = true
@@ -415,40 +251,15 @@ export default defineComponent({
       saveAs(blob, filename)
     },
     undo() {
-      this.ime.reset()
-      this.history.undo()
+      this.session.undo()
     },
     redo() {
-      this.ime.reset()
-      this.history.redo()
-    },
-
-    /* Undo/Redo functionality */
-    doWithBackup(op: () => UndoOp) {
-      this.history.do(op)
-    },
-
-    /* Interactions by Keyboards */
-    writeIME(key: string, shiftKey: boolean) {
-      const write = resolveImeWrite(this.ime, {
-        key,
-        shiftKey,
-        isSelecting: this.editor.isSelecting,
-        sigimShow: this.sigimShow,
-      })
-      if (write.type === 'write') this.write(write.where, write.entry, false)
-    },
-    writeOctave(delta: 1 | -1) {
-      const main = this.editor.get('col').data.main
-      const change = resolveOctaveChange(main, this.octave, delta)
-      if (change.type === 'none') return
-      this.octave = change.octave
-      if (change.type === 'writeMain') this.write('main', change.main)
+      this.session.redo()
     },
 
     /* Event Handlers */
     pointerDown(coord: Cursor) {
-      this.dragging = startCanvasDrag(this.editor, coord)
+      this.dragging = this.session.startCanvasDrag(coord)
     },
     pointerOver(coord: Cursor) {
       if (this.dragging) this.selectTo(coord)
@@ -457,91 +268,33 @@ export default defineComponent({
       this.dragging = false
     },
     keypressHandler(e: KeyboardEvent) {
-      const command = getKeyboardCommand(e, {
-        playerActive: this.player != null,
-        isSelecting: this.editor.isSelecting,
-        rhythmMode: this.editor.cursor.rhythmMode,
-        sigimShow: this.sigimShow,
-        tickIdx: this.tickIdx,
-        imeComposing: this.ime.isComposing(),
-        imeGrace: this.ime.grace,
-      })
+      const command = this.session.getKeyboardCommand(e, this.player != null)
       if (command.preventDefault) e.preventDefault()
-      this.executeKeyboardCommand(command)
-    },
-    executeKeyboardCommand(command: KeyboardCommand) {
-      switch (command.type) {
-        case 'ignore':
-          return
-        case 'moveUpDown':
-        case 'moveLeftRight':
-        case 'discardSelection':
-        case 'home':
-        case 'end':
-          executeKeyboardNavigation(command, this.editor, this.config)
-          return
-        case 'shapeChange':
-          this.shapechange(command.what, command.delta)
-          return
-        case 'backspaceSelection':
-        case 'backspace':
-        case 'deleteSelection':
-        case 'deleteForward':
-        case 'cutSelection':
-          this.doWithBackup(getKeyboardEditUndo(command, this.editor))
-          return
-        case 'eraseRhythmTick':
-          this.erase()
-          return
-        case 'deleteRhythmRow':
-          this.shapechange('row', -1)
-          return
-        case 'imeBackspace':
-          this.write(command.where, this.ime.backspace(), false)
-          return
-        case 'eraseModifier':
-          this.write('modifier', undefined)
-          return
-        case 'eraseEntry':
-          this.erase()
-          return
-        case 'paste':
-          this.paste()
-          return
-        case 'copy':
-          this.copy()
-          return
-        case 'octave':
-          this.writeOctave(command.delta)
-          return
-        case 'writeRest':
-          this.write('main', REST_OBJ)
-          return
-        case 'writeIme':
-          this.writeIME(command.key, command.shiftKey)
-          return
-        case 'writeRhythmTick':
-          this.tickchange(command.tickIdx)
-          return
-        case 'undo':
-          this.undo()
-          return
-        case 'redo':
-          this.redo()
-          return
-        case 'selectAll':
-          this.editor.selectAll()
-          return
-        case 'cut':
-          this.cut()
-          return
-        case 'writePitch':
-          this.write('main', YUL_OBJ[this.octave + 3][command.pitchIdx])
-          return
-      }
+      this.session.executeKeyboardCommand(command)
     },
   },
   computed: {
+    music(): Music {
+      return this.session.music
+    },
+    editor(): MusicEditor {
+      return this.session.editor as unknown as MusicEditor
+    },
+    config(): Config {
+      return this.session.config
+    },
+    sigimShow(): boolean {
+      return this.session.sigimShow
+    },
+    octave(): number {
+      return this.session.octave
+    },
+    trill(): TrillState {
+      return this.session.trill
+    },
+    tickIdx(): number {
+      return this.session.tickIdx
+    },
     workspaceLabel(): string {
       return WORKSPACE_LABEL
     },
@@ -555,24 +308,16 @@ export default defineComponent({
       return this.music.asGaks()
     },
     undoable(): boolean {
-      return this.player == null && this.history?.undoable === true
+      return this.player == null && this.session.undoable
     },
     redoable(): boolean {
-      return this.player == null && this.history?.redoable === true
+      return this.player == null && this.session.redoable
     },
     pastable(): boolean {
-      return canPaste(
-        this.clipboard,
-        this.editor.isSelecting,
-        this.editor.anchor,
-        this.editor.cursor
-      )
+      return this.session.pastable
     },
     trillShow(): TrillState {
-      return {
-        before: this.trill && this.trill.before != null,
-        after: this.trill && this.trill.after != null,
-      }
+      return this.session.trillShow
     },
     canvasLabel(): string {
       if (this.player) return makeCanvasLabel({ playing: true })
@@ -586,7 +331,9 @@ export default defineComponent({
     },
   },
   created() {
-    this.create('새 곡')
+    this.session = new EditorSession({
+      requestFocus: () => this.updateFocus(),
+    })
   },
   mounted() {
     document.addEventListener('pointerup', this.pointerUp)
