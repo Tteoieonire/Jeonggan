@@ -130,6 +130,7 @@ import { Music, MusicEditor } from './domain/editor'
 import { readMusicFile } from './io/file-open'
 import { ActionHistory } from './features/history'
 import { IME } from './features/ime'
+import { resolveImeWrite } from './features/ime-write'
 import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
 import { getKeyboardEditUndo } from './features/keyboard-edit'
 import { executeKeyboardNavigation } from './features/keyboard-navigation'
@@ -434,11 +435,13 @@ export default defineComponent({
 
     /* Interactions by Keyboards */
     writeIME(key: string, shiftKey: boolean) {
-      if (this.editor.isSelecting) return
-      if (shiftKey && !this.sigimShow) return
-      const where = shiftKey ? 'modifier' : 'main'
-      const obj = this.ime.update(key, shiftKey)
-      this.write(where, obj, false)
+      const write = resolveImeWrite(this.ime, {
+        key,
+        shiftKey,
+        isSelecting: this.editor.isSelecting,
+        sigimShow: this.sigimShow,
+      })
+      if (write.type === 'write') this.write(write.where, write.entry, false)
     },
     writeOctave(delta: 1 | -1) {
       const main = this.editor.get('col').data.main
