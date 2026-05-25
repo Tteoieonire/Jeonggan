@@ -114,12 +114,12 @@ import initmodal from './components/initmodal.vue'
 
 import { bindEditorDocumentEvents } from './app/document-listeners'
 import { EditorSession } from './app/editor-session'
+import { PlaybackSession } from './app/playback-session'
 import { makeCanvasLabel } from './features/canvas-label'
 import Cursor, { CoordLevel } from './domain/cursor'
 import { Music, MusicEditor } from './domain/editor'
 import { readMusicFile } from './io/file-open'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
-import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
 import { Config } from './domain/viewer'
 import {
@@ -132,9 +132,9 @@ export default defineComponent({
   data() {
     return {
       session: undefined as unknown as EditorSession,
-      player: undefined as undefined | MusicPlayer,
+      playback: undefined as unknown as PlaybackSession,
       removeDocumentListeners: undefined as undefined | (() => void),
-      busy: false,
+      fileBusy: false,
       loadingFailed: false,
     }
   },
@@ -148,8 +148,8 @@ export default defineComponent({
       this.resetEditorUiState()
     },
     resetEditorUiState() {
-      this.player = undefined
-      this.busy = false
+      this.playback.reset()
+      this.fileBusy = false
       this.loadingFailed = false
     },
     updateFocus() {
@@ -213,25 +213,13 @@ export default defineComponent({
       this.session.paste()
     },
     async play(command: 'stop' | 'pause' | 'resume') {
-      if (command === 'stop') {
-        this.player?.stop()
-        this.player = undefined
-      } else if (command === 'pause') {
-        this.player?.stop()
-      } else if (command === 'resume') {
-        this.player = this.player || MusicPlayer.fromMusicViewer(this.editor)
-        this.busy = true
-        await this.player.load()
-        this.busy = false
-        await this.player.play()
-      }
-      if (this.player?.finished) this.player = undefined
+      await this.playback.play(command, this.editor)
     },
     rename(title: string, instrument: InstrumentName) {
       this.session.rename(title, instrument)
     },
     async open(file: any) {
-      this.busy = true
+      this.fileBusy = true
       await nextTick()
       try {
         const music = await readMusicFile(file)
@@ -239,7 +227,7 @@ export default defineComponent({
       } catch (error) {
         this.loadingFailed = true
       } finally {
-        this.busy = false
+        this.fileBusy = false
       }
     },
     save() {
@@ -297,6 +285,12 @@ export default defineComponent({
     tickIdx(): number {
       return this.session.tickIdx
     },
+    player() {
+      return this.playback.player
+    },
+    busy(): boolean {
+      return this.fileBusy || this.playback.busy
+    },
     workspaceLabel(): string {
       return WORKSPACE_LABEL
     },
@@ -336,6 +330,7 @@ export default defineComponent({
     this.session = new EditorSession({
       requestFocus: () => this.updateFocus(),
     })
+    this.playback = new PlaybackSession()
   },
   mounted() {
     this.removeDocumentListeners = bindEditorDocumentEvents(document, {
