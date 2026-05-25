@@ -2,6 +2,28 @@ import { describe, expect, it } from 'vitest'
 import { IME } from './ime'
 
 describe('IME', () => {
+  describe('isComposing', () => {
+    it('returns a boolean composing state', () => {
+      const ime = new IME()
+      expect(ime.isComposing()).toBe(false)
+
+      ime.update('3', false)
+      expect(ime.isComposing()).toBe(true)
+
+      ime.backspace()
+      expect(ime.isComposing()).toBe(false)
+    })
+
+    it('returns false after reset', () => {
+      const ime = new IME()
+      ime.update('Backquote', true)
+      expect(ime.isComposing()).toBe(true)
+
+      ime.reset()
+      expect(ime.isComposing()).toBe(false)
+    })
+  })
+
   describe('compile', () => {
     it('can compile digits', () => {
       const ime = new IME()

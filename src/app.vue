@@ -481,7 +481,7 @@ export default defineComponent({
         rhythmMode: this.editor.cursor.rhythmMode,
         sigimShow: this.sigimShow,
         tickIdx: this.tickIdx,
-        imeComposing: !!this.ime.isComposing(),
+        imeComposing: this.ime.isComposing(),
         imeGrace: this.ime.grace,
       })
       if (command.preventDefault) e.preventDefault()

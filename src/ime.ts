@@ -16,8 +16,8 @@ class IME {
     this.trillAfter = ''
   }
 
-  isComposing() {
-    return (
+  isComposing(): boolean {
+    return !!(
       this.digits ||
       this.equals ||
       this.special ||
