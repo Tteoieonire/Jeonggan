@@ -10,6 +10,11 @@ import {
   type UndoOp,
 } from '../navigation/viewer'
 
+type StructureLevel = keyof typeof PARENT_OF
+type ElementListHost = {
+  get<K extends keyof ElementOf>(what: K): ElementOf[K]
+}
+
 export type StructureEditHost = {
   cursor: Cursor
   score: ScoreFactory
@@ -37,11 +42,12 @@ export function addElement<T extends keyof typeof PARENT_OF>(
       obj = editor.score.make(what) as any
     }
   }
-  editor.get(PARENT_OF[what]).data.splice(destPos, 0, obj as any)
+  const element = obj as ElementOf[T]
+  insertElementAt(editor, what, destPos, element)
   const undo = editor.move(what, destPos)
   return () => {
     undo()
-    editor.get(PARENT_OF[what]).data.splice(destPos, 1)
+    removeElementAt(editor, what, destPos)
   }
 }
 
@@ -60,9 +66,9 @@ export function delElement(
       : what === 'col'
       ? idOp
       : editor.move(CHILD_OF[what], 0)
-  const old = arr.splice(idx, 1)[0]
+  const old = removeElementAt(editor, what, idx)
   return () => {
-    editor.get(PARENT_OF[what]).data.splice(idx, 0, old as any)
+    insertElementAt(editor, what, idx, old)
     undo()
   }
 }
@@ -74,9 +80,9 @@ export function writeElement<T extends keyof typeof PARENT_OF>(
 ): UndoOp {
   const arr = editor.get(PARENT_OF[what]).data
   const idx = editor.cursor[what]
-  const old = arr.splice(idx, 1, obj as any)[0]
+  const old = replaceElementAt(editor, what, idx, obj)
   return () => {
-    editor.get(PARENT_OF[what]).data.splice(idx, 1, old as any)
+    replaceElementAt(editor, what, idx, old)
   }
 }
 
@@ -87,11 +93,99 @@ export function eraseElement(
   if (what !== 'chapter')
     return writeElement(editor, what, editor.score.make(what))
 
-  const cells = editor.get('chapter').data
-  const old = cells.splice(0, cells.length, editor.score.cell())
+  const old = replaceElementData(editor.get('chapter'), [editor.score.cell()])
   return () => {
-    editor.get('chapter').data.splice(0, 1, ...old)
+    replaceElementData(editor.get('chapter'), old)
   }
+}
+
+export function insertElementAt<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T,
+  idx: number,
+  obj: ElementOf[T]
+): void {
+  replaceElementList(
+    editor,
+    what,
+    insertAt(getElementList(editor, what), idx, obj)
+  )
+}
+
+export function removeElementAt<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T,
+  idx: number
+): ElementOf[T] {
+  const list = getElementList(editor, what)
+  const old = list[idx]
+  replaceElementList(editor, what, removeAt(list, idx))
+  return old
+}
+
+export function replaceElementAt<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T,
+  idx: number,
+  obj: ElementOf[T]
+): ElementOf[T] {
+  const list = getElementList(editor, what)
+  const old = list[idx]
+  replaceElementList(editor, what, replaceAt(list, idx, obj))
+  return old
+}
+
+export function replaceElementRange<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T,
+  start: number,
+  end: number,
+  replacements: ElementOf[T][]
+): ElementOf[T][] {
+  const list = getElementList(editor, what)
+  const old = list.slice(start, end)
+  replaceElementList(editor, what, [
+    ...list.slice(0, start),
+    ...replacements,
+    ...list.slice(end),
+  ])
+  return old
+}
+
+export function replaceElementData<T extends keyof ElementOf>(
+  element: ElementOf[T],
+  data: ElementOf[T]['data']
+): ElementOf[T]['data'] {
+  const old = element.data
+  element.data = data
+  return old
+}
+
+function getElementList<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T
+): ElementOf[T][] {
+  return editor.get(PARENT_OF[what]).data as ElementOf[T][]
+}
+
+function replaceElementList<T extends StructureLevel>(
+  editor: ElementListHost,
+  what: T,
+  data: ElementOf[T][]
+): void {
+  replaceElementData(editor.get(PARENT_OF[what]), data as any)
+}
+
+function insertAt<T>(arr: T[], idx: number, item: T): T[] {
+  return [...arr.slice(0, idx), item, ...arr.slice(idx)]
+}
+
+function removeAt<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)]
+}
+
+function replaceAt<T>(arr: T[], idx: number, item: T): T[] {
+  return arr.map((old, i) => (i === idx ? item : old))
 }
 
 function newConfigFrom(config: Config): Config {

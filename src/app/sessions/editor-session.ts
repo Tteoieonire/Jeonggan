@@ -45,7 +45,6 @@ export type EditorSessionHooks = {
 export class EditorSession {
   music!: Music
   editor!: MusicEditor
-  config!: Config
   sigimShow = false
   octave = 0
   trill: TrillState = {}
@@ -106,6 +105,10 @@ export class EditorSession {
 
   get gaks() {
     return this.music.asGaks()
+  }
+
+  get config(): Config {
+    return this.editor.get('chapter').config
   }
 
   get trillShow(): TrillState {
@@ -199,16 +202,13 @@ export class EditorSession {
   changeConfig(config: Config, isVisibleChange: boolean): void {
     if (!isVisibleChange) {
       this.editor.get('chapter').setConfig(config)
-      this.config = config
       return
     }
     this.doWithHistory(() => {
       const old = this.config
       this.editor.get('chapter').setConfig(config)
-      this.config = config
       return () => {
         this.editor.get('chapter').setConfig(old)
-        this.config = old
       }
     })
   }
@@ -224,11 +224,7 @@ export class EditorSession {
     this.doWithHistory(() => {
       this.editor.discardSelection()
       const undo = this.editor.del('chapter')
-      this.updateChapter()
-      return () => {
-        undo()
-        this.updateChapter()
-      }
+      return () => undo()
     })
   }
 
@@ -291,13 +287,11 @@ export class EditorSession {
     this.music = music
     this.editor = this.music.getEditor()
     this.history = createEditorHistory(this.editor, () => {
-      this.updateChapter()
       this.updateSympad()
       this.updateRhythm()
       this.hooks.requestFocus?.()
     })
     this.dragging = false
-    this.updateChapter()
     this.updateRhythm()
     this.updateSympad()
     this.ime.reset()
@@ -308,7 +302,6 @@ export class EditorSession {
       this.hooks.requestFocus?.()
     })
     this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
-    this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
   }
 
   private updateSympad(): void {
@@ -327,9 +320,5 @@ export class EditorSession {
     if (this.editor.cursor.rhythmMode) {
       this.tickIdx = rhythmTickIndex(this.editor.currentRhythmTick())
     }
-  }
-
-  private updateChapter(): void {
-    this.config = this.editor.get('chapter').config
   }
 }

@@ -2,6 +2,7 @@ import Cursor, { type Level } from '../navigation/cursor'
 import { debone } from '../navigation/selector'
 import type { ScoreFactory } from '../score'
 import { inRange } from '../utils'
+import { replaceElementRange } from './structure-editing'
 import {
   type ElementOf,
   type Entry,
@@ -110,12 +111,10 @@ export function cutRange(editor: SelectionEditHost): [Entry[][][], UndoOp] {
     const end =
       editor.cursor.chapter === last.chapter ? last.cell + 1 : cells.length
 
-    const old = cells.splice(start, end - start)
+    const emptyCells = cells.slice(start, end).map(() => editor.score.cell())
+    const old = replaceElementRange(editor, 'cell', start, end, emptyCells)
     entries.push(...debone(old))
-    cells.splice(start, 0, ...old.map(() => editor.score.cell()))
-    undos.push(() =>
-      editor.get('chapter').data.splice(start, end - start, ...old)
-    )
+    undos.push(() => replaceElementRange(editor, 'cell', start, end, old))
 
     if (editor.cursor.chapter === last.chapter) break
     undos.push(editor.move('chapter', editor.cursor.chapter + 1))

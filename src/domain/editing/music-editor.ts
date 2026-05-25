@@ -22,6 +22,9 @@ import {
   addElement,
   delElement,
   eraseElement,
+  insertElementAt,
+  removeElementAt,
+  replaceElementData,
   writeElement,
 } from './structure-editing'
 import { inRange } from '../utils'
@@ -77,22 +80,21 @@ export class MusicEditor extends MusicSelector<EditableMusicBase> {
   private merge(): UndoOp {
     const what = this.getDelimiter()
     const preyPos = this.cursor[what] + 1
-    const parentLevel = PARENT_OF[what]
-    const parent = this.get(parentLevel).data
+    const parent = this.get(PARENT_OF[what]).data
     if (!inRange(preyPos, parent)) return idOp
 
-    const prey = parent.splice(preyPos, 1)[0] as any
+    const prey = removeElementAt(this, what, preyPos) as any
     let undo: UndoOp = idOp
+    let oldData: unknown
     if (what !== 'col') {
-      this.get(what).data.push(...prey.data)
+      const target = this.get(what)
+      oldData = replaceElementData(target, [...target.data, ...prey.data])
       undo = this.merge()
     }
     return () => {
       undo()
-      const parent = this.get(parentLevel).data
-      if (what !== 'col')
-        this.get(what).data.splice(-prey.data.length, prey.data.length)
-      parent.splice(preyPos, 0, prey)
+      if (what !== 'col') replaceElementData(this.get(what), oldData as any)
+      insertElementAt(this, what, preyPos, prey)
     }
   }
 

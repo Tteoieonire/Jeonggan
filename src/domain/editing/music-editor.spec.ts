@@ -283,6 +283,36 @@ describe('MusicEditor', () => {
     })
   })
 
+  describe('structure editing', () => {
+    it('replaces parent data arrays for structural writes', () => {
+      const editor = new MusicEditor(deserializeMusic(SAMPLE_YAML))
+      const chapter = editor.get('chapter')
+      const chapterData = chapter.data
+
+      const undoAdd = editor.add('cell')
+      expect(chapter.data).not.toBe(chapterData)
+      expect(chapter.data).toHaveLength(chapterData.length + 1)
+
+      undoAdd()
+      expect(chapter.data).not.toBe(chapterData)
+      expect(chapter.data).toEqual(chapterData)
+
+      const row = editor.get('row')
+      const rowData = row.data
+      const undoWrite = editor.write(
+        'col',
+        editor.score.col({ main: REST_OBJ })
+      )
+
+      expect(row.data).not.toBe(rowData)
+      expect(rowData[0].data).not.toEqual({ main: REST_OBJ })
+
+      undoWrite()
+      expect(row.data).not.toBe(rowData)
+      expect(row.data).toEqual(rowData)
+    })
+  })
+
   describe('cutEntry', () => {
     it('can cut an empty column', () => {
       const editor = new MusicEditor(music)
