@@ -1,12 +1,30 @@
 import type { RhythmTick } from './constants'
 import Cursor from './cursor'
-import { debone, MusicSelector } from './selector'
-import { getID, inRange } from './utils'
 import {
-  Cell,
-  Chapter,
-  CHILD_OF,
-  Config,
+  addRhythmRow as addEditorRhythmRow,
+  currentRhythmTick as getCurrentEditorRhythmTick,
+  delRhythmRow as deleteEditorRhythmRow,
+  eraseRhythmTick as eraseEditorRhythmTick,
+  writeRhythmTick as writeEditorRhythmTick,
+} from './rhythm-editing'
+import {
+  cutEntry as cutEditorEntry,
+  cutRange as cutEditorRange,
+  delRange as deleteEditorRange,
+  isEmptyCell as isEditorCellEmpty,
+  isEmptyRange as isEditorRangeEmpty,
+  pasteEntry as pasteEditorEntry,
+  pasteRange as pasteEditorRange,
+} from './selection-editing'
+import { MusicSelector } from './selector'
+import {
+  addElement,
+  delElement,
+  eraseElement,
+  writeElement,
+} from './structure-editing'
+import { inRange } from './utils'
+import {
   ElementOf,
   Entry,
   idOp,
@@ -19,100 +37,36 @@ import {
 export class MusicEditor extends MusicSelector {
   /* Button action */
   add<T extends keyof typeof PARENT_OF>(what: T, obj?: ElementOf[T]): UndoOp {
-    if (this.cursor.rhythmMode && what === 'row') return this.addRhythmRow()
-    const destPos = this.cursor[what] + 1
-    if (obj == null) {
-      if (what === 'chapter') {
-        const config = newConfigFrom(this.get('chapter').config)
-        obj = new Chapter(config) as any
-      } else {
-        obj = _make(what) as any
-      }
-    }
-    this.get(PARENT_OF[what]).data.splice(destPos, 0, obj as any)
-    const undo = this.move(what, destPos)
-    return () => {
-      undo()
-      this.get(PARENT_OF[what]).data.splice(destPos, 1)
-    }
+    return addElement(this, what, obj)
   }
   addRhythmRow(): UndoOp {
-    const rows = this.get('chapter').config.rhythm[this.cursor.cell]
-    rows.splice(this.cursor.row + 1, 0, '')
-    this.moveRhythm('row', this.cursor.row + 1)
-    return () => {
-      this.moveRhythm('row', this.cursor.row - 1)
-      const rows = this.get('chapter').config.rhythm[this.cursor.cell]
-      rows.splice(this.cursor.row + 1, 1)
-    }
+    return addEditorRhythmRow(this)
   }
 
   del(what: keyof typeof PARENT_OF): UndoOp {
-    if (this.cursor.rhythmMode && what === 'row') return this.delRhythmRow()
-    const arr = this.get(PARENT_OF[what]).data
-    const idx = this.cursor[what]
-    if (arr.length === 1) return this.erase(what)
-
-    const undo =
-      idx === arr.length - 1
-        ? this.move(what, idx - 1, SNAP.BACK)
-        : what === 'col'
-        ? idOp
-        : this.move(CHILD_OF[what], 0)
-    const old = arr.splice(idx, 1)[0]
-    return () => {
-      this.get(PARENT_OF[what]).data.splice(idx, 0, old as any)
-      undo()
-    }
+    return delElement(this, what)
   }
   delRhythmRow() {
-    const arr = this.get('chapter').config.rhythm[this.cursor.cell]
-    const idx = this.cursor.row
-
-    let undo = idOp
-    const keep = arr.length === 1
-    if (keep) arr.push('')
-    else undo = this.moveRhythm('row', Math.min(idx, arr.length - 2))
-
-    const old = arr.splice(idx, 1)[0]
-    return () => {
-      const arr = this.get('chapter').config.rhythm[this.cursor.cell]
-      arr.splice(idx, keep ? 1 : 0, old)
-      undo()
-    }
+    return deleteEditorRhythmRow(this)
   }
   currentRhythmTick(): RhythmTick {
-    return this.get('chapter').config.rhythm[this.cursor.cell][this.cursor.row]
+    return getCurrentEditorRhythmTick(this)
   }
 
   writeRhythmTick(tick: RhythmTick): UndoOp {
-    const rows = this.get('chapter').config.rhythm[this.cursor.cell]
-    const row = this.cursor.row
-    const old = rows.splice(row, 1, tick)[0]
-    return () => rows.splice(row, 1, old)
+    return writeEditorRhythmTick(this, tick)
   }
 
   eraseRhythmTick(): UndoOp {
-    return this.writeRhythmTick('')
+    return eraseEditorRhythmTick(this)
   }
 
   write<T extends keyof typeof PARENT_OF>(what: T, obj: ElementOf[T]): UndoOp {
-    const arr = this.get(PARENT_OF[what]).data
-    const idx = this.cursor[what]
-    const old = arr.splice(idx, 1, obj as any)[0]
-    return () => {
-      this.get(PARENT_OF[what]).data.splice(idx, 1, old as any)
-    }
+    return writeElement(this, what, obj)
   }
 
   erase(what: keyof typeof PARENT_OF = 'col'): UndoOp {
-    if (what !== 'chapter') return this.write(what, _make(what))
-
-    const cells = this.get('chapter').data
-    const old = cells.splice(0, cells.length, _make('cell'))
-    return () => {
-      this.get('chapter').data.splice(0, 1, ...old)
-    }
+    return eraseElement(this, what)
   }
 
   /* Complex actions */
@@ -171,145 +125,28 @@ export class MusicEditor extends MusicSelector {
 
   /* Selection actions */
   isEmptyCell(position: Cursor): boolean {
-    const chapter = this.music.data[position.chapter]
-    const cell = chapter.data[position.cell]
-    if (cell.data.length > 1) return false
-    const row = cell.data[0]
-    if (row.data.length > 1) return false
-    const col = row.data[0]
-    return col.data.main == null
+    return isEditorCellEmpty(this, position)
   }
 
   isEmptyRange(): boolean {
-    const selector = this.clone()
-    if (selector.anchor == null) return false
-    if (selector.cursor.isLessThan(selector.anchor))
-      Cursor.swap(selector.cursor, selector.anchor)
-    while (selector.anchor.isLessThan(selector.cursor)) {
-      if (!this.isEmptyCell(selector.cursor)) return false
-      selector.stepCol(-1) || selector.stepChapter(-1)
-    }
-    return this.isEmptyCell(selector.cursor)
+    return isEditorRangeEmpty(this)
   }
 
   delRange(): UndoOp {
-    if (this.anchor == null) throw Error('No selected found')
-    if (this.cursor.isLessThan(this.anchor))
-      Cursor.swap(this.cursor, this.anchor)
-
-    const undos: UndoOp[] = []
-    while (this.anchor.isLessThan(this.cursor, 'cell'))
-      undos.push(this.backspace())
-    undos.reverse()
-
-    this.discardSelection()
-    return () => undos.forEach(op => op())
+    return deleteEditorRange(this)
   }
 
   cutEntry(): [Entry, UndoOp] {
-    if (this.isSelecting) throw Error('Selection found')
-    const col = this.get('col')
-    const old = col.data
-    col.data = {}
-    return [
-      old,
-      () => {
-        this.get('col').data = old
-      },
-    ]
+    return cutEditorEntry(this)
   }
   cutRange(): [Entry[][][], UndoOp] {
-    if (this.anchor == null) throw Error('No selected found')
-    this.anchor.move(this.anchor.chapter, this.anchor.cell, 0, 0)
-    this.move('row', 0)
-
-    const oldCursor = this.cursor.clone()
-    const [first, last] = this.anchor.isLessThan(oldCursor, 'cell')
-      ? [this.anchor, oldCursor]
-      : [oldCursor, this.anchor]
-    this.cursor.moveTo(first)
-
-    const entries: Entry[][][] = []
-    const undos: UndoOp[] = []
-    while (true) {
-      const cells = this.get('chapter').data
-      const start = this.cursor.chapter === first.chapter ? first.cell : 0
-      const end =
-        this.cursor.chapter === last.chapter ? last.cell + 1 : cells.length
-
-      const old = cells.splice(start, end - start)
-      entries.push(...debone(old))
-      cells.splice(start, 0, ...old.map(() => _make('cell')))
-      undos.push(() =>
-        this.get('chapter').data.splice(start, end - start, ...old)
-      )
-
-      if (this.cursor.chapter === last.chapter) break
-      undos.push(this.move('chapter', this.cursor.chapter + 1))
-    }
-    undos.reverse()
-
-    this.cursor.moveTo(oldCursor)
-    this.normalizeSelection()
-    return [entries, () => undos.forEach(op => op())]
+    return cutEditorRange(this)
   }
 
   pasteEntry(entry: Entry): UndoOp {
-    if (this.isSelecting) {
-      if (
-        this.anchor?.chapter === this.cursor.chapter &&
-        this.anchor.cell === this.cursor.cell
-      )
-        return this.pasteRange([[[entry]]])
-      throw Error('Multi-cell selection found')
-    }
-    const col = this.get('col')
-    const old = col.data
-    col.data = entry
-    return () => {
-      this.get('col').data = old
-    }
+    return pasteEditorEntry(this, entry)
   }
   pasteRange(range: Entry[][][]): UndoOp {
-    if (this.anchor == null) this.createSelection()
-    else if (this.anchor.isLessThan(this.cursor))
-      this.cursor.moveTo(this.anchor)
-    else this.anchor.moveTo(this.cursor)
-
-    const undos: UndoOp[] = []
-    undos.push(this.move('row', 0, SNAP.FRONT))
-    for (const [i, entries] of range.entries()) {
-      const cell: Cell = {
-        id: getID(),
-        data: entries.map(row => ({
-          id: getID(),
-          data: row.map(col => ({ id: getID(), data: col })),
-        })),
-      }
-      undos.push(this.write('cell', cell))
-      if (i === range.length - 1) break
-
-      if (inRange(this.cursor.cell + 1, this.get('chapter').data.length)) {
-        undos.push(this.move('cell', this.cursor.cell + 1))
-      } else if (inRange(this.cursor.chapter + 1, this.music.data.length)) {
-        undos.push(this.move('chapter', this.cursor.chapter + 1))
-        undos.push(this.move('cell', 0))
-      } else {
-        undos.push(this.add('cell'))
-      }
-    }
-    undos.push(this.move('row', -1, SNAP.BACK))
-    undos.reverse()
-    return () => undos.forEach(op => op())
-  }
-}
-
-function newConfigFrom(config: Config): Config {
-  return {
-    ...config,
-    name: '새 장',
-    rhythm: JSON.parse(JSON.stringify(config.rhythm)),
-    hideRhythm: true,
-    padding: 0,
+    return pasteEditorRange(this, range)
   }
 }
