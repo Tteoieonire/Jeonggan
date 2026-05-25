@@ -46,10 +46,8 @@ export {
 export { idOp, mergeActions, type UndoOp } from '../editing/undo'
 
 export class MusicViewer {
-  music: MusicBase
-  cursor: Cursor
-  constructor(music: MusicBase, cursor?: Cursor) {
-    this.music = music
+  readonly cursor: Cursor
+  constructor(public readonly music: MusicBase, cursor?: Cursor) {
     this.cursor = cursor || new Cursor(false, 0, 0, 0, 0)
   }
 

@@ -60,8 +60,11 @@ export function isEmptyRange(editor: SelectionEditHost): boolean {
 
 export function delRange(editor: SelectionEditHost): UndoOp {
   if (editor.anchor == null) throw Error('No selected found')
-  if (editor.cursor.isLessThan(editor.anchor))
-    Cursor.swap(editor.cursor, editor.anchor)
+  if (editor.cursor.isLessThan(editor.anchor)) {
+    const cursor = editor.cursor.clone()
+    editor.cursor.moveTo(editor.anchor)
+    editor.anchor = cursor
+  }
 
   const undos: UndoOp[] = []
   while (editor.anchor.isLessThan(editor.cursor, 'cell'))

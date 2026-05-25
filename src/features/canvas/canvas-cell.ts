@@ -22,8 +22,7 @@ export function coordInCanvasCell(
   col: number
 ): Cursor {
   const coord = cellCoord.clone()
-  coord.row = row
-  coord.col = col
+  coord.move(cellCoord.chapter, cellCoord.cell, row, col)
   return coord
 }
 

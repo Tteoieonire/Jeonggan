@@ -19,7 +19,7 @@ export function coordInCanvasRhythmCell(
   row: number
 ): Cursor {
   const coord = cellCoord.clone()
-  coord.row = row
+  coord.moveRhythm(cellCoord.chapter, cellCoord.cell, row)
   return coord
 }
 

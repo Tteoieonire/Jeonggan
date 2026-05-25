@@ -1,8 +1,10 @@
+import type { CursorState } from './state'
+
 export type Level = 'music' | 'chapter' | 'cell' | 'row' | 'col'
 export type CoordLevel = 'chapter' | 'cell' | 'row' | 'col'
 
 type Coord<T> = { [level in CoordLevel]: T } & { rhythmMode: boolean }
-type Position = Coord<number>
+type Position = CursorState
 
 type Time = 'before' | 'after'
 type Event = `${Time}${Capitalize<keyof Position>}Change`
@@ -17,14 +19,20 @@ function checkChanges(curPos: Position, newPos: Position): Coord<boolean> {
   return { rhythmMode, chapter, cell, row, col }
 }
 
-class Cursor implements Position {
-  rhythmMode: boolean
-  chapter: number
-  cell: number
-  row: number
-  col: number
+function toPosition(position: Position): Position {
+  return Object.freeze({
+    rhythmMode: position.rhythmMode,
+    chapter: position.chapter,
+    cell: position.cell,
+    row: position.row,
+    col: position.col,
+  })
+}
 
-  eventlisteners: Partial<Record<Event, Handler>>
+class Cursor implements Position {
+  _state: Position
+
+  readonly eventlisteners: Partial<Record<Event, Handler>>
   constructor(
     rhythmMode: boolean,
     chapter: number,
@@ -32,12 +40,32 @@ class Cursor implements Position {
     row: number,
     col: number
   ) {
-    this.rhythmMode = rhythmMode
-    this.chapter = chapter
-    this.cell = cell
-    this.row = row
-    this.col = col
+    this._state = toPosition({ rhythmMode, chapter, cell, row, col })
     this.eventlisteners = {}
+  }
+
+  get rhythmMode(): boolean {
+    return this._state.rhythmMode
+  }
+
+  get chapter(): number {
+    return this._state.chapter
+  }
+
+  get cell(): number {
+    return this._state.cell
+  }
+
+  get row(): number {
+    return this._state.row
+  }
+
+  get col(): number {
+    return this._state.col
+  }
+
+  get state(): Position {
+    return this._state
   }
 
   clone() {
@@ -51,11 +79,7 @@ class Cursor implements Position {
   }
 
   loadFrom(newPos: Position) {
-    this.rhythmMode = newPos.rhythmMode
-    this.chapter = newPos.chapter
-    this.cell = newPos.cell
-    this.row = newPos.row
-    this.col = newPos.col
+    this._state = toPosition(newPos)
   }
 
   checkChanges(newPos: Position): Coord<boolean> {

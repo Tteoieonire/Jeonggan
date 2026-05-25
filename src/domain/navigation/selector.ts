@@ -18,9 +18,10 @@ export function debone(cells: Cell[]): Entry[][][] {
 export class MusicSelector<
   TMusic extends MusicBase = MusicBase
 > extends MusicViewer {
+  declare readonly music: TMusic
   anchor?: Cursor
 
-  constructor(public music: TMusic, cursor?: Cursor, anchor?: Cursor) {
+  constructor(music: TMusic, cursor?: Cursor, anchor?: Cursor) {
     super(music, cursor)
     this.anchor = anchor
   }
@@ -51,14 +52,20 @@ export class MusicSelector<
   normalizeSelection() {
     if (this.anchor == null) return
     if (this.anchor.isLessThan(this.cursor)) {
-      this.anchor.move(this.anchor.chapter, this.anchor.cell, 0, 0)
+      this.anchor = new Cursor(
+        false,
+        this.anchor.chapter,
+        this.anchor.cell,
+        0,
+        0
+      )
       this.move('row', -1, SNAP.BACK)
     } else {
       const chapter = this.cursor.chapter
       const cell = this.cursor.cell
       this.cursor.moveTo(this.anchor)
       this.move('row', -1, SNAP.BACK)
-      this.anchor.moveTo(this.cursor)
+      this.anchor = this.cursor.clone()
       this.cursor.move(chapter, cell, 0, 0)
     }
   }
@@ -66,8 +73,11 @@ export class MusicSelector<
   selectAll() {
     if (this.cursor.rhythmMode) return
     if (this.anchor == null) this.anchor = this.cursor.clone()
-    if (this.cursor.isLessThan(this.anchor, 'cell'))
-      Cursor.swap(this.cursor, this.anchor)
+    if (this.cursor.isLessThan(this.anchor, 'cell')) {
+      const cursor = this.cursor.clone()
+      this.cursor.moveTo(this.anchor)
+      this.anchor = cursor
+    }
 
     const gakLength = this.get('chapter').config.rhythm.length
     const head = this.cursor.cell - this._jeong(this.cursor.cell)
