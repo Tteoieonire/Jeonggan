@@ -5,7 +5,7 @@ import {
   makeMusicYamlDownload,
   type MidiWriter,
 } from './music-export'
-import { deserializeMusic } from '../domain/serializer'
+import { deserializeMusic } from '../domain/serialization'
 
 const SAMPLE_YAML = `- title: test song
   instrument: acoustic_guitar

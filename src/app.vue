@@ -103,18 +103,16 @@
 import type { InstrumentName } from 'soundfont-player'
 import { defineComponent, nextTick } from 'vue'
 
-import canvaspanel from './components/canvaspanel.vue'
-import keypanel from './components/keypanel.vue'
-import menupanel from './components/menupanel.vue'
+import canvaspanel from './components/canvas/canvaspanel.vue'
+import keypanel from './components/keypad/keypanel.vue'
+import menupanel from './components/menu/menupanel.vue'
 
-import configmodal from './components/configmodal.vue'
-import globalmodal from './components/globalmodal.vue'
-import initmodal from './components/initmodal.vue'
+import configmodal from './components/modals/configmodal.vue'
+import globalmodal from './components/modals/globalmodal.vue'
+import initmodal from './components/modals/initmodal.vue'
 
-import { bindEditorDocumentEvents } from './app/document-listeners'
-import { EditorSession } from './app/editor-session'
-import { FileSession } from './app/file-session'
-import { PlaybackSession } from './app/playback-session'
+import { bindEditorDocumentEvents } from './app/browser'
+import { EditorSession, FileSession, PlaybackSession } from './app/sessions'
 import Cursor, { CoordLevel } from './domain/cursor'
 import { Music, MusicEditor } from './domain/editor'
 import { EntryOf, TrillState } from './domain/symbols'
@@ -123,7 +121,7 @@ import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,
   workspaceKeyShortcuts as formatWorkspaceKeyShortcuts,
-} from './features/workspace-accessibility'
+} from './features/canvas'
 
 export default defineComponent({
   data() {
