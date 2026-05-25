@@ -6,7 +6,7 @@ import {
   hasShiftKeyOnly,
   type KeyboardContext,
   type KeyboardInput,
-} from './keyboard'
+} from './index'
 
 const BASE_CONTEXT: KeyboardContext = {
   playerActive: false,

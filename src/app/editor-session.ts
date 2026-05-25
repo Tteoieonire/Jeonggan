@@ -27,8 +27,8 @@ import {
   type KeyboardContext,
   type KeyboardInput,
 } from '../features/keyboard'
-import { getKeyboardEditUndo } from '../features/keyboard-edit'
-import { executeKeyboardNavigation } from '../features/keyboard-navigation'
+import { getKeyboardEditUndo } from '../features/keyboard/edit'
+import { executeKeyboardNavigation } from '../features/keyboard/navigation'
 import { resolveOctaveChange } from '../features/octave'
 import { applyModifierTrill } from '../features/trill'
 

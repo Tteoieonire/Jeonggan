@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Entry, UndoOp } from '../domain/viewer'
+import type { Entry, UndoOp } from '../../domain/viewer'
 import {
   getKeyboardEditUndo,
   type KeyboardEditCommand,
   type KeyboardEditEditor,
-} from './keyboard-edit'
+} from './edit'
 
 describe('keyboard edit helpers', () => {
   it('deletes an empty selection with a follow-up backspace', () => {

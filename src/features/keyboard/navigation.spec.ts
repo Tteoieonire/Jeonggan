@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import Cursor from '../domain/cursor'
-import { Music, MusicEditor } from '../domain/editor'
-import { Chapter, Config } from '../domain/viewer'
+import Cursor from '../../domain/cursor'
+import { Music, MusicEditor } from '../../domain/editor'
+import { Chapter, Config } from '../../domain/viewer'
 import {
   executeKeyboardNavigation,
   prepareKeyboardSelection,
-} from './keyboard-navigation'
+} from './navigation'
 
 const CONFIG: Config = {
   name: '초장',
