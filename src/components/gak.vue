@@ -73,10 +73,17 @@ import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/domain/cursor'
 import { Gak } from '@/domain/viewer'
+import {
+  coordInGak,
+  getGakLabel,
+  getGakLength,
+  getGakPadding,
+  getGakTitle,
+  groupGakContent,
+  type GakGroupInfo,
+} from '@/features/canvas-gak'
 import cell from './cell.vue'
 import rhythmcell from './rhythmcell.vue'
-
-type Info = { index: number; endsSubdivision: boolean; endsChapter: boolean }
 
 export default defineComponent({
   props: {
@@ -97,11 +104,7 @@ export default defineComponent({
       row: number = 0,
       col: number = 0
     ): Cursor {
-      if (!rhythmMode) {
-        cell += this.gak.gakIndex * this.gakLength
-        if (this.gak.gakIndex > 0) cell -= this.gak.padding
-      }
-      return new Cursor(rhythmMode, this.gak.chapterIndex, cell, row, col)
+      return coordInGak(this.gak, rhythmMode, cell, row, col)
     },
     moveTo(coord: Cursor) {
       this.$emit('move-to', coord)
@@ -115,43 +118,22 @@ export default defineComponent({
     pointerOver(coord: Cursor) {
       this.$emit('pointer-over', coord)
     },
-    grouped<T>(content: T[]): [T, Info][] {
-      const numbered = Array.from(content.entries())
-      let idx = this.gak.gakIndex === 0 ? -this.gak.padding : 0
-      const result: [T, Info][] = []
-      for (const subdivision of this.gak.measure) {
-        const sliced = numbered
-          .slice(Math.max(0, idx), Math.max(0, idx + subdivision))
-          .map(([index, data]): [T, Info] => [
-            data,
-            { index, endsSubdivision: false, endsChapter: false },
-          ])
-        if (sliced.length) {
-          sliced[sliced.length - 1][1].endsSubdivision = true
-          result.push(...sliced)
-        }
-        idx += subdivision
-      }
-      result[result.length - 1][1].endsChapter = this.gak.isLast
-      return result
+    grouped<T>(content: T[]): [T, GakGroupInfo][] {
+      return groupGakContent(content, this.gak)
     },
   },
   computed: {
     gakLength() {
-      return this.gak.measure.reduce((a, b) => a + b, 0)
+      return getGakLength(this.gak.measure)
     },
     title() {
-      return this.gak.title || this.gak.chapterIndex + 1 + '장'
+      return getGakTitle(this.gak)
     },
     label() {
-      if (this.gak.rhythm) {
-        return this.title + ' 장단'
-      } else {
-        return this.title + ' ' + (this.gak.gakIndex + 1) + '각'
-      }
+      return getGakLabel(this.gak)
     },
     padding() {
-      return (this.gak.gakIndex === 0 ? this.gak.padding : 0) * 3.5 + 'rem'
+      return getGakPadding(this.gak)
     },
   },
   components: {
