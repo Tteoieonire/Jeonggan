@@ -31,8 +31,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/domain/cursor'
-import { Cell } from '@/domain/viewer'
+import Cursor from '@/domain/navigation/cursor'
+import { Cell } from '@/domain/navigation/viewer'
 import {
   coordInCanvasCell,
   getCanvasCellRowStyle,

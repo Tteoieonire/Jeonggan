@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { makeCanvasLabel } from './canvas-label'
 import { YUL_OBJ } from '../../domain/constants'
-import Cursor from '../../domain/cursor'
+import Cursor from '../../domain/navigation/cursor'
 import { querySymbol } from '../../domain/symbols'
-import type { Col, Config } from '../../domain/viewer'
+import type { Col, Config } from '../../domain/navigation/viewer'
 
 const CONFIG: Pick<Config, 'name' | 'padding' | 'rhythm'> = {
   name: '초장',

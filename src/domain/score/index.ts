@@ -1,8 +1,8 @@
 import { InstrumentName } from 'soundfont-player'
 
-import { RHYTHM_OBJ } from './constants'
-import { MainEntry, ModifierEntry } from './symbols'
-import { getID, WithID } from './utils'
+import { RHYTHM_OBJ } from '../constants'
+import { MainEntry, ModifierEntry } from '../symbols'
+import { getID, WithID } from '../utils'
 
 export type Config = Readonly<{
   name: string

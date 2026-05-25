@@ -1,6 +1,6 @@
-import type { RhythmTick } from './constants'
-import type Cursor from './cursor'
-import { type Chapter, idOp, type UndoOp } from './viewer'
+import type { RhythmTick } from '../constants'
+import type Cursor from '../navigation/cursor'
+import { type Chapter, idOp, type UndoOp } from '../navigation/viewer'
 
 export type RhythmEditHost = {
   cursor: Cursor

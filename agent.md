@@ -8,7 +8,7 @@
 
 ## 핵심 계층
 
-현재 구현의 기본 자료구조는 `src/domain/score.ts`에 있고, 좌표 기반 조회와 이동은 `src/domain/viewer.ts`가 담당한다. 선택/복사 동작은 `src/domain/selector.ts`, 실제 편집 API는 `src/domain/music-editor.ts`가 노출한다. `MusicEditor`의 세부 구현은 `src/domain/structure-editing.ts`, `src/domain/rhythm-editing.ts`, `src/domain/selection-editing.ts`로 나뉜다. 재생과 MIDI 변환은 `src/domain/playback/`, YAML 직렬화는 `src/domain/serialization/`에 있다.
+현재 구현의 기본 자료구조는 `src/domain/score/`에 있고, 좌표 기반 조회와 이동은 `src/domain/navigation/`이 담당한다. 실제 편집 API와 실행 취소 가능한 변경은 `src/domain/editing/`에 있다. 재생과 MIDI 변환은 `src/domain/playback/`, YAML 직렬화는 `src/domain/serialization/`에 있다.
 
 - `Music`: 전체 악보. 여러 `Chapter`를 가진다.
 - `Chapter`: 화면과 설정상 "장"에 해당한다. `config`와 일반 정간 데이터인 `data: Cell[]`를 가진다.

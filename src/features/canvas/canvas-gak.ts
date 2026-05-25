@@ -1,5 +1,5 @@
-import Cursor from '../../domain/cursor'
-import type { Gak } from '../../domain/viewer'
+import Cursor from '../../domain/navigation/cursor'
+import type { Gak } from '../../domain/navigation/viewer'
 
 export type GakGroupInfo = {
   index: number

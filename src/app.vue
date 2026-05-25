@@ -113,11 +113,11 @@ import initmodal from './components/modals/initmodal.vue'
 
 import { bindEditorDocumentEvents } from './app/browser'
 import { EditorSession, FileSession, PlaybackSession } from './app/sessions'
-import Cursor, { CoordLevel } from './domain/cursor'
+import Cursor, { CoordLevel } from './domain/navigation/cursor'
 import { Music } from './domain/music'
-import { MusicEditor } from './domain/music-editor'
+import { MusicEditor } from './domain/editing/music-editor'
 import { EntryOf, TrillState } from './domain/symbols'
-import { Config } from './domain/viewer'
+import { Config } from './domain/navigation/viewer'
 import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,

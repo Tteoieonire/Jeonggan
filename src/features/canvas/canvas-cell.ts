@@ -1,4 +1,4 @@
-import type Cursor from '../../domain/cursor'
+import type Cursor from '../../domain/navigation/cursor'
 
 export type CanvasCellRowStyle = {
   fontSize: string

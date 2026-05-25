@@ -1,4 +1,4 @@
-import type Cursor from './cursor'
+import type Cursor from '../navigation/cursor'
 import {
   Chapter,
   CHILD_OF,
@@ -9,7 +9,7 @@ import {
   SNAP,
   type UndoOp,
   _make,
-} from './viewer'
+} from '../navigation/viewer'
 
 export type StructureEditHost = {
   cursor: Cursor

@@ -17,7 +17,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/domain/cursor'
+import Cursor from '@/domain/navigation/cursor'
 import {
   coordInCanvasRhythmCell,
   getCanvasRhythmCellRowStyle,

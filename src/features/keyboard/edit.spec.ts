@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Entry, UndoOp } from '../../domain/viewer'
+import type { Entry, UndoOp } from '../../domain/navigation/viewer'
 import {
   getKeyboardEditUndo,
   type KeyboardEditCommand,

@@ -1,5 +1,5 @@
-import Cursor from '../../domain/cursor'
-import type { Col, Config } from '../../domain/viewer'
+import Cursor from '../../domain/navigation/cursor'
+import type { Col, Config } from '../../domain/navigation/viewer'
 
 type PlayingCanvasLabelInput = {
   playing: true

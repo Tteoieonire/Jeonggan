@@ -7,11 +7,11 @@ import {
 } from '../commands'
 import { createEditorHistory, type EditorHistory } from './editor-history'
 import { rhythmTickIndex, YUL_OBJ } from '../../domain/constants'
-import Cursor, { CoordLevel } from '../../domain/cursor'
+import Cursor, { CoordLevel } from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { MusicEditor } from '../../domain/music-editor'
+import { MusicEditor } from '../../domain/editing/music-editor'
 import type { EntryOf, TrillState } from '../../domain/symbols'
-import { Chapter, Config, UndoOp } from '../../domain/viewer'
+import { Chapter, Config, UndoOp } from '../../domain/navigation/viewer'
 import {
   makeCanvasLabel,
   moveCanvasCursor,

@@ -1,6 +1,6 @@
 import Cursor from './cursor'
-import type { Music } from './music'
-import { inRange } from './utils'
+import type { Music } from '../music'
+import { inRange } from '../utils'
 import {
   Cell,
   Entry,

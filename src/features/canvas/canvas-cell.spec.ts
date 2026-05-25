@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import Cursor from '../../domain/cursor'
+import Cursor from '../../domain/navigation/cursor'
 import {
   coordInCanvasCell,
   getCanvasCellRowStyle,

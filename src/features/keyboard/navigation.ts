@@ -1,6 +1,6 @@
-import type { MusicEditor } from '../../domain/music-editor'
-import type { Config } from '../../domain/viewer'
-import { SNAP } from '../../domain/viewer'
+import type { MusicEditor } from '../../domain/editing/music-editor'
+import type { Config } from '../../domain/navigation/viewer'
+import { SNAP } from '../../domain/navigation/viewer'
 import type { KeyboardCommand } from './index'
 
 export type KeyboardNavigationCommand = Extract<

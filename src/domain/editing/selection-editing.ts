@@ -1,6 +1,6 @@
-import Cursor, { type Level } from './cursor'
-import { debone } from './selector'
-import { getID, inRange } from './utils'
+import Cursor, { type Level } from '../navigation/cursor'
+import { debone } from '../navigation/selector'
+import { getID, inRange } from '../utils'
 import {
   type Cell,
   type ElementOf,
@@ -10,7 +10,7 @@ import {
   SNAP,
   type UndoOp,
   _make,
-} from './viewer'
+} from '../navigation/viewer'
 
 type SelectionRangeWalker = {
   anchor?: Cursor

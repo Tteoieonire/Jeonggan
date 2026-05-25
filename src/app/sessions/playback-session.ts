@@ -1,6 +1,6 @@
-import Cursor from '../../domain/cursor'
+import Cursor from '../../domain/navigation/cursor'
 import { MusicPlayer } from '../../domain/playback'
-import type { MusicBase } from '../../domain/viewer'
+import type { MusicBase } from '../../domain/navigation/viewer'
 
 export type PlaybackCommand = 'stop' | 'pause' | 'resume'
 

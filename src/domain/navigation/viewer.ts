@@ -4,9 +4,9 @@ import {
   type ElementOf,
   type MusicBase,
   PARENT_OF,
-} from './score'
-import type { UndoOp } from './undo'
-import { inRange, wrappedIdx } from './utils'
+} from '../score'
+import type { UndoOp } from '../editing/undo'
+import { inRange, wrappedIdx } from '../utils'
 
 export {
   CHILD_OF,
@@ -21,8 +21,8 @@ export {
   PARENT_OF,
   type Row,
   _make,
-} from './score'
-export { idOp, mergeActions, type UndoOp } from './undo'
+} from '../score'
+export { idOp, mergeActions, type UndoOp } from '../editing/undo'
 
 export const enum SNAP {
   FRONT = 0,

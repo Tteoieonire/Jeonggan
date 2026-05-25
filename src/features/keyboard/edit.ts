@@ -1,5 +1,5 @@
-import type { MusicEditor } from '../../domain/music-editor'
-import { mergeActions, type UndoOp } from '../../domain/viewer'
+import type { MusicEditor } from '../../domain/editing/music-editor'
+import { mergeActions, type UndoOp } from '../../domain/navigation/viewer'
 import type { KeyboardCommand } from './index'
 
 export type KeyboardEditCommand = Extract<

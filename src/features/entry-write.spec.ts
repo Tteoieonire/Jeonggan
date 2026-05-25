@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { REST_OBJ, YUL_OBJ } from '../domain/constants'
 import type { EntryOf } from '../domain/symbols'
-import type { Col, Entry, UndoOp } from '../domain/viewer'
+import type { Col, Entry, UndoOp } from '../domain/navigation/viewer'
 import { getEntryWriteUndo, type EntryWriteEditor } from './entry-write'
 
 describe('entry write helpers', () => {

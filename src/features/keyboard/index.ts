@@ -1,5 +1,5 @@
 import { RHYTHM_OBJ } from '../../domain/constants'
-import type { CoordLevel } from '../../domain/cursor'
+import type { CoordLevel } from '../../domain/navigation/cursor'
 
 export type KeyboardInput = Pick<
   KeyboardEvent,

@@ -1,8 +1,9 @@
 import { InstrumentName } from 'soundfont-player'
 
-import { MusicEditor } from './music-editor'
+import { MusicEditor } from './editing/music-editor'
 import { MusicPlayer } from './playback'
-import { Chapter, MusicBase, MusicViewer } from './viewer'
+import { Chapter, MusicBase } from './score'
+import { MusicViewer } from './navigation/viewer'
 
 export class Music implements MusicBase {
   private _editor?: MusicEditor

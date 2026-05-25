@@ -1,5 +1,5 @@
-import Cursor from '../../domain/cursor'
-import type { MusicEditor } from '../../domain/music-editor'
+import Cursor from '../../domain/navigation/cursor'
+import type { MusicEditor } from '../../domain/editing/music-editor'
 import { ActionHistory } from '../../features/history'
 
 const DEFAULT_EDITOR_HISTORY_LIMIT = 100

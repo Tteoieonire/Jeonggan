@@ -1,8 +1,8 @@
 import { instrument, InstrumentName, Player } from 'soundfont-player'
-import Cursor from '../cursor'
+import Cursor from '../navigation/cursor'
 import { MainEntry, ModifierEntry } from '../symbols'
 import { sleep } from '../utils'
-import { MusicBase, MusicViewer } from '../viewer'
+import { MusicBase, MusicViewer } from '../navigation/viewer'
 
 const REF_PITCH = 63 // Eb4, 황종
 

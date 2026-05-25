@@ -1,4 +1,4 @@
-import type { UndoOp } from '../../domain/viewer'
+import type { UndoOp } from '../../domain/navigation/viewer'
 
 export type ActionRecord<State> = {
   undo: UndoOp

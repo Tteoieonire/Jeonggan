@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
-import Cursor from './cursor'
+import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from '../constants'
+import Cursor from '../navigation/cursor'
 import { MusicEditor } from './music-editor'
-import { MusicSelector } from './selector'
-import { deserializeMusic, serializeMusic } from './serialization'
-import { SNAP } from './viewer'
+import { MusicSelector } from '../navigation/selector'
+import { deserializeMusic, serializeMusic } from '../serialization'
+import { SNAP } from '../navigation/viewer'
 
 const SAMPLE_YAML = `- title: 양청도드리
   instrument: acoustic_grand_piano

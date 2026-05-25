@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { YUL_OBJ } from '../../domain/constants'
-import Cursor from '../../domain/cursor'
-import type { Entry } from '../../domain/viewer'
+import Cursor from '../../domain/navigation/cursor'
+import type { Entry } from '../../domain/navigation/viewer'
 import type { KeyboardInput } from '../../features/keyboard'
 import { EditorSession } from './editor-session'
 

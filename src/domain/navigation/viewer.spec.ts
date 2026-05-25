@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { YUL_OBJ } from './constants'
+import { YUL_OBJ } from '../constants'
 import Cursor from './cursor'
-import { deserializeMusic } from './serialization'
-import { querySymbol } from './symbols'
+import { deserializeMusic } from '../serialization'
+import { querySymbol } from '../symbols'
 import { MusicViewer, SNAP } from './viewer'
 
 const SAMPLE_YAML = `- title: 양청도드리

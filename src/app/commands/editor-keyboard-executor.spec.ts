@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { YUL_OBJ } from '../../domain/constants'
-import Cursor from '../../domain/cursor'
+import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { MusicEditor } from '../../domain/music-editor'
-import { Chapter, Config, UndoOp } from '../../domain/viewer'
+import { MusicEditor } from '../../domain/editing/music-editor'
+import { Chapter, Config, UndoOp } from '../../domain/navigation/viewer'
 import type { ClipboardData } from '../../features/clipboard'
 import { IME } from '../../features/ime'
 import { executeEditorCommand, type EditorCommand } from './editor-command'

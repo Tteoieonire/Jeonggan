@@ -1,5 +1,5 @@
-import type { RhythmTick } from './constants'
-import Cursor from './cursor'
+import type { RhythmTick } from '../constants'
+import Cursor from '../navigation/cursor'
 import {
   addRhythmRow as addEditorRhythmRow,
   currentRhythmTick as getCurrentEditorRhythmTick,
@@ -16,14 +16,14 @@ import {
   pasteEntry as pasteEditorEntry,
   pasteRange as pasteEditorRange,
 } from './selection-editing'
-import { MusicSelector } from './selector'
+import { MusicSelector } from '../navigation/selector'
 import {
   addElement,
   delElement,
   eraseElement,
   writeElement,
 } from './structure-editing'
-import { inRange } from './utils'
+import { inRange } from '../utils'
 import {
   ElementOf,
   Entry,
@@ -32,7 +32,7 @@ import {
   SNAP,
   UndoOp,
   _make,
-} from './viewer'
+} from '../navigation/viewer'
 
 export class MusicEditor extends MusicSelector {
   /* Button action */

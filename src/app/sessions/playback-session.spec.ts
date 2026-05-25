@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import Cursor from '../../domain/cursor'
+import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { Chapter, Config } from '../../domain/viewer'
+import { Chapter, Config } from '../../domain/navigation/viewer'
 import { PlaybackSession, type PlaybackPlayer } from './playback-session'
 
 const CONFIG: Config = {

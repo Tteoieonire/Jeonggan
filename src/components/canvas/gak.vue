@@ -71,8 +71,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/domain/cursor'
-import { Gak } from '@/domain/viewer'
+import Cursor from '@/domain/navigation/cursor'
+import { Gak } from '@/domain/navigation/viewer'
 import {
   coordInGak,
   getGakLabel,

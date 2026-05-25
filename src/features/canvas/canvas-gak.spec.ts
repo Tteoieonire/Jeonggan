@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import Cursor from '../../domain/cursor'
-import type { Gak } from '../../domain/viewer'
+import Cursor from '../../domain/navigation/cursor'
+import type { Gak } from '../../domain/navigation/viewer'
 import {
   coordInGak,
   getGakLabel,
