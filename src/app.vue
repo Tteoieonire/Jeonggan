@@ -101,7 +101,6 @@
 
 <script lang="ts">
 import { saveAs } from 'file-saver'
-import { writeMidi } from 'midi-file'
 import { InstrumentName } from 'soundfont-player'
 import { defineComponent, nextTick } from 'vue'
 
@@ -116,15 +115,13 @@ import initmodal from './components/initmodal.vue'
 import { makeCanvasLabel } from './canvas-label'
 import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
-import { makeMidiDownload, makeYamlDownload } from './download'
 import { Music, MusicEditor } from './editor'
 import { readMusicFile } from './file-open'
 import { ActionHistory } from './history'
 import { IME } from './ime'
 import { getKeyboardCommand, type KeyboardCommand } from './keyboard'
-import { convertToMidi } from './midi'
+import { makeMusicMidiDownload, makeMusicYamlDownload } from './music-export'
 import { MusicPlayer } from './player'
-import { serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
 import { getID } from './utils'
 import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
@@ -407,14 +404,11 @@ export default defineComponent({
       }
     },
     save() {
-      const data = serializeMusic(this.music)
-      const { blob, filename } = makeYamlDownload(this.music.title, data)
+      const { blob, filename } = makeMusicYamlDownload(this.music)
       saveAs(blob, filename)
     },
     async exportMidi() {
-      const compiled = convertToMidi(this.music.getPlayer())
-      const data = Uint8Array.from(writeMidi(compiled, { running: true }))
-      const { blob, filename } = makeMidiDownload(this.music.title, data)
+      const { blob, filename } = makeMusicMidiDownload(this.music)
       saveAs(blob, filename)
     },
     undo() {
