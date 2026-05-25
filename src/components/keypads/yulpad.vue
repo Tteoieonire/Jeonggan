@@ -39,8 +39,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import { REST_OBJ, YUL_OBJ } from '../../constants'
-import { MainEntry, ModifierEntry } from '../../symbols'
+import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
+import { MainEntry, ModifierEntry } from '../../domain/symbols'
 
 export default defineComponent({
   props: {

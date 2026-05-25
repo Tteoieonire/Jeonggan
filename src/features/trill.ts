@@ -1,4 +1,8 @@
-import { querySymbol, type ModifierEntry, type TrillState } from './symbols'
+import {
+  querySymbol,
+  type ModifierEntry,
+  type TrillState,
+} from '../domain/symbols'
 
 export function formatTrillQuery(query: string, trill: TrillState): string {
   const base = query.replace(/~/g, '')

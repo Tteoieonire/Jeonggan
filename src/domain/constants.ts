@@ -105,7 +105,7 @@ const YUL_OBJ = OCTAVE.map(function (oct_label, oct_idx) {
 })
 const REST_OBJ: MainEntry = { text: '△', label: '쉼표', pitches: [] } as const
 
-type RhythmTick = (typeof RHYTHM_OBJ)[number] | ''
+type RhythmTick = typeof RHYTHM_OBJ[number] | ''
 
 function rhythmTickIndex(tick: RhythmTick): number {
   return tick === '' ? -1 : RHYTHM_OBJ.indexOf(tick)

@@ -112,26 +112,31 @@ import configmodal from './components/configmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
-import { makeCanvasLabel } from './canvas-label'
-import { canPaste, type ClipboardData } from './clipboard'
-import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
-import Cursor, { CoordLevel } from './cursor'
-import { Music, MusicEditor } from './editor'
-import { readMusicFile } from './file-open'
-import { ActionHistory } from './history'
-import { IME } from './ime'
-import { getKeyboardCommand, type KeyboardCommand } from './keyboard'
-import { makeMusicMidiDownload, makeMusicYamlDownload } from './music-export'
-import { MusicPlayer } from './player'
-import { EntryOf, TrillState } from './symbols'
-import { applyModifierTrill } from './trill'
-import { getID } from './utils'
-import { Chapter, Config, mergeActions, UndoOp } from './viewer'
+import { makeCanvasLabel } from './features/canvas-label'
+import { canPaste, type ClipboardData } from './features/clipboard'
+import {
+  REST_OBJ,
+  RHYTHM_OBJ,
+  rhythmTickIndex,
+  YUL_OBJ,
+} from './domain/constants'
+import Cursor, { CoordLevel } from './domain/cursor'
+import { Music, MusicEditor } from './domain/editor'
+import { readMusicFile } from './io/file-open'
+import { ActionHistory } from './features/history'
+import { IME } from './features/ime'
+import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
+import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
+import { MusicPlayer } from './domain/player'
+import { EntryOf, TrillState } from './domain/symbols'
+import { applyModifierTrill } from './features/trill'
+import { getID } from './domain/utils'
+import { Chapter, Config, mergeActions, UndoOp } from './domain/viewer'
 import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,
   workspaceKeyShortcuts as formatWorkspaceKeyShortcuts,
-} from './workspace-accessibility'
+} from './features/workspace-accessibility'
 
 /**
  * Controller

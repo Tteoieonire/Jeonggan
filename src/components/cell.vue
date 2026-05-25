@@ -31,8 +31,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/cursor'
-import { Cell, Row } from '@/viewer'
+import Cursor from '@/domain/cursor'
+import { Cell, Row } from '@/domain/viewer'
 import col from './col.vue'
 
 export default defineComponent({

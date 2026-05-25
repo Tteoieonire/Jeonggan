@@ -17,7 +17,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/cursor'
+import Cursor from '@/domain/cursor'
 
 export default defineComponent({
   props: {

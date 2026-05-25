@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { querySymbol, type ModifierEntry } from './symbols'
+import { querySymbol, type ModifierEntry } from '../domain/symbols'
 import { applyModifierTrill, formatTrillQuery } from './trill'
 
 describe('trill helpers', () => {

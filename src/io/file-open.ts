@@ -1,4 +1,4 @@
-import { deserializeMusic } from './serializer'
+import { deserializeMusic } from '../domain/serializer'
 
 export type TextFileReader = {
   addEventListener(

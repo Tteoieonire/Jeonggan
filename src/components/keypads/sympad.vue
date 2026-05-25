@@ -70,7 +70,7 @@ import {
   ModifierEntry,
   querySymbol,
   TrillState,
-} from '../../symbols'
+} from '../../domain/symbols'
 
 const frame_main = [
   ['3'],

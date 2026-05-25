@@ -10,8 +10,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/cursor'
-import { Col } from '@/viewer'
+import Cursor from '@/domain/cursor'
+import { Col } from '@/domain/viewer'
 
 export default defineComponent({
   props: {

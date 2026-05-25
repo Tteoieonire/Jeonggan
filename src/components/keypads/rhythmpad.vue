@@ -14,7 +14,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { RHYTHM_OBJ } from '../../constants'
+import { RHYTHM_OBJ } from '../../domain/constants'
 
 export default defineComponent({
   props: { tickIdx: { type: Number, required: true } },

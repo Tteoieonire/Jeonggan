@@ -5,10 +5,7 @@ export type DownloadPayload = {
 
 const RESERVED_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g
 
-export function makeDownloadFilename(
-  title: string,
-  extension: string
-): string {
+export function makeDownloadFilename(title: string, extension: string): string {
   const safeExtension = extension.replace(/^\.+/, '')
   const safeTitle = title
     .trim()

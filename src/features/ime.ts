@@ -1,4 +1,4 @@
-import { querySymbol } from './symbols'
+import { querySymbol } from '../domain/symbols'
 
 class IME {
   grace: boolean = false

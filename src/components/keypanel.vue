@@ -60,7 +60,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import { MainEntry, ModifierEntry, TrillState } from '@/symbols'
+import { MainEntry, ModifierEntry, TrillState } from '@/domain/symbols'
 import cellpad from './keypads/cellpad.vue'
 import rhythmpad from './keypads/rhythmpad.vue'
 import shapepad from './keypads/shapepad.vue'

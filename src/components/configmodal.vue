@@ -91,8 +91,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import { YUL_OBJ } from '../constants'
-import { Config } from '../viewer'
+import { YUL_OBJ } from '../domain/constants'
+import { Config } from '../domain/viewer'
 
 const YULS = YUL_OBJ[3].map(x => ({ text: x.text, value: x.label }))
 const SCALE = YUL_OBJ[3].map(x => x.label)

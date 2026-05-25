@@ -1,5 +1,5 @@
-import Cursor from './cursor'
-import type { Entry } from './viewer'
+import Cursor from '../domain/cursor'
+import type { Entry } from '../domain/viewer'
 
 export type ClipboardData = ['Entry', Entry] | ['Range', Entry[][][]]
 

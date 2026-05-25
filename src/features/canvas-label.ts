@@ -1,5 +1,5 @@
-import Cursor from './cursor'
-import type { Col, Config } from './viewer'
+import Cursor from '../domain/cursor'
+import type { Col, Config } from '../domain/viewer'
 
 type PlayingCanvasLabelInput = {
   playing: true
@@ -14,9 +14,7 @@ type EditingCanvasLabelInput = {
   col: Col
 }
 
-export type CanvasLabelInput =
-  | PlayingCanvasLabelInput
-  | EditingCanvasLabelInput
+export type CanvasLabelInput = PlayingCanvasLabelInput | EditingCanvasLabelInput
 
 export function makeCanvasLabel(input: CanvasLabelInput): string {
   if (input.playing) return ''

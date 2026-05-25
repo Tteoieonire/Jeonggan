@@ -71,8 +71,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import Cursor from '@/cursor'
-import { Gak } from '@/viewer'
+import Cursor from '@/domain/cursor'
+import { Gak } from '@/domain/viewer'
 import cell from './cell.vue'
 import rhythmcell from './rhythmcell.vue'
 

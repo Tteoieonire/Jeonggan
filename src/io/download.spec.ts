@@ -12,9 +12,7 @@ describe('download helpers', () => {
     })
 
     it('removes characters that are unsafe in filenames', () => {
-      expect(makeDownloadFilename('suite: 1/2*?', '.mid')).toBe(
-        'suite-12.mid'
-      )
+      expect(makeDownloadFilename('suite: 1/2*?', '.mid')).toBe('suite-12.mid')
     })
 
     it('uses a fallback when the title has no usable characters', () => {

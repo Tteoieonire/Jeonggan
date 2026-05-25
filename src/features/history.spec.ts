@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import Cursor from './cursor'
+import Cursor from '../domain/cursor'
 import { ActionHistory } from './history'
 
 describe('ActionHistory', () => {

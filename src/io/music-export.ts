@@ -4,9 +4,9 @@ import {
   makeYamlDownload,
   type DownloadPayload,
 } from './download'
-import type { Music } from './editor'
-import { convertToMidi } from './midi'
-import { serializeMusic } from './serializer'
+import type { Music } from '../domain/editor'
+import { convertToMidi } from '../domain/midi'
+import { serializeMusic } from '../domain/serializer'
 
 export type MidiWriter = (
   data: MidiData,

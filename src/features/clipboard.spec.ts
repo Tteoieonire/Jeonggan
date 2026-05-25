@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { canPaste, type ClipboardData } from './clipboard'
-import Cursor from './cursor'
+import Cursor from '../domain/cursor'
 
 const ENTRY_CLIPBOARD: ClipboardData = ['Entry', {}]
 const RANGE_CLIPBOARD: ClipboardData = ['Range', [[[{}]]]]

@@ -16,8 +16,8 @@
 </template>
 
 <script lang="ts">
-import Cursor from '@/cursor'
-import { Gak } from '@/viewer'
+import Cursor from '@/domain/cursor'
+import { Gak } from '@/domain/viewer'
 import { defineComponent, PropType } from 'vue'
 
 import gak from './gak.vue'
