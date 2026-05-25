@@ -2,7 +2,7 @@ import type { InstrumentName } from 'soundfont-player'
 
 import { executeEditorCommand, type EditorCommand } from './editor-command'
 import { createEditorHistory, type EditorHistory } from './editor-history'
-import { editorCommandFromKeyboard } from './editor-keyboard-command'
+import { executeEditorKeyboardCommand } from './editor-keyboard-executor'
 import { rhythmTickIndex, YUL_OBJ } from '../domain/constants'
 import Cursor, { CoordLevel } from '../domain/cursor'
 import { Music, MusicEditor } from '../domain/editor'
@@ -22,8 +22,6 @@ import {
   type KeyboardContext,
   type KeyboardInput,
 } from '../features/keyboard'
-import { getKeyboardEditUndo } from '../features/keyboard/edit'
-import { executeKeyboardNavigation } from '../features/keyboard/navigation'
 import { resolveOctaveChange } from '../features/octave'
 import { applyModifierTrill } from '../features/trill'
 
@@ -273,41 +271,7 @@ export class EditorSession {
   }
 
   executeKeyboardCommand(command: KeyboardCommand): void {
-    const editorCommand = editorCommandFromKeyboard(command, {
-      editor: this.editor,
-      ime: this.ime,
-      octave: this.octave,
-      sigimShow: this.sigimShow,
-    })
-    if (editorCommand != null) {
-      this.execute(editorCommand)
-      return
-    }
-
-    switch (command.type) {
-      case 'ignore':
-        return
-      case 'moveUpDown':
-      case 'moveLeftRight':
-      case 'discardSelection':
-      case 'home':
-      case 'end':
-        executeKeyboardNavigation(command, this.editor, this.config)
-        return
-      case 'backspaceSelection':
-      case 'backspace':
-      case 'deleteSelection':
-      case 'deleteForward':
-      case 'cutSelection':
-        this.doWithHistory(getKeyboardEditUndo(command, this.editor))
-        return
-      case 'octave':
-        this.writeOctave(command.delta)
-        return
-      case 'selectAll':
-        this.editor.selectAll()
-        return
-    }
+    executeEditorKeyboardCommand(this, command)
   }
 
   writeOctave(delta: 1 | -1): void {
