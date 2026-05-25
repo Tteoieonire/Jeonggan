@@ -3,7 +3,7 @@
     <b-button
       v-for="(item, i) in RHYTHM_OBJ"
       :key="i"
-      :pressed="thisTick(i)"
+      :active="thisTick(i)"
       @click="change(i)"
     >
       {{ item }}표

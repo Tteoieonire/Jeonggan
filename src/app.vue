@@ -142,6 +142,11 @@ type UndoRecord = {
   oldAnchor?: Cursor
   newAnchor?: Cursor
 }
+type RhythmTick = (typeof RHYTHM_OBJ)[number] | ''
+
+function rhythmTickIndex(tick: RhythmTick): number {
+  return tick === '' ? -1 : RHYTHM_OBJ.indexOf(tick)
+}
 
 export default defineComponent({
   data() {
@@ -220,7 +225,7 @@ export default defineComponent({
         const rows =
           this.editor.get('chapter').config.rhythm[this.editor.cursor.cell]
         const row = rows[this.editor.cursor.row]
-        this.tickIdx = row === '' ? -1 : RHYTHM_OBJ.indexOf(row)
+        this.tickIdx = rhythmTickIndex(row)
       }
     },
     updateChapter() {
@@ -270,11 +275,15 @@ export default defineComponent({
       if (this.editor.isSelecting) return
       if (this.editor.cursor.rhythmMode) {
         this.doWithBackup(() => {
-          const rows = this.config.rhythm[this.editor.cursor.cell]
-          const old = rows.splice(this.editor.cursor.row, 1, '')[0]
+          const cell = this.editor.cursor.cell
+          const row = this.editor.cursor.row
+          const rows = this.config.rhythm[cell]
+          const old = rows.splice(row, 1, '')[0]
+          this.tickIdx = -1
           return () => {
-            const rows = this.config.rhythm[this.editor.cursor.cell]
-            rows.splice(this.editor.cursor.row, 1, old)
+            const rows = this.config.rhythm[cell]
+            rows.splice(row, 1, old)
+            this.tickIdx = rhythmTickIndex(old)
           }
         })
       } else {
@@ -292,15 +301,17 @@ export default defineComponent({
       this.octave += delta
     },
     tickchange(tickIdx: number) {
-      const oldtick = this.tickIdx
       this.doWithBackup(() => {
+        const cell = this.editor.cursor.cell
+        const row = this.editor.cursor.row
+        const rows = this.config.rhythm[cell]
+        const old = rows[row]
         this.tickIdx = tickIdx
-        const rows = this.config.rhythm[this.editor.cursor.cell]
-        rows.splice(this.editor.cursor.row, 1, RHYTHM_OBJ[this.tickIdx])
+        rows.splice(row, 1, RHYTHM_OBJ[tickIdx])
         return () => {
-          this.tickIdx = oldtick
-          const rows = this.config.rhythm[this.editor.cursor.cell]
-          rows.splice(this.editor.cursor.row, 1, RHYTHM_OBJ[this.tickIdx])
+          const rows = this.config.rhythm[cell]
+          rows.splice(row, 1, old)
+          this.tickIdx = rhythmTickIndex(old)
         }
       })
     },
