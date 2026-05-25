@@ -1,6 +1,6 @@
 <template>
   <b-button-group class="m-1">
-    <b-button @click="add" aria-label="새 정간 추가">
+    <b-button @click="add" :aria-label="addLabel">
       <svg
         class="icon"
         aria-hidden="true"
@@ -13,7 +13,7 @@
         />
       </svg>
     </b-button>
-    <b-button @click="del" aria-label="이 정간 삭제">
+    <b-button @click="del" :aria-label="deleteLabel">
       <svg
         class="icon"
         aria-hidden="true"
@@ -32,14 +32,30 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
+import {
+  shapePadAriaLabel,
+  shapePadChange,
+  type ShapePadDelta,
+} from '@/features/shape-pad'
+
 export default defineComponent({
-  emits: { 'shape-change': (type: 'cell', delta: 1 | -1) => true },
+  emits: { 'shape-change': (type: 'cell', delta: ShapePadDelta) => true },
   methods: {
     add() {
-      this.$emit('shape-change', 'cell', +1)
+      const [type, delta] = shapePadChange('cell', +1)
+      this.$emit('shape-change', type, delta)
     },
     del() {
-      this.$emit('shape-change', 'cell', -1)
+      const [type, delta] = shapePadChange('cell', -1)
+      this.$emit('shape-change', type, delta)
+    },
+  },
+  computed: {
+    addLabel() {
+      return shapePadAriaLabel('cell', +1)
+    },
+    deleteLabel() {
+      return shapePadAriaLabel('cell', -1)
     },
   },
 })

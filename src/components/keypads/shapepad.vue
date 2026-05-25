@@ -1,6 +1,6 @@
 <template>
   <b-button-group class="m-1">
-    <b-button @click="add" :aria-label="'새' + label + '추가'">
+    <b-button @click="add" :aria-label="addLabel">
       <svg
         class="icon"
         aria-hidden="true"
@@ -14,7 +14,7 @@
         />
       </svg>
     </b-button>
-    <b-button @click="del" :aria-label="'지금' + label + '삭제'">
+    <b-button @click="del" :aria-label="deleteLabel">
       <svg
         class="icon"
         aria-hidden="true"
@@ -34,25 +34,40 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
+import {
+  shapePadAriaLabel,
+  shapePadChange,
+  shapePadIconTransform,
+  type ShapePadAxisLevel,
+  type ShapePadDelta,
+} from '@/features/shape-pad'
+
 export default defineComponent({
   props: {
-    for: { type: String as PropType<'col' | 'row'>, required: true },
+    for: { type: String as PropType<ShapePadAxisLevel>, required: true },
   },
-  emits: { 'shape-change': (type: 'row' | 'col', delta: 1 | -1) => true },
+  emits: {
+    'shape-change': (type: ShapePadAxisLevel, delta: ShapePadDelta) => true,
+  },
   methods: {
     add() {
-      this.$emit('shape-change', this.for, +1)
+      const [type, delta] = shapePadChange(this.for, +1)
+      this.$emit('shape-change', type, delta)
     },
     del() {
-      this.$emit('shape-change', this.for, -1)
+      const [type, delta] = shapePadChange(this.for, -1)
+      this.$emit('shape-change', type, delta)
     },
   },
   computed: {
-    label() {
-      return this.for === 'col' ? ' 열 ' : ' 행 '
+    addLabel() {
+      return shapePadAriaLabel(this.for, +1)
+    },
+    deleteLabel() {
+      return shapePadAriaLabel(this.for, -1)
     },
     transform() {
-      return this.for === 'col' ? 'rotate(90)' : ''
+      return shapePadIconTransform(this.for)
     },
   },
 })
