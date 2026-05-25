@@ -131,6 +131,7 @@ import { readMusicFile } from './io/file-open'
 import { ActionHistory } from './features/history'
 import { IME } from './features/ime'
 import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
+import { executeKeyboardNavigation } from './features/keyboard-navigation'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
 import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
@@ -476,40 +477,14 @@ export default defineComponent({
         case 'ignore':
           return
         case 'moveUpDown':
-          this.prepareKeyboardSelection(command.select)
-          this.editor.moveUpDown(command.direction)
-          return
         case 'moveLeftRight':
-          this.prepareKeyboardSelection(command.select)
-          this.editor.moveLeftRight(command.direction)
+        case 'discardSelection':
+        case 'home':
+        case 'end':
+          executeKeyboardNavigation(command, this.editor, this.config)
           return
         case 'shapeChange':
           this.shapechange(command.what, command.delta)
-          return
-        case 'discardSelection':
-          this.editor.discardSelection()
-          return
-        case 'home':
-          if (command.rhythmMode) {
-            this.editor.moveRhythm('cell', 0)
-          } else {
-            this.prepareKeyboardSelection(command.select)
-            command.toChapter
-              ? this.editor.move('chapter', 0, 0)
-              : this.editor.moveHome()
-          }
-          return
-        case 'end':
-          if (command.rhythmMode) {
-            const rhythm = this.config.rhythm
-            this.editor.moveRhythm('cell', rhythm.length - 1)
-            this.editor.moveRhythm('row', rhythm[rhythm.length - 1].length - 1)
-          } else {
-            this.prepareKeyboardSelection(command.select)
-            command.toChapter
-              ? this.editor.move('chapter', -1, -1)
-              : this.editor.moveEnd()
-          }
           return
         case 'backspaceSelection':
           this.doWithBackup(
@@ -589,10 +564,6 @@ export default defineComponent({
           this.write('main', YUL_OBJ[this.octave + 3][command.pitchIdx])
           return
       }
-    },
-    prepareKeyboardSelection(select: boolean) {
-      if (!select) this.editor.discardSelection()
-      else if (!this.editor.isSelecting) this.editor.createSelection()
     },
   },
   computed: {
