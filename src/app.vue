@@ -120,11 +120,12 @@ import { makeMidiDownload, makeYamlDownload } from './download'
 import { Music, MusicEditor } from './editor'
 import { ActionHistory } from './history'
 import { IME } from './ime'
+import { getKeyboardCommand, type KeyboardCommand } from './keyboard'
 import { convertToMidi } from './midi'
 import { MusicPlayer } from './player'
 import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
-import { getID, inRange } from './utils'
+import { getID } from './utils'
 import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
 import {
   WORKSPACE_HELP,
@@ -145,20 +146,6 @@ const INIT_CONFIG: Config = {
   padding: 0,
 }
 const MAX_HISTORY = 100
-const PITCH2CODE = [
-  'KeyG',
-  'KeyE',
-  'KeyX',
-  'KeyU',
-  'KeyR',
-  'KeyW',
-  'KeyB',
-  'KeyD',
-  'KeyL',
-  'KeyS',
-  'KeyA',
-  'KeyM',
-]
 
 type HistoryState = {
   cursor: Cursor
@@ -488,218 +475,140 @@ export default defineComponent({
       this.dragging = false
     },
     keypressHandler(e: KeyboardEvent) {
-      if (this.player) return
-
-      switch (e.code) {
-        /* Navigation */
-        case 'ArrowUp':
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          this.editor.moveUpDown('up')
-          break
-        case 'ArrowDown':
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          this.editor.moveUpDown('down')
-          break
-        case 'ArrowLeft':
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          this.editor.moveLeftRight('left')
-          break
-        case 'ArrowRight':
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          this.editor.moveLeftRight('right')
-          break
-        /* Editing */
-        case 'Space':
-          if (this.editor.isSelecting) return
-          if (!e.shiftKey) return
-          if (this.editor.cursor.rhythmMode) return
-          this.shapechange('col', +1)
-          break
-        case 'Enter':
-        case 'NumpadEnter':
-          if (this.editor.isSelecting) return
-
-          if (e.shiftKey) this.shapechange('row', +1)
-          else if (this.editor.cursor.rhythmMode) return
-          else this.shapechange('cell', +1)
-          break
-        case 'Escape':
+      const command = getKeyboardCommand(e, {
+        playerActive: this.player != null,
+        isSelecting: this.editor.isSelecting,
+        rhythmMode: this.editor.cursor.rhythmMode,
+        sigimShow: this.sigimShow,
+        tickIdx: this.tickIdx,
+        imeComposing: !!this.ime.isComposing(),
+        imeGrace: this.ime.grace,
+      })
+      if (command.preventDefault) e.preventDefault()
+      this.executeKeyboardCommand(command)
+    },
+    executeKeyboardCommand(command: KeyboardCommand) {
+      switch (command.type) {
+        case 'ignore':
+          return
+        case 'moveUpDown':
+          this.prepareKeyboardSelection(command.select)
+          this.editor.moveUpDown(command.direction)
+          return
+        case 'moveLeftRight':
+          this.prepareKeyboardSelection(command.select)
+          this.editor.moveLeftRight(command.direction)
+          return
+        case 'shapeChange':
+          this.shapechange(command.what, command.delta)
+          return
+        case 'discardSelection':
           this.editor.discardSelection()
           return
-        case 'Home':
-          if (this.editor.cursor.rhythmMode) {
+        case 'home':
+          if (command.rhythmMode) {
             this.editor.moveRhythm('cell', 0)
-            break
+          } else {
+            this.prepareKeyboardSelection(command.select)
+            command.toChapter
+              ? this.editor.move('chapter', 0, 0)
+              : this.editor.moveHome()
           }
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          e.ctrlKey ? this.editor.move('chapter', 0, 0) : this.editor.moveHome()
-          break
-        case 'End':
-          if (this.editor.cursor.rhythmMode) {
+          return
+        case 'end':
+          if (command.rhythmMode) {
             const rhythm = this.config.rhythm
             this.editor.moveRhythm('cell', rhythm.length - 1)
             this.editor.moveRhythm('row', rhythm[rhythm.length - 1].length - 1)
-            break
-          }
-          if (!e.shiftKey) this.editor.discardSelection()
-          else if (!this.editor.isSelecting) this.editor.createSelection()
-
-          e.ctrlKey
-            ? this.editor.move('chapter', -1, -1)
-            : this.editor.moveEnd()
-          break
-        /* Editing */
-        case 'Backspace':
-          if (this.editor.isSelecting) {
-            this.doWithBackup(
-              this.editor.isEmptyRange()
-                ? mergeActions(
-                    () => this.editor.delRange(),
-                    () => this.editor.backspace()
-                  )
-                : () => this.editor.cutRange()[1]
-            )
-          } else if (this.editor.cursor.rhythmMode) {
-            if (this.tickIdx !== -1) this.erase()
-            else this.shapechange('row', -1)
-          } else if (this.ime.isComposing()) {
-            const where = this.ime.grace ? 'modifier' : 'main'
-            const obj = this.ime.backspace()
-            this.write(where, obj, false)
           } else {
-            this.doWithBackup(() => this.editor.backspace())
-          }
-          break
-        case 'Minus':
-        case 'NumpadSubtract':
-          if (this.editor.cursor.rhythmMode) return
-          if (hasShiftKeyOnly(e)) {
-            if (this.editor.isSelecting) return
-            this.write('modifier', undefined)
-          } else if (!hasModifierKey(e)) {
-            if (this.editor.isSelecting) {
-              this.doWithBackup(() => this.editor.cutRange()[1])
-            } else {
-              this.erase()
-            }
+            this.prepareKeyboardSelection(command.select)
+            command.toChapter
+              ? this.editor.move('chapter', -1, -1)
+              : this.editor.moveEnd()
           }
           return
-        case 'Delete':
-          if (this.editor.isSelecting) {
-            this.doWithBackup(
-              this.editor.isEmptyRange()
-                ? mergeActions(
-                    () => this.editor.delRange(),
-                    () => this.editor.deletekey()
-                  )
-                : () => this.editor.cutRange()[1]
-            )
-          } else if (this.editor.cursor.rhythmMode) {
-            if (this.tickIdx !== -1) this.erase()
-            else this.shapechange('row', -1)
-          } else {
-            this.doWithBackup(() => this.editor.deletekey())
-          }
+        case 'backspaceSelection':
+          this.doWithBackup(
+            this.editor.isEmptyRange()
+              ? mergeActions(
+                  () => this.editor.delRange(),
+                  () => this.editor.backspace()
+                )
+              : () => this.editor.cutRange()[1]
+          )
           return
-
-        /* Lower octave */
-        case 'KeyV':
-          if (hasCtrlKeyOnly(e)) {
-            this.paste()
-            break
-          }
-        // breakthrough
-        case 'Slash':
-        case 'KeyQ':
-        case 'KeyK':
-          if (this.editor.cursor.rhythmMode) return
-          this.writeOctave(-1)
-          break
-
-        /* Raise octave */
-        case 'KeyC':
-          if (hasCtrlKeyOnly(e)) {
-            this.copy()
-            break
-          }
-        // breakthrough
-        case 'Semicolon':
-        case 'KeyT':
-        case 'KeyJ':
-          if (this.editor.cursor.rhythmMode) return
-          this.writeOctave(+1)
+        case 'backspace':
+          this.doWithBackup(() => this.editor.backspace())
           return
-
-        case 'Comma':
-          if (this.editor.cursor.rhythmMode) return
-          if (this.editor.isSelecting) return
+        case 'deleteSelection':
+          this.doWithBackup(
+            this.editor.isEmptyRange()
+              ? mergeActions(
+                  () => this.editor.delRange(),
+                  () => this.editor.deletekey()
+                )
+              : () => this.editor.cutRange()[1]
+          )
+          return
+        case 'deleteForward':
+          this.doWithBackup(() => this.editor.deletekey())
+          return
+        case 'eraseRhythmTick':
+          this.erase()
+          return
+        case 'deleteRhythmRow':
+          this.shapechange('row', -1)
+          return
+        case 'imeBackspace':
+          this.write(command.where, this.ime.backspace(), false)
+          return
+        case 'eraseModifier':
+          this.write('modifier', undefined)
+          return
+        case 'cutSelection':
+          this.doWithBackup(() => this.editor.cutRange()[1])
+          return
+        case 'eraseEntry':
+          this.erase()
+          return
+        case 'paste':
+          this.paste()
+          return
+        case 'copy':
+          this.copy()
+          return
+        case 'octave':
+          this.writeOctave(command.delta)
+          return
+        case 'writeRest':
           this.write('main', REST_OBJ)
           return
-        case 'Equal':
-          if (this.editor.cursor.rhythmMode) return
-          if (e.ctrlKey || e.altKey || e.metaKey) return
-          if (!this.sigimShow) return
-          if (this.editor.isSelecting) return
-          this.writeIME(e.code, true)
-          break
-        case 'Backquote':
-        case 'KeyH':
-        case 'KeyI':
-          if (this.editor.cursor.rhythmMode) return
-          if (!hasShiftKeyOnly(e)) return
-          if (!this.sigimShow) return
-          if (this.editor.isSelecting) return
-          this.writeIME(e.code, true)
-          break
-        default:
-          const prefix = e.code.slice(0, -1)
-          if (prefix === 'Digit' || prefix === 'Numpad') {
-            if (this.editor.isSelecting) return
-            if (hasModifierKey(e) && !hasShiftKeyOnly(e)) return
-            const digit = e.code.slice(-1)
-            if (this.editor.cursor.rhythmMode) {
-              if (e.shiftKey) return
-              if (!inRange(+digit - 1, RHYTHM_OBJ.length)) return
-              this.tickchange(+digit - 1)
-            } else {
-              this.writeIME(digit, e.shiftKey)
-            }
-            break
-          }
-
-          if (e.ctrlKey) {
-            if (e.code === 'KeyZ') {
-              if (e.shiftKey) this.redo()
-              else this.undo()
-            } else if (e.code === 'KeyA' && hasCtrlKeyOnly(e)) {
-              this.editor.selectAll()
-            } else if (e.code === 'KeyX' && hasCtrlKeyOnly(e)) {
-              this.cut()
-            }
-            break
-          }
-
-          if (this.editor.cursor.rhythmMode) return
-          if (hasModifierKey(e) && !hasShiftKeyOnly(e)) return
-          let idxPitch = PITCH2CODE.indexOf(e.code)
-          if (idxPitch !== -1) {
-            if (this.editor.isSelecting) return
-            this.write('main', YUL_OBJ[this.octave + 3][idxPitch])
-            break
-          }
+        case 'writeIme':
+          this.writeIME(command.key, command.shiftKey)
+          return
+        case 'writeRhythmTick':
+          this.tickchange(command.tickIdx)
+          return
+        case 'undo':
+          this.undo()
+          return
+        case 'redo':
+          this.redo()
+          return
+        case 'selectAll':
+          this.editor.selectAll()
+          return
+        case 'cut':
+          this.cut()
+          return
+        case 'writePitch':
+          this.write('main', YUL_OBJ[this.octave + 3][command.pitchIdx])
           return
       }
-      e.preventDefault()
+    },
+    prepareKeyboardSelection(select: boolean) {
+      if (!select) this.editor.discardSelection()
+      else if (!this.editor.isSelecting) this.editor.createSelection()
     },
   },
   computed: {
@@ -766,16 +675,6 @@ export default defineComponent({
     configmodal,
   },
 })
-
-function hasModifierKey(e: KeyboardEvent) {
-  return e.ctrlKey || e.shiftKey || e.altKey || e.metaKey
-}
-function hasCtrlKeyOnly(e: KeyboardEvent) {
-  return e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey
-}
-function hasShiftKeyOnly(e: KeyboardEvent) {
-  return !e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey
-}
 </script>
 
 <style>
