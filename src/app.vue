@@ -122,7 +122,8 @@ import { IME } from './ime'
 import { getKeyboardCommand, type KeyboardCommand } from './keyboard'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './music-export'
 import { MusicPlayer } from './player'
-import { EntryOf, querySymbol, TrillState } from './symbols'
+import { EntryOf, TrillState } from './symbols'
+import { applyModifierTrill } from './trill'
 import { getID } from './utils'
 import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
 import {
@@ -308,11 +309,11 @@ export default defineComponent({
       this.doWithBackup(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
     },
     trillchange(trill: TrillState) {
-      let query = this.editor.get('col').data?.modifier?.query
-      if (query == null) return
-      query = query.replace(/~/g, '')
-      query = (trill.before ? '~' : '') + query + (trill.after ? '~' : '')
-      this.write('modifier', querySymbol('modifier', query, 'key'))
+      const modifier = applyModifierTrill(
+        this.editor.get('col').data?.modifier,
+        trill
+      )
+      if (modifier != null) this.write('modifier', modifier)
     },
     configchange(config: Config, isVisibleChange: boolean) {
       if (!isVisibleChange) {
