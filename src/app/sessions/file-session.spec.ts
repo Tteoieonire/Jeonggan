@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Music } from '../../domain/editor'
+import { Music } from '../../domain/music'
 import type { DownloadPayload } from '../../io/download'
 import { FileSession, type FileSessionDeps } from './file-session'
 

@@ -1,4 +1,4 @@
-import type { MusicEditor } from '../../domain/editor'
+import type { MusicEditor } from '../../domain/music-editor'
 import type { Config, UndoOp } from '../../domain/viewer'
 import type { IME } from '../../features/ime'
 import type { KeyboardCommand } from '../../features/keyboard'

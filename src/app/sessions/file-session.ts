@@ -1,6 +1,6 @@
 import { saveAs } from 'file-saver'
 
-import type { Music } from '../../domain/editor'
+import type { Music } from '../../domain/music'
 import type { DownloadPayload } from '../../io/download'
 import { readMusicFile } from '../../io/file-open'
 import {

@@ -1,7 +1,7 @@
 import type { EntryOf } from '../domain/symbols'
 import { getID } from '../domain/utils'
 import type { Col, Entry, UndoOp } from '../domain/viewer'
-import type { MusicEditor } from '../domain/editor'
+import type { MusicEditor } from '../domain/music-editor'
 
 export type EntryWriteEditor = Pick<
   MusicEditor,

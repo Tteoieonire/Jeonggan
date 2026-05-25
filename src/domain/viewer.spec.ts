@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { YUL_OBJ } from './constants'
 import Cursor from './cursor'
-import { deserializeMusic } from './serializer'
+import { deserializeMusic } from './serialization'
 import { querySymbol } from './symbols'
 import { MusicViewer, SNAP } from './viewer'
 

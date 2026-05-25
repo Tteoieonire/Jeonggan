@@ -1,4 +1,4 @@
-import type { MusicEditor } from '../../domain/editor'
+import type { MusicEditor } from '../../domain/music-editor'
 import { mergeActions, type UndoOp } from '../../domain/viewer'
 import type { KeyboardCommand } from './index'
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor from './cursor'
-import { MusicEditor, MusicSelector } from './editor'
-import { deserializeMusic, serializeMusic } from './serializer'
+import { MusicEditor } from './music-editor'
+import { MusicSelector } from './selector'
+import { deserializeMusic, serializeMusic } from './serialization'
 import { SNAP } from './viewer'
 
 const SAMPLE_YAML = `- title: 양청도드리

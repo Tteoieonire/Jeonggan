@@ -4,7 +4,7 @@ import {
   makeYamlDownload,
   type DownloadPayload,
 } from './download'
-import type { Music } from '../domain/editor'
+import type { Music } from '../domain/music'
 import { convertToMidi } from '../domain/playback'
 import { serializeMusic } from '../domain/serialization'
 

@@ -8,7 +8,8 @@ import {
 import { createEditorHistory, type EditorHistory } from './editor-history'
 import { rhythmTickIndex, YUL_OBJ } from '../../domain/constants'
 import Cursor, { CoordLevel } from '../../domain/cursor'
-import { Music, MusicEditor } from '../../domain/editor'
+import { Music } from '../../domain/music'
+import { MusicEditor } from '../../domain/music-editor'
 import type { EntryOf, TrillState } from '../../domain/symbols'
 import { Chapter, Config, UndoOp } from '../../domain/viewer'
 import {

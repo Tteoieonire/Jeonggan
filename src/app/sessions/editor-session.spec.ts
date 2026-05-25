@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
 import Cursor from '../../domain/cursor'
-import { Music } from '../../domain/editor'
+import { Music } from '../../domain/music'
 import { Chapter, Config } from '../../domain/viewer'
 import { EditorSession } from './editor-session'
 

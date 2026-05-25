@@ -1,5 +1,5 @@
 import Cursor from '../../domain/cursor'
-import type { MusicEditor } from '../../domain/editor'
+import type { MusicEditor } from '../../domain/music-editor'
 
 export type CanvasSelectionEditor = Pick<
   MusicEditor,

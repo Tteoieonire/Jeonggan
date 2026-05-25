@@ -1,6 +1,6 @@
 import { RHYTHM_OBJ } from '../../domain/constants'
 import type { CoordLevel } from '../../domain/cursor'
-import type { MusicEditor } from '../../domain/editor'
+import type { MusicEditor } from '../../domain/music-editor'
 import type { EntryOf } from '../../domain/symbols'
 import type { UndoOp } from '../../domain/viewer'
 import type { ClipboardData } from '../../features/clipboard'

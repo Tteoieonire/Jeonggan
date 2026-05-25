@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import Cursor from '../../domain/cursor'
-import { Music } from '../../domain/editor'
+import { Music } from '../../domain/music'
 import { Chapter, Config } from '../../domain/viewer'
 import {
   captureEditorHistoryState,

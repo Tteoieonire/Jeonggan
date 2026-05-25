@@ -1,5 +1,5 @@
 import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
-import type { MusicEditor } from '../../domain/editor'
+import type { MusicEditor } from '../../domain/music-editor'
 import type { IME } from '../../features/ime'
 import { resolveImeWrite } from '../../features/ime'
 import type { KeyboardCommand } from '../../features/keyboard'
