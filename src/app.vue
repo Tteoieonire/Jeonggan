@@ -113,6 +113,11 @@ import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
 import { makeCanvasLabel } from './features/canvas-label'
+import {
+  moveCanvasCursor,
+  selectCanvasRange,
+  startCanvasDrag,
+} from './features/canvas-selection'
 import { canPaste, type ClipboardData } from './features/clipboard'
 import {
   REST_OBJ,
@@ -261,16 +266,11 @@ export default defineComponent({
     /* Interactions by buttons */
     moveTo(coord: Cursor) {
       if (this.player != null) return
-      this.editor.discardSelection()
-      this.editor.cursor.moveTo(coord)
+      moveCanvasCursor(this.editor, coord)
     },
     selectTo(coord: Cursor) {
       if (this.player != null) return
-      if (this.editor.cursor.rhythmMode || coord.rhythmMode)
-        this.editor.discardSelection()
-      else if (!this.editor.isSelecting) this.editor.createSelection()
-      this.editor.cursor.moveTo(coord)
-      this.editor.normalizeSelection()
+      selectCanvasRange(this.editor, coord)
     },
     discardSelection() {
       this.editor.discardSelection()
@@ -450,14 +450,7 @@ export default defineComponent({
 
     /* Event Handlers */
     pointerDown(coord: Cursor) {
-      if (this.editor.anchor?.isEqualTo(coord, 'cell')) {
-        this.editor.anchor.moveTo(this.editor.cursor)
-        this.editor.cursor.moveTo(coord)
-        this.editor.normalizeSelection()
-      } else if (!this.editor.cursor.isEqualTo(coord, 'cell')) {
-        return // ignore this event
-      }
-      this.dragging = true
+      this.dragging = startCanvasDrag(this.editor, coord)
     },
     pointerOver(coord: Cursor) {
       if (this.dragging) this.selectTo(coord)
