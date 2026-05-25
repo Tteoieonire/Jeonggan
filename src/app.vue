@@ -97,6 +97,7 @@ import initmodal from './components/initmodal.vue'
 
 import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
+import { makeMidiDownload, makeYamlDownload } from './download'
 import { Music, MusicEditor } from './editor'
 import { ActionHistory } from './history'
 import { IME } from './ime'
@@ -403,19 +404,13 @@ export default defineComponent({
     },
     save() {
       const data = serializeMusic(this.music)
-
-      const blob = new Blob([data], { type: 'text/x-yaml' })
-      const filename =
-        this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.yaml'
+      const { blob, filename } = makeYamlDownload(this.music.title, data)
       saveAs(blob, filename)
     },
     async exportMidi() {
       const compiled = convertToMidi(this.music.getPlayer())
       const data = Uint8Array.from(writeMidi(compiled, { running: true }))
-
-      const blob = new Blob([data], { type: 'audio/midi' })
-      const filename =
-        this.music.title.replace('\\s+', '-').replace('\\W+', '') + '.mid'
+      const { blob, filename } = makeMidiDownload(this.music.title, data)
       saveAs(blob, filename)
     },
     undo() {
