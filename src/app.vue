@@ -118,12 +118,13 @@ import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
 import { makeMidiDownload, makeYamlDownload } from './download'
 import { Music, MusicEditor } from './editor'
+import { readMusicFile } from './file-open'
 import { ActionHistory } from './history'
 import { IME } from './ime'
 import { getKeyboardCommand, type KeyboardCommand } from './keyboard'
 import { convertToMidi } from './midi'
 import { MusicPlayer } from './player'
-import { deserializeMusic, serializeMusic } from './serializer'
+import { serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
 import { getID } from './utils'
 import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
@@ -396,22 +397,14 @@ export default defineComponent({
     async open(file: any) {
       this.busy = true
       await nextTick()
-      const reader = new FileReader()
-      reader.addEventListener('load', e => {
-        const result = e.target?.result
-        if (typeof result !== 'string') {
-          this.busy = false
-          return
-        }
-        try {
-          const music = deserializeMusic(result)
-          this.load(music)
-        } catch (error) {
-          this.loadingFailed = true
-        }
+      try {
+        const music = await readMusicFile(file)
+        if (music != null) this.load(music)
+      } catch (error) {
+        this.loadingFailed = true
+      } finally {
         this.busy = false
-      })
-      reader.readAsText(file)
+      }
     },
     save() {
       const data = serializeMusic(this.music)
