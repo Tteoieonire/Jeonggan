@@ -18,7 +18,7 @@ import { RHYTHM_OBJ } from '../../constants'
 
 export default defineComponent({
   props: { tickIdx: { type: Number, required: true } },
-  emits: { tickchange: (i: number) => 0 <= i && i < RHYTHM_OBJ.length },
+  emits: { 'tick-change': (i: number) => 0 <= i && i < RHYTHM_OBJ.length },
   data() {
     return { RHYTHM_OBJ }
   },
@@ -27,7 +27,7 @@ export default defineComponent({
       return this.tickIdx === i
     },
     change(i: number) {
-      this.$emit('tickchange', i)
+      this.$emit('tick-change', i)
     },
   },
 })

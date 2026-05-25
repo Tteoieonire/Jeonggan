@@ -38,13 +38,13 @@ export default defineComponent({
   props: {
     for: { type: String as PropType<'col' | 'row'>, required: true },
   },
-  emits: { shapechange: (type: 'row' | 'col', delta: 1 | -1) => true },
+  emits: { 'shape-change': (type: 'row' | 'col', delta: 1 | -1) => true },
   methods: {
     add() {
-      this.$emit('shapechange', this.for, +1)
+      this.$emit('shape-change', this.for, +1)
     },
     del() {
-      this.$emit('shapechange', this.for, -1)
+      this.$emit('shape-change', this.for, -1)
     },
   },
   computed: {

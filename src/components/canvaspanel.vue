@@ -7,8 +7,8 @@
       :anchor="anchor"
       :cursor="cursor"
       :gak="gak"
-      @moveTo="moveTo"
-      @selectTo="selectTo"
+      @move-to="moveTo"
+      @select-to="selectTo"
       @pointer-down="pointerDown"
       @pointer-over="pointerOver"
     ></gak>
@@ -30,23 +30,23 @@ export default defineComponent({
     gaks: { type: Object as PropType<Gak[]>, required: true },
   },
   emits: {
-    moveTo: (coord: Cursor) => true,
-    selectTo: (coord: Cursor) => true,
-    pointerDown: (coord: Cursor) => true,
-    pointerOver: (coord: Cursor) => true,
+    'move-to': (coord: Cursor) => true,
+    'select-to': (coord: Cursor) => true,
+    'pointer-down': (coord: Cursor) => true,
+    'pointer-over': (coord: Cursor) => true,
   },
   methods: {
     moveTo(coord: Cursor) {
-      this.$emit('moveTo', coord)
+      this.$emit('move-to', coord)
     },
     selectTo(coord: Cursor) {
-      this.$emit('selectTo', coord)
+      this.$emit('select-to', coord)
     },
     pointerDown(coord: Cursor) {
-      this.$emit('pointerDown', coord)
+      this.$emit('pointer-down', coord)
     },
     pointerOver(coord: Cursor) {
-      this.$emit('pointerOver', coord)
+      this.$emit('pointer-over', coord)
     },
   },
   components: { gak },

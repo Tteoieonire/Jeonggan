@@ -19,8 +19,8 @@
         :content="x"
         :coord="coordWith(r, c)"
         :cursor="cursor"
-        @moveTo="moveTo"
-        @selectTo="selectTo"
+        @move-to="moveTo"
+        @select-to="selectTo"
         class="mycol"
       >
       </el>
@@ -43,10 +43,10 @@ export default defineComponent({
     cursor: { type: Object as PropType<Cursor> },
   },
   emits: {
-    moveTo: (coord: Cursor) => true,
-    selectTo: (coord: Cursor) => true,
-    pointerDown: (coord: Cursor) => true,
-    pointerOver: (coord: Cursor) => true,
+    'move-to': (coord: Cursor) => true,
+    'select-to': (coord: Cursor) => true,
+    'pointer-down': (coord: Cursor) => true,
+    'pointer-over': (coord: Cursor) => true,
   },
   methods: {
     getRowStyle(row: Row) {
@@ -63,17 +63,17 @@ export default defineComponent({
       return coord
     },
     moveTo(coord: Cursor) {
-      this.$emit('moveTo', coord)
+      this.$emit('move-to', coord)
     },
     selectTo(coord: Cursor) {
-      this.$emit('selectTo', coord)
+      this.$emit('select-to', coord)
     },
     pointerDown(e: PointerEvent) {
       ;(e.target as any).releasePointerCapture(e.pointerId)
-      this.$emit('pointerDown', this.coord)
+      this.$emit('pointer-down', this.coord)
     },
     pointerOver() {
-      this.$emit('pointerOver', this.coord)
+      this.$emit('pointer-over', this.coord)
     },
   },
   computed: {

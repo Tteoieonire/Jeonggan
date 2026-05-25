@@ -37,6 +37,7 @@ const MAIN: Record<string, MainSymbolEntry> = labelMainTable({
   '53': { pitches: [5, 3], text: '뒷시김새너나표' },
   '210': { pitches: [2, 1, 0], text: '뒷시김새네로나표' },
   '234': { pitches: [2, 3, 4], text: '뒷시김새느나니표' },
+  '454': { pitches: [4, 5, 4], text: '뒷시김새느니르표' },
   '432': { pitches: [4, 3, 2], text: '뒷시김새니로나표' },
   '543': { pitches: [5, 4, 3], text: '뒷시김새니레나표' },
   '2123': { pitches: [2, 1, 2, 3], text: '뒷시김새노라느니표' },

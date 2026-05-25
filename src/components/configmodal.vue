@@ -100,8 +100,8 @@ const SCALE = YUL_OBJ[3].map(x => x.label)
 export default defineComponent({
   props: { config: { type: Object as PropType<Config>, required: true } },
   emits: {
-    configchange: (config: Config, visible: boolean) => true,
-    deletechapter: () => true,
+    'config-change': (config: Config, visible: boolean) => true,
+    'delete-chapter': () => true,
   },
   data() {
     return {
@@ -139,7 +139,7 @@ export default defineComponent({
           .sort((a: number, b: number) => a - b),
         rhythm,
       }
-      this.$emit('configchange', config, true)
+      this.$emit('config-change', config, true)
     },
     reset() {
       if (!this.config) return
@@ -151,7 +151,7 @@ export default defineComponent({
       this.scale = this.config.scale.map(i => SCALE[i])
     },
     deletechapter() {
-      this.$emit('deletechapter')
+      this.$emit('delete-chapter')
     },
   },
   computed: {

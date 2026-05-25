@@ -2,11 +2,11 @@
   <!-- 하단 키 패널 -->
   <b-button-toolbar key-nav class="panel">
     <div v-if="rhythmMode" class="flex">
-      <rhythmpad :tickIdx="tickIdx" @tickchange="tickchange" />
+      <rhythmpad :tick-idx="tickIdx" @tick-change="tickchange" />
       <b-button @click="erase" aria-label="지우개" class="m-1">
         <font-awesome-icon icon="eraser" />
       </b-button>
-      <shapepad for="row" @shapechange="shapechange" />
+      <shapepad for="row" @shape-change="shapechange" />
     </div>
     <div v-else class="flex">
       <yulpad
@@ -14,7 +14,7 @@
         :scale="scale"
         :octave="octave"
         @write="write"
-        @octavechange="octavechange"
+        @octave-change="octavechange"
       />
 
       <div style="order: 3">
@@ -22,19 +22,19 @@
           <font-awesome-icon icon="eraser" />
         </b-button>
 
-        <cellpad @shapechange="shapechange"></cellpad>
-        <shapepad for="row" @shapechange="shapechange" />
-        <shapepad for="col" @shapechange="shapechange" />
+        <cellpad @shape-change="shapechange"></cellpad>
+        <shapepad for="row" @shape-change="shapechange" />
+        <shapepad for="col" @shape-change="shapechange" />
       </div>
 
       <div style="order: 1">
         <!-- TODO: 주법 -->
         <sympad
-          :sigimShow="sigimShow"
-          :trillShow="trillShow"
+          :sigim-show="sigimShow"
+          :trill-show="trillShow"
           :trill="trill"
           @write="write"
-          @trillchange="trillchange"
+          @trill-change="trillchange"
           type="modifier"
         />
         <sympad @write="write" type="main" />
@@ -81,10 +81,10 @@ export default defineComponent({
     write: (where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) =>
       true,
     erase: () => true,
-    shapechange: (type: 'cell' | 'row' | 'col', delta: 1 | -1) => true,
-    octavechange: (delta: 1 | -1) => true,
-    tickchange: (tickIdx: number) => true,
-    trillchange: (trill: TrillState) => true,
+    'shape-change': (type: 'cell' | 'row' | 'col', delta: 1 | -1) => true,
+    'octave-change': (delta: 1 | -1) => true,
+    'tick-change': (tickIdx: number) => true,
+    'trill-change': (trill: TrillState) => true,
   },
   methods: {
     write(where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) {
@@ -94,16 +94,16 @@ export default defineComponent({
       this.$emit('erase')
     },
     shapechange(type: 'cell' | 'row' | 'col', delta: 1 | -1) {
-      this.$emit('shapechange', type, delta)
+      this.$emit('shape-change', type, delta)
     },
     octavechange(delta: 1 | -1) {
-      this.$emit('octavechange', delta)
+      this.$emit('octave-change', delta)
     },
     tickchange(tickIdx: number) {
-      this.$emit('tickchange', tickIdx)
+      this.$emit('tick-change', tickIdx)
     },
     trillchange(trill: TrillState) {
-      this.$emit('trillchange', trill)
+      this.$emit('trill-change', trill)
     },
   },
   components: {

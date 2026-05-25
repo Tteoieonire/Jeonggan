@@ -51,7 +51,7 @@ export default defineComponent({
     write(where: 'main' | 'modifier', obj: MainEntry | ModifierEntry) {
       return true
     },
-    octavechange: (delta: 1 | -1) => true,
+    'octave-change': (delta: 1 | -1) => true,
   },
   methods: {
     rest() {
@@ -62,10 +62,10 @@ export default defineComponent({
       this.$emit('write', 'main', obj)
     },
     lower() {
-      if (this.octave > -3) this.$emit('octavechange', -1)
+      if (this.octave > -3) this.$emit('octave-change', -1)
     },
     raise() {
-      if (this.octave < 3) this.$emit('octavechange', +1)
+      if (this.octave < 3) this.$emit('octave-change', +1)
     },
   },
   computed: {

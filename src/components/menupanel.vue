@@ -85,7 +85,7 @@
           >새 장 추가</b-button
         >
 
-        <b-dropdown no-caret right>
+        <b-dropdown no-caret placement="bottom-end">
           <template #button-content>
             <span aria-label="그 밖의 명령 목록">
               <font-awesome-icon icon="ellipsis-v" />
@@ -126,13 +126,13 @@ export default defineComponent({
     paste: () => true,
     undo: () => true,
     redo: () => true,
-    addchapter: () => true,
+    'add-chapter': () => true,
     play: (mode: 'resume' | 'pause' | 'stop') => true,
-    exportMidi: () => true,
+    'export-midi': () => true,
   },
   methods: {
     addchapter() {
-      this.$emit('addchapter')
+      this.$emit('add-chapter')
     },
     resume() {
       this.$emit('play', 'resume')
@@ -155,7 +155,7 @@ export default defineComponent({
       this.$emit('save')
     },
     exportMidi() {
-      this.$emit('exportMidi')
+      this.$emit('export-midi')
     },
     cut() {
       this.$emit('cut')

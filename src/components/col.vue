@@ -20,18 +20,21 @@ export default defineComponent({
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
   },
-  emits: { moveTo: (coord: Cursor) => true, selectTo: (coord: Cursor) => true },
+  emits: {
+    'move-to': (coord: Cursor) => true,
+    'select-to': (coord: Cursor) => true,
+  },
   methods: {
     moveOrSelectTo(e: MouseEvent) {
       if (e.shiftKey) {
-        this.$emit('selectTo', this.coord)
+        this.$emit('select-to', this.coord)
         return
       }
       if (this.anchor != null) {
         if (this.anchor.isEqualTo(this.coord, 'cell')) return
         if (this.cursor?.isEqualTo(this.coord, 'cell')) return
       }
-      this.$emit('moveTo', this.coord)
+      this.$emit('move-to', this.coord)
     },
   },
   computed: {

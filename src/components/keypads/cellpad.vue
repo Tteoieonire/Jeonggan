@@ -33,13 +33,13 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  emits: { shapechange: (type: 'cell', delta: 1 | -1) => true },
+  emits: { 'shape-change': (type: 'cell', delta: 1 | -1) => true },
   methods: {
     add() {
-      this.$emit('shapechange', 'cell', +1)
+      this.$emit('shape-change', 'cell', +1)
     },
     del() {
-      this.$emit('shapechange', 'cell', -1)
+      this.$emit('shape-change', 'cell', -1)
     },
   },
 })

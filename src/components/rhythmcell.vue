@@ -26,7 +26,7 @@ export default defineComponent({
     cursor: { type: Object as PropType<Cursor> },
   },
   emits: {
-    moveTo: (coord: Cursor) => true,
+    'move-to': (coord: Cursor) => true,
   },
   methods: {
     coordWith(r: number): Cursor {
@@ -36,7 +36,7 @@ export default defineComponent({
     },
     moveRhythm(e: MouseEvent, row: number) {
       // if (e.shiftKey) TODO
-      this.$emit('moveTo', this.coordWith(row))
+      this.$emit('move-to', this.coordWith(row))
     },
   },
   computed: {

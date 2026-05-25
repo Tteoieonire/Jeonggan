@@ -1,6 +1,11 @@
 <template>
   <b-button-group class="m-1 aaa">
-    <b-dropdown :text="label" dropup :disabled="disabled" @keydown.stop>
+    <b-dropdown
+      :text="label"
+      placement="top-start"
+      :disabled="disabled"
+      @keydown.stop
+    >
       <div v-for="(group, i) in SYMBOL" :key="i" class="sympad-flex">
         <b-dropdown-item-button
           v-for="(obj, j) in group"
@@ -106,7 +111,7 @@ export default defineComponent({
   },
   emits: {
     write: (type: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) => true,
-    trillchange: (trillState: TrillState) => true,
+    'trill-change': (trillState: TrillState) => true,
   },
   methods: {
     write(obj?: MainEntry | ModifierEntry | Record<'text' | 'label', string>) {
@@ -114,13 +119,13 @@ export default defineComponent({
       this.$emit('write', this.type, obj)
     },
     toggleTrillBefore() {
-      this.$emit('trillchange', {
+      this.$emit('trill-change', {
         before: !this.trill?.before,
         after: this.trill?.after,
       })
     },
     toggleTrillAfter() {
-      this.$emit('trillchange', {
+      this.$emit('trill-change', {
         before: this.trill?.before,
         after: !this.trill?.after,
       })

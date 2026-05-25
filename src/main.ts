@@ -1,9 +1,9 @@
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 import './style.css'
 
-import BootstrapVue3 from 'bootstrap-vue-3'
 import { createApp } from 'vue'
+import { createBootstrap } from 'bootstrap-vue-next'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
@@ -45,7 +45,9 @@ library.add(
   faXmark
 )
 
-createApp(MyApp)
-  .use(BootstrapVue3)
+const app = createApp(MyApp)
+
+app
+  .use(createBootstrap())
   .component('font-awesome-icon', FontAwesomeIcon)
   .mount('#app')

@@ -1,82 +1,84 @@
 <template>
-  <menupanel
-    :rhythmMode="editor.cursor.rhythmMode"
-    :playing="player?.playing"
-    :undoable="undoable"
-    :redoable="redoable"
-    :pastable="pastable"
-    @addchapter="addchapter"
-    @play="play"
-    @open="open"
-    @save="save"
-    @exportMidi="exportMidi"
-    @cut="cut"
-    @copy="copy"
-    @paste="paste"
-    @undo="undo"
-    @redo="redo"
-    id="menubar"
-  ></menupanel>
-  <keypanel
-    v-if="!player"
-    :tickIdx="tickIdx"
-    :rhythmMode="editor.cursor.rhythmMode"
-    :sigimShow="sigimShow"
-    :trillShow="trillShow"
-    :scale="config.scale"
-    :octave="octave"
-    :trill="trill"
-    @write="write"
-    @erase="erase"
-    @shapechange="shapechange"
-    @octavechange="octavechange"
-    @tickchange="tickchange"
-    @trillchange="trillchange"
-    id="keypanel"
-  ></keypanel>
-  <div id="workspace" tabIndex="0" :aria-label="canvasLabel">
-    <b-overlay :show="busy" variant="dark">
-      <canvaspanel
-        :title="music.title"
-        :cursor="player?.cursor || editor.cursor"
-        :anchor="player ? undefined : editor.anchor"
-        :gaks="gaks"
-        @moveTo="moveTo"
-        @selectTo="selectTo"
-        @pointer-down="pointerDown"
-        @pointer-over="pointerOver"
-      ></canvaspanel>
-    </b-overlay>
-  </div>
-  <configmodal
-    :config="config"
-    @configchange="configchange"
-    @deletechapter="deletechapter"
-    @keydown.stop
-  ></configmodal>
-  <initmodal :title="music.title" @init="create" @keydown.stop></initmodal>
-  <globalmodal
-    :title="music.title"
-    :instrument="music.instrument"
-    @rename="rename"
-    @keydown.stop
-  ></globalmodal>
-  <b-alert
-    v-model="loadingFailed"
-    class="position-fixed fixed-top mr-0"
-    style="z-index: 1000"
-    variant="warning"
-    dismissible
-  >
-    파일을 열지 못했습니다. 문제가 계속되는 경우
-    <b-link href="https://github.com/Tteoieonire/Jeonggan/issues/new/choose"
-      >게시판</b-link
+  <b-app>
+    <menupanel
+      :rhythm-mode="editor.cursor.rhythmMode"
+      :playing="player?.playing"
+      :undoable="undoable"
+      :redoable="redoable"
+      :pastable="pastable"
+      @add-chapter="addchapter"
+      @play="play"
+      @open="open"
+      @save="save"
+      @export-midi="exportMidi"
+      @cut="cut"
+      @copy="copy"
+      @paste="paste"
+      @undo="undo"
+      @redo="redo"
+      id="menubar"
+    ></menupanel>
+    <keypanel
+      v-if="!player"
+      :tick-idx="tickIdx"
+      :rhythm-mode="editor.cursor.rhythmMode"
+      :sigim-show="sigimShow"
+      :trill-show="trillShow"
+      :scale="config.scale"
+      :octave="octave"
+      :trill="trill"
+      @write="write"
+      @erase="erase"
+      @shape-change="shapechange"
+      @octave-change="octavechange"
+      @tick-change="tickchange"
+      @trill-change="trillchange"
+      id="keypanel"
+    ></keypanel>
+    <div id="workspace" tabindex="0" :aria-label="canvasLabel">
+      <b-overlay :show="busy" variant="dark">
+        <canvaspanel
+          :title="music.title"
+          :cursor="player?.cursor || editor.cursor"
+          :anchor="player ? undefined : editor.anchor"
+          :gaks="gaks"
+          @move-to="moveTo"
+          @select-to="selectTo"
+          @pointer-down="pointerDown"
+          @pointer-over="pointerOver"
+        ></canvaspanel>
+      </b-overlay>
+    </div>
+    <configmodal
+      :config="config"
+      @config-change="configchange"
+      @delete-chapter="deletechapter"
+      @keydown.stop
+    ></configmodal>
+    <initmodal :title="music.title" @init="create" @keydown.stop></initmodal>
+    <globalmodal
+      :title="music.title"
+      :instrument="music.instrument"
+      @rename="rename"
+      @keydown.stop
+    ></globalmodal>
+    <b-alert
+      v-model="loadingFailed"
+      class="position-fixed fixed-top me-0"
+      style="z-index: 1000"
+      variant="warning"
+      dismissible
     >
-    또는 메일(<b-link
-      href="mailto:ieay4a@gmail.com?subject=[정간보]%20파일%20열기%20문제%20문의"
-      >ieay4a@gmail.com</b-link
-    >)로 문의 주세요.
-  </b-alert>
+      파일을 열지 못했습니다. 문제가 계속되는 경우
+      <b-link href="https://github.com/Tteoieonire/Jeonggan/issues/new/choose"
+        >게시판</b-link
+      >
+      또는 메일(<b-link
+        href="mailto:ieay4a@gmail.com?subject=[정간보]%20파일%20열기%20문제%20문의"
+        >ieay4a@gmail.com</b-link
+      >)로 문의 주세요.
+    </b-alert>
+  </b-app>
 </template>
 
 <script lang="ts">
