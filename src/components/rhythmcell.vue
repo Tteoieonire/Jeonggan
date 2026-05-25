@@ -18,6 +18,11 @@
 import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/domain/cursor'
+import {
+  coordInCanvasRhythmCell,
+  getCanvasRhythmCellRowStyle,
+  getCanvasRhythmTickStates,
+} from '@/features/canvas-rhythm-cell'
 
 export default defineComponent({
   props: {
@@ -30,9 +35,7 @@ export default defineComponent({
   },
   methods: {
     coordWith(r: number): Cursor {
-      const coord = this.coord.clone()
-      coord.row = r
-      return coord
+      return coordInCanvasRhythmCell(this.coord, r)
     },
     moveRhythm(e: MouseEvent, row: number) {
       // if (e.shiftKey) TODO
@@ -41,14 +44,13 @@ export default defineComponent({
   },
   computed: {
     rowStyle() {
-      return {
-        fontSize: 2 * Math.exp(-0.2 * this.ticks.length) + 'rem',
-        lineHeight: 3.5 / this.ticks.length + 'rem',
-      }
+      return getCanvasRhythmCellRowStyle(this.ticks.length)
     },
     isCur(): boolean[] {
-      return this.ticks.map(
-        (tick, i) => !!this.cursor?.isEqualTo(this.coordWith(i), 'row')
+      return getCanvasRhythmTickStates(
+        this.ticks.length,
+        this.coord,
+        this.cursor
       )
     },
   },
