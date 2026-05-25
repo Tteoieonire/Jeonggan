@@ -131,13 +131,14 @@ import { readMusicFile } from './io/file-open'
 import { ActionHistory } from './features/history'
 import { IME } from './features/ime'
 import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
+import { getKeyboardEditUndo } from './features/keyboard-edit'
 import { executeKeyboardNavigation } from './features/keyboard-navigation'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
 import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
 import { applyModifierTrill } from './features/trill'
 import { getID } from './domain/utils'
-import { Chapter, Config, mergeActions, UndoOp } from './domain/viewer'
+import { Chapter, Config, UndoOp } from './domain/viewer'
 import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,
@@ -487,30 +488,11 @@ export default defineComponent({
           this.shapechange(command.what, command.delta)
           return
         case 'backspaceSelection':
-          this.doWithBackup(
-            this.editor.isEmptyRange()
-              ? mergeActions(
-                  () => this.editor.delRange(),
-                  () => this.editor.backspace()
-                )
-              : () => this.editor.cutRange()[1]
-          )
-          return
         case 'backspace':
-          this.doWithBackup(() => this.editor.backspace())
-          return
         case 'deleteSelection':
-          this.doWithBackup(
-            this.editor.isEmptyRange()
-              ? mergeActions(
-                  () => this.editor.delRange(),
-                  () => this.editor.deletekey()
-                )
-              : () => this.editor.cutRange()[1]
-          )
-          return
         case 'deleteForward':
-          this.doWithBackup(() => this.editor.deletekey())
+        case 'cutSelection':
+          this.doWithBackup(getKeyboardEditUndo(command, this.editor))
           return
         case 'eraseRhythmTick':
           this.erase()
@@ -523,9 +505,6 @@ export default defineComponent({
           return
         case 'eraseModifier':
           this.write('modifier', undefined)
-          return
-        case 'cutSelection':
-          this.doWithBackup(() => this.editor.cutRange()[1])
           return
         case 'eraseEntry':
           this.erase()
