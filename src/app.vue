@@ -115,7 +115,6 @@ import { bindEditorDocumentEvents } from './app/document-listeners'
 import { EditorSession } from './app/editor-session'
 import { FileSession } from './app/file-session'
 import { PlaybackSession } from './app/playback-session'
-import { makeCanvasLabel } from './features/canvas-label'
 import Cursor, { CoordLevel } from './domain/cursor'
 import { Music, MusicEditor } from './domain/editor'
 import { EntryOf, TrillState } from './domain/symbols'
@@ -294,13 +293,13 @@ export default defineComponent({
       return formatWorkspaceKeyShortcuts()
     },
     gaks() {
-      return this.music.asGaks()
+      return this.session.gaks
     },
     undoable(): boolean {
-      return this.player == null && this.session.undoable
+      return this.session.canUndo(this.player != null)
     },
     redoable(): boolean {
-      return this.player == null && this.session.redoable
+      return this.session.canRedo(this.player != null)
     },
     pastable(): boolean {
       return this.session.pastable
@@ -309,14 +308,7 @@ export default defineComponent({
       return this.session.trillShow
     },
     canvasLabel(): string {
-      if (this.player) return makeCanvasLabel({ playing: true })
-      return makeCanvasLabel({
-        cursor: this.editor.cursor,
-        config: this.config,
-        numRows: this.editor.get('cell').data.length,
-        numCols: this.editor.get('row').data.length,
-        col: this.editor.get('col'),
-      })
+      return this.session.canvasLabel(this.player != null)
     },
   },
   created() {

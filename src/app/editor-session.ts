@@ -15,6 +15,7 @@ import {
   selectCanvasRange,
   startCanvasDrag,
 } from '../features/canvas-selection'
+import { makeCanvasLabel } from '../features/canvas-label'
 import { canPaste, type ClipboardData } from '../features/clipboard'
 import { getEntryWriteUndo } from '../features/entry-write'
 import { ActionHistory } from '../features/history'
@@ -90,8 +91,16 @@ export class EditorSession {
     return this.history.undoable
   }
 
+  canUndo(playerActive: boolean): boolean {
+    return !playerActive && this.undoable
+  }
+
   get redoable(): boolean {
     return this.history.redoable
+  }
+
+  canRedo(playerActive: boolean): boolean {
+    return !playerActive && this.redoable
   }
 
   get pastable(): boolean {
@@ -103,11 +112,26 @@ export class EditorSession {
     )
   }
 
+  get gaks() {
+    return this.music.asGaks()
+  }
+
   get trillShow(): TrillState {
     return {
       before: this.trill && this.trill.before != null,
       after: this.trill && this.trill.after != null,
     }
+  }
+
+  canvasLabel(playerActive: boolean): string {
+    if (playerActive) return makeCanvasLabel({ playing: true })
+    return makeCanvasLabel({
+      cursor: this.editor.cursor,
+      config: this.config,
+      numRows: this.editor.get('cell').data.length,
+      numCols: this.editor.get('row').data.length,
+      col: this.editor.get('col'),
+    })
   }
 
   moveTo(coord: Cursor): void {

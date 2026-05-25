@@ -53,6 +53,22 @@ describe('EditorSession', () => {
     expect(session.editor.get('col').data.main).toEqual(YUL_OBJ[3][2])
   })
 
+  it('exposes derived editor state for the Vue adapter', () => {
+    const session = new EditorSession()
+
+    expect(session.gaks).toEqual(session.music.asGaks())
+    expect(session.canvasLabel(false)).toContain('황종, 초장 1각 1번째 정간')
+    expect(session.canvasLabel(true)).toBe('')
+
+    session.write('main', REST_OBJ)
+    expect(session.canUndo(false)).toBe(true)
+    expect(session.canUndo(true)).toBe(false)
+
+    session.undo()
+    expect(session.canRedo(false)).toBe(true)
+    expect(session.canRedo(true)).toBe(false)
+  })
+
   it('keeps octave and clipboard when loading different music', () => {
     const session = new EditorSession()
     session.changeOctave(1)
