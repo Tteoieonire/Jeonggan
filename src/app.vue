@@ -134,6 +134,7 @@ import { getKeyboardCommand, type KeyboardCommand } from './features/keyboard'
 import { getKeyboardEditUndo } from './features/keyboard-edit'
 import { executeKeyboardNavigation } from './features/keyboard-navigation'
 import { makeMusicMidiDownload, makeMusicYamlDownload } from './io/music-export'
+import { resolveOctaveChange } from './features/octave'
 import { MusicPlayer } from './domain/player'
 import { EntryOf, TrillState } from './domain/symbols'
 import { applyModifierTrill } from './features/trill'
@@ -441,13 +442,10 @@ export default defineComponent({
     },
     writeOctave(delta: 1 | -1) {
       const main = this.editor.get('col').data.main
-      if (main == null || 'pitches' in main) return this.octavechange(delta)
-
-      const destOctave = main.octave + delta
-      if (destOctave < -3 || 3 < destOctave) return
-      this.octave = destOctave
-
-      this.write('main', YUL_OBJ[destOctave + 3][main.yul])
+      const change = resolveOctaveChange(main, this.octave, delta)
+      if (change.type === 'none') return
+      this.octave = change.octave
+      if (change.type === 'writeMain') this.write('main', change.main)
     },
 
     /* Event Handlers */
