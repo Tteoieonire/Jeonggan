@@ -35,7 +35,12 @@
       @trill-change="trillchange"
       id="keypanel"
     ></keypanel>
-    <div id="workspace" tabindex="0" :aria-label="canvasLabel">
+    <div
+      id="workspace"
+      tabindex="0"
+      aria-label="정간보 편집기"
+      aria-describedby="canvas-status"
+    >
       <b-overlay :show="busy" variant="dark">
         <canvaspanel
           :title="music.title"
@@ -48,6 +53,15 @@
           @pointer-over="pointerOver"
         ></canvaspanel>
       </b-overlay>
+    </div>
+    <div
+      id="canvas-status"
+      class="visually-hidden"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {{ canvasLabel }}
     </div>
     <configmodal
       :config="config"
