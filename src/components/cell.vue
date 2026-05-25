@@ -32,7 +32,13 @@
 import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/domain/cursor'
-import { Cell, Row } from '@/domain/viewer'
+import { Cell } from '@/domain/viewer'
+import {
+  coordInCanvasCell,
+  getCanvasCellRowStyle,
+  isCanvasCellHandle,
+  isCanvasCellSelected,
+} from '@/features/canvas-cell'
 import col from './col.vue'
 
 export default defineComponent({
@@ -49,18 +55,11 @@ export default defineComponent({
     'pointer-over': (coord: Cursor) => true,
   },
   methods: {
-    getRowStyle(row: Row) {
-      const longest = Math.max(this.rows.length, row.data.length)
-      return {
-        fontSize: 2 * Math.exp(-0.3 * longest) + 'rem',
-        height: 100 / this.rows.length + '%',
-      }
+    getRowStyle(row: Cell['data'][number]) {
+      return getCanvasCellRowStyle(this.rows.length, row.data.length)
     },
     coordWith(r: number, c: number): Cursor {
-      const coord = this.coord.clone()
-      coord.row = r
-      coord.col = c
-      return coord
+      return coordInCanvasCell(this.coord, r, c)
     },
     moveTo(coord: Cursor) {
       this.$emit('move-to', coord)
@@ -81,14 +80,10 @@ export default defineComponent({
       return this.cell.data
     },
     isSel(): boolean {
-      if (this.anchor == null || this.cursor == null) return false
-      return this.coord.isBetween(this.anchor, this.cursor, 'cell')
+      return isCanvasCellSelected(this.coord, this.anchor, this.cursor)
     },
     isHandle(): boolean {
-      return !!(
-        this.anchor?.isEqualTo(this.coord, 'cell') ||
-        this.cursor?.isEqualTo(this.coord, 'cell')
-      )
+      return isCanvasCellHandle(this.coord, this.anchor, this.cursor)
     },
   },
   components: {
