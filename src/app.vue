@@ -95,6 +95,7 @@ import configmodal from './components/configmodal.vue'
 import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
+import { makeCanvasLabel } from './canvas-label'
 import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
 import { makeMidiDownload, makeYamlDownload } from './download'
@@ -705,32 +706,14 @@ export default defineComponent({
       }
     },
     canvasLabel(): string {
-      if (this.player) return ''
-      const chapterName = this.config.name
-      if (this.editor.cursor.rhythmMode) {
-        return (
-          (this.config.rhythm[this.editor.cursor.cell] || '빈 박') +
-          `, ${chapterName} 장단 ${this.editor.cursor.cell + 1}번째 정간`
-        )
-      }
-
-      let pos = this.editor.cursor.cell
-      const gak = Math.floor(
-        (pos + this.config.padding) / this.config.rhythm.length
-      )
-      if (gak > 0) pos = (pos + this.config.padding) % this.config.rhythm.length
-
-      const numRows = this.editor.get('cell').data.length
-      const numCols = this.editor.get('row').data.length
-      const col = this.editor.get('col')
-      const main = col.data?.main?.label ?? '빈칸'
-      const modifier = col.data?.modifier?.label ?? ''
-      return (
-        `${main} ${modifier}, ` +
-        `${chapterName} ${gak + 1}각 ${pos + 1}번째 정간, ` +
-        `${numRows}행 중 ${this.editor.cursor.row + 1}행, ` +
-        `${numCols}열 중 ${this.editor.cursor.col + 1}열`
-      )
+      if (this.player) return makeCanvasLabel({ playing: true })
+      return makeCanvasLabel({
+        cursor: this.editor.cursor,
+        config: this.config,
+        numRows: this.editor.get('cell').data.length,
+        numCols: this.editor.get('row').data.length,
+        col: this.editor.get('col'),
+      })
     },
   },
   created() {
