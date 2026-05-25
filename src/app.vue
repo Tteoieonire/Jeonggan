@@ -38,8 +38,9 @@
     <div
       id="workspace"
       tabindex="0"
-      aria-label="정간보 편집기"
-      aria-describedby="canvas-status"
+      :aria-label="workspaceLabel"
+      aria-describedby="workspace-help canvas-status"
+      :aria-keyshortcuts="workspaceKeyShortcuts"
     >
       <b-overlay :show="busy" variant="dark">
         <canvaspanel
@@ -53,6 +54,9 @@
           @pointer-over="pointerOver"
         ></canvaspanel>
       </b-overlay>
+    </div>
+    <div id="workspace-help" class="visually-hidden">
+      {{ workspaceHelp }}
     </div>
     <div
       id="canvas-status"
@@ -122,6 +126,11 @@ import { deserializeMusic, serializeMusic } from './serializer'
 import { EntryOf, querySymbol, TrillState } from './symbols'
 import { getID, inRange } from './utils'
 import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
+import {
+  WORKSPACE_HELP,
+  WORKSPACE_LABEL,
+  workspaceKeyShortcuts as formatWorkspaceKeyShortcuts,
+} from './workspace-accessibility'
 
 /**
  * Controller
@@ -694,6 +703,15 @@ export default defineComponent({
     },
   },
   computed: {
+    workspaceLabel(): string {
+      return WORKSPACE_LABEL
+    },
+    workspaceHelp(): string {
+      return WORKSPACE_HELP
+    },
+    workspaceKeyShortcuts(): string {
+      return formatWorkspaceKeyShortcuts()
+    },
     gaks() {
       return this.music.asGaks()
     },
