@@ -1,5 +1,6 @@
 import type { InstrumentName } from 'soundfont-player'
 
+import { createEditorHistory, type EditorHistory } from './editor-history'
 import {
   REST_OBJ,
   RHYTHM_OBJ,
@@ -18,7 +19,6 @@ import {
 import { makeCanvasLabel } from '../features/canvas-label'
 import { canPaste, type ClipboardData } from '../features/clipboard'
 import { getEntryWriteUndo } from '../features/entry-write'
-import { ActionHistory } from '../features/history'
 import { IME } from '../features/ime'
 import { resolveImeWrite } from '../features/ime-write'
 import {
@@ -41,12 +41,6 @@ const INIT_CONFIG: Config = {
   scale: [0, 2, 5, 7, 9],
   padding: 0,
 }
-const MAX_HISTORY = 100
-
-type HistoryState = {
-  cursor: Cursor
-  anchor: Cursor | undefined
-}
 
 export type EditorSessionHooks = {
   requestFocus?: () => void
@@ -61,7 +55,7 @@ export class EditorSession {
   trill: TrillState = {}
   tickIdx = -1
   ime = new IME()
-  history!: ActionHistory<HistoryState>
+  history!: EditorHistory
   clipboard: ClipboardData | undefined
   private dragging = false
 
@@ -396,7 +390,11 @@ export class EditorSession {
   private replaceMusic(music: Music): void {
     this.music = music
     this.editor = this.music.getEditor()
-    this.history = this.createHistory()
+    this.history = createEditorHistory(this.editor, () => {
+      this.updateSympad()
+      this.updateRhythm()
+      this.hooks.requestFocus?.()
+    })
     this.dragging = false
     this.updateChapter()
     this.updateRhythm()
@@ -410,25 +408,6 @@ export class EditorSession {
     })
     this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
     this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
-  }
-
-  private createHistory(): ActionHistory<HistoryState> {
-    return new ActionHistory(
-      () => ({
-        cursor: this.editor.cursor.clone(),
-        anchor: this.editor.anchor?.clone(),
-      }),
-      state => {
-        this.editor.anchor = state.anchor?.clone()
-        this.editor.cursor.moveTo(state.cursor)
-      },
-      () => {
-        this.updateSympad()
-        this.updateRhythm()
-        this.hooks.requestFocus?.()
-      },
-      MAX_HISTORY
-    )
   }
 
   private updateSympad(): void {
