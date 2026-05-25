@@ -1,12 +1,8 @@
 import type { InstrumentName } from 'soundfont-player'
 
+import { executeEditorCommand, type EditorCommand } from './editor-command'
 import { createEditorHistory, type EditorHistory } from './editor-history'
-import {
-  REST_OBJ,
-  RHYTHM_OBJ,
-  rhythmTickIndex,
-  YUL_OBJ,
-} from '../domain/constants'
+import { REST_OBJ, rhythmTickIndex, YUL_OBJ } from '../domain/constants'
 import Cursor, { CoordLevel } from '../domain/cursor'
 import { Music, MusicEditor } from '../domain/editor'
 import type { EntryOf, TrillState } from '../domain/symbols'
@@ -18,7 +14,6 @@ import {
 } from '../features/canvas-selection'
 import { makeCanvasLabel } from '../features/canvas-label'
 import { canPaste, type ClipboardData } from '../features/clipboard'
-import { getEntryWriteUndo } from '../features/entry-write'
 import { IME } from '../features/ime'
 import { resolveImeWrite } from '../features/ime-write'
 import {
@@ -156,31 +151,29 @@ export class EditorSession {
     this.editor.discardSelection()
   }
 
+  execute(command: EditorCommand): void {
+    executeEditorCommand(this, command)
+  }
+
   write<K extends keyof EntryOf>(
     where: K,
     obj?: EntryOf[K],
     resetIME = true
   ): void {
-    const op = getEntryWriteUndo(this.editor, where, obj)
-    if (op == null) return
-    this.doWithHistory(op)
-    if (resetIME) this.ime.reset()
+    this.execute({
+      type: 'writeEntry',
+      where,
+      entry: obj,
+      resetIme: resetIME,
+    })
   }
 
   erase(): void {
-    if (this.editor.isSelecting) return
-    if (this.editor.cursor.rhythmMode) {
-      this.doWithHistory(() => this.editor.eraseRhythmTick())
-    } else {
-      this.doWithHistory(() => this.editor.erase())
-      this.ime.reset()
-    }
+    this.execute({ type: 'erase' })
   }
 
   changeShape(what: CoordLevel, delta: -1 | 1): void {
-    if (this.editor.isSelecting) return
-    if (delta === +1) this.doWithHistory(() => this.editor.add(what))
-    else this.doWithHistory(() => this.editor.del(what))
+    this.execute({ type: 'changeShape', level: what, delta })
   }
 
   changeOctave(delta: -1 | 1): void {
@@ -189,7 +182,7 @@ export class EditorSession {
   }
 
   changeTick(tickIdx: number): void {
-    this.doWithHistory(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
+    this.execute({ type: 'writeRhythmTick', tickIdx })
   }
 
   changeTrill(trill: TrillState): void {
@@ -237,41 +230,23 @@ export class EditorSession {
   }
 
   cut(): void {
-    this.doWithHistory(() => {
-      if (this.editor.isSelecting) {
-        const [content, undo] = this.editor.cutRange()
-        this.clipboard = ['Range', content]
-        return undo
-      } else {
-        const [content, undo] = this.editor.cutEntry()
-        this.clipboard = ['Entry', content]
-        return undo
-      }
-    })
+    this.execute({ type: 'cut' })
   }
 
   copy(): void {
-    this.clipboard = this.editor.copy()
+    this.execute({ type: 'copy' })
   }
 
   paste(): void {
-    if (this.clipboard == null) return
-    const [mode, content] = this.clipboard
-    this.doWithHistory(() =>
-      mode === 'Entry'
-        ? this.editor.pasteEntry(content)
-        : this.editor.pasteRange(content)
-    )
+    this.execute({ type: 'paste' })
   }
 
   undo(): void {
-    this.ime.reset()
-    this.history.undo()
+    this.execute({ type: 'undo' })
   }
 
   redo(): void {
-    this.ime.reset()
-    this.history.redo()
+    this.execute({ type: 'redo' })
   }
 
   doWithHistory(op: () => UndoOp): void {
