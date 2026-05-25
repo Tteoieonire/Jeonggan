@@ -98,6 +98,7 @@ import initmodal from './components/initmodal.vue'
 import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
 import { Music, MusicEditor } from './editor'
+import { ActionHistory } from './history'
 import { IME } from './ime'
 import { convertToMidi } from './midi'
 import { MusicPlayer } from './player'
@@ -134,13 +135,9 @@ const PITCH2CODE = [
   'KeyM',
 ]
 
-type UndoRecord = {
-  undo: UndoOp
-  redo: () => UndoOp
-  oldCursor: Cursor
-  newCursor: Cursor
-  oldAnchor?: Cursor
-  newAnchor?: Cursor
+type HistoryState = {
+  cursor: Cursor
+  anchor?: Cursor
 }
 
 export default defineComponent({
@@ -156,8 +153,7 @@ export default defineComponent({
       trill: {} as TrillState,
       tickIdx: -1,
       ime: new IME(),
-      undoHistory: [] as Array<UndoRecord>,
-      undoTravel: 0,
+      history: undefined as unknown as ActionHistory<HistoryState>,
       clipboard: undefined as
         | undefined
         | ['Entry', Entry]
@@ -187,8 +183,7 @@ export default defineComponent({
       // keep octave & clipboard
       this.dragging = false
       this.player = undefined
-      this.undoHistory = []
-      this.undoTravel = 0
+      this.history = this.createHistory()
       this.busy = false
       this.loadingFailed = false
       this.updateChapter()
@@ -203,6 +198,24 @@ export default defineComponent({
       })
       this.editor.cursor.on('afterRowChange', () => this.updateRhythm())
       this.editor.cursor.on('afterChapterChange', () => this.updateChapter())
+    },
+    createHistory() {
+      return new ActionHistory(
+        () => ({
+          cursor: this.editor.cursor.clone(),
+          anchor: this.editor.anchor?.clone(),
+        }),
+        state => {
+          this.editor.anchor = state.anchor?.clone()
+          this.editor.cursor.moveTo(state.cursor)
+        },
+        () => {
+          this.updateSympad()
+          this.updateRhythm()
+          this.updateFocus()
+        },
+        MAX_HISTORY
+      )
     },
     updateSympad() {
       if (this.editor.cursor.rhythmMode) return
@@ -407,61 +420,16 @@ export default defineComponent({
     },
     undo() {
       this.ime.reset()
-      if (this.undoTravel === 0) return
-      this.undoTravel -= 1
-      const { undo, oldCursor, oldAnchor, newCursor, newAnchor } =
-        this.undoHistory[this.undoTravel]
-      this.editor.anchor = newAnchor
-      this.editor.cursor.moveTo(newCursor)
-      undo()
-      this.editor.anchor = oldAnchor
-      this.editor.cursor.moveTo(oldCursor)
-      this.updateSympad()
-      this.updateRhythm()
-      this.updateFocus()
+      this.history.undo()
     },
     redo() {
       this.ime.reset()
-      if (this.undoTravel >= this.undoHistory.length) return
-      const { redo, oldCursor, oldAnchor } = this.undoHistory[this.undoTravel]
-      this.editor.anchor = oldAnchor
-      this.editor.cursor.moveTo(oldCursor)
-      redo()
-      this.updateSympad()
-      this.updateRhythm()
-      this.updateFocus()
-      this.undoTravel += 1
+      this.history.redo()
     },
 
     /* Undo/Redo functionality */
     doWithBackup(op: () => UndoOp) {
-      /** op: a function that does the (re)-operation.
-          takes zero args and returns undo function
-   */
-      this.undoHistory = this.undoHistory.slice(0, this.undoTravel)
-
-      const oldCursor = this.editor.cursor.clone()
-      const oldAnchor = this.editor.anchor?.clone()
-      const undo = op()
-      const newCursor = this.editor.cursor.clone()
-      const newAnchor = this.editor.anchor?.clone()
-      this.updateSympad()
-      this.updateRhythm()
-      this.updateFocus()
-      this.undoHistory.push({
-        undo,
-        redo: op,
-        oldCursor,
-        newCursor,
-        oldAnchor,
-        newAnchor,
-      })
-      this.undoTravel += 1
-
-      if (this.undoTravel > MAX_HISTORY) {
-        this.undoHistory = this.undoHistory.slice(-MAX_HISTORY)
-        this.undoTravel = MAX_HISTORY
-      }
+      this.history.do(op)
     },
 
     /* Interactions by Keyboards */
@@ -720,10 +688,10 @@ export default defineComponent({
       return this.music.asGaks()
     },
     undoable(): boolean {
-      return this.player == null && this.undoTravel > 0
+      return this.player == null && this.history?.undoable === true
     },
     redoable(): boolean {
-      return this.player == null && this.undoTravel < this.undoHistory.length
+      return this.player == null && this.history?.redoable === true
     },
     pastable(): boolean {
       if (this.clipboard == null) return false
