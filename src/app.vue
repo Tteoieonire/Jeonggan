@@ -113,6 +113,7 @@ import globalmodal from './components/globalmodal.vue'
 import initmodal from './components/initmodal.vue'
 
 import { makeCanvasLabel } from './canvas-label'
+import { canPaste, type ClipboardData } from './clipboard'
 import { REST_OBJ, RHYTHM_OBJ, rhythmTickIndex, YUL_OBJ } from './constants'
 import Cursor, { CoordLevel } from './cursor'
 import { Music, MusicEditor } from './editor'
@@ -125,7 +126,7 @@ import { MusicPlayer } from './player'
 import { EntryOf, TrillState } from './symbols'
 import { applyModifierTrill } from './trill'
 import { getID } from './utils'
-import { Chapter, Config, Entry, mergeActions, UndoOp } from './viewer'
+import { Chapter, Config, mergeActions, UndoOp } from './viewer'
 import {
   WORKSPACE_HELP,
   WORKSPACE_LABEL,
@@ -165,10 +166,7 @@ export default defineComponent({
       tickIdx: -1,
       ime: new IME(),
       history: undefined as unknown as ActionHistory<HistoryState>,
-      clipboard: undefined as
-        | undefined
-        | ['Entry', Entry]
-        | ['Range', Entry[][][]],
+      clipboard: undefined as undefined | ClipboardData,
       busy: false,
       loadingFailed: false,
     }
@@ -619,13 +617,11 @@ export default defineComponent({
       return this.player == null && this.history?.redoable === true
     },
     pastable(): boolean {
-      if (this.clipboard == null) return false
-      const mode = this.clipboard[0]
-      if (mode === 'Range') return true
-      if (!this.editor.isSelecting) return true
-      return (
-        this.editor.anchor?.chapter === this.editor.cursor.chapter &&
-        this.editor.anchor?.cell === this.editor.cursor.cell
+      return canPaste(
+        this.clipboard,
+        this.editor.isSelecting,
+        this.editor.anchor,
+        this.editor.cursor
       )
     },
     trillShow(): TrillState {
