@@ -6,7 +6,16 @@ import YAML from 'yaml'
 import { REST_OBJ, YUL_OBJ } from '../constants'
 import { Music } from '../music'
 import { MainEntry, querySymbol } from '../symbols'
-import { Cell, Chapter, Col, Config, Entry, Row, ScoreFactory } from '../score'
+import {
+  Cell,
+  Chapter,
+  Col,
+  Config,
+  Entry,
+  EntryCell,
+  Row,
+  ScoreFactory,
+} from '../score'
 import { createIDGenerator, type NextID } from '../utils'
 
 const TABLE = '黃大太夾姑仲㽔林夷南無應'
@@ -27,19 +36,11 @@ function serializeRow(row: Row): string {
 
 function serializeCell(cell: Cell): string {
   if (cell.data.length === 0) return '-'
-  return cell.data.map(serializeRow).join('\n')
-}
-
-function hasBreathMarks(cells: Cell[]): boolean {
-  return cells.some(cell => cell.data.some(row => row.breath))
-}
-
-function serializeBreathMarks(cells: Cell[]): string {
-  return (
-    cells
-      .map(cell => cell.data.map(row => (row.breath ? '숨표' : '-')).join('\n'))
-      .join('\n\n') + '\n'
-  )
+  return cell.data
+    .flatMap(row =>
+      row.breath ? [serializeRow(row), '숨표'] : [serializeRow(row)]
+    )
+    .join('\n')
 }
 
 function serializeScale(scale: number[]): string {
@@ -63,8 +64,6 @@ function serializeChapter(chapter: Chapter) {
   const serialized: Record<string, any> = {
     ...serializeConfig(chapter.config),
   }
-  if (hasBreathMarks(chapter.data))
-    serialized.breath = serializeBreathMarks(chapter.data)
   serialized.content = chapter.data.map(serializeCell).join('\n\n') + '\n'
   return serialized
 }
@@ -102,33 +101,24 @@ function deserializeCells(string: string, score: ScoreFactory): Cell[] {
     .trim()
     .split('\n\n')
     .map(function (cell) {
-      const entries = cell
-        .trim()
-        .split('\n')
-        .map(row => row.trim().split(' ').map(deserializeEntry))
+      const entries = deserializeCellRows(cell)
       return score.cellFromEntries(entries)
     })
 }
 
-function deserializeBreathMarks(string: string | undefined): boolean[][] {
-  if (!string) return []
-  return string
-    .trim()
-    .split('\n\n')
-    .map(cell =>
-      cell
-        .trim()
-        .split('\n')
-        .map(row => row.trim() === '숨표')
-    )
-}
-
-function applyBreathMarks(cells: Cell[], marks: boolean[][]): void {
-  for (const [cellIndex, cell] of cells.entries()) {
-    for (const [rowIndex, row] of cell.data.entries()) {
-      if (marks[cellIndex]?.[rowIndex]) row.breath = true
+function deserializeCellRows(cell: string): EntryCell {
+  const entries: EntryCell = []
+  for (const line of cell.trim().split('\n')) {
+    const row = line.trim()
+    if (row === '숨표') {
+      if (entries.length === 0)
+        throw Error('Breath mark row must follow a notation row.')
+      entries[entries.length - 1].breath = true
+      continue
     }
+    entries.push(row.split(' ').map(deserializeEntry))
   }
+  return entries
 }
 
 type Header = {
@@ -181,9 +171,7 @@ function deserializeMusic(yaml: string, options: DeserializeMusicOptions = {}) {
       rhythm,
       padding: content.padding || 0,
     }
-    const cells = deserializeCells(content.content, score)
-    applyBreathMarks(cells, deserializeBreathMarks(content.breath))
-    return score.chapter(config, cells)
+    return score.chapter(config, deserializeCells(content.content, score))
   })
   return new Music(title, chapters, instrument, score)
 }

@@ -195,20 +195,19 @@ describe('Round-trip', () => {
     -
   scale: 黃太姑林南
   tempo: 140
-  breath: |
-    숨표
-
-    -
-    숨표
   content: |
     汰
+    숨표
 
     黃
     太
+    숨표
 `
     const music = deserializeMusic(yaml)
 
+    expect(music.data[0].data[0].data).toHaveLength(1)
     expect(music.data[0].data[0].data[0].breath).toBe(true)
+    expect(music.data[0].data[1].data).toHaveLength(2)
     expect(music.data[0].data[1].data[0].breath).toBeUndefined()
     expect(music.data[0].data[1].data[1].breath).toBe(true)
     expect(serializeMusic(music)).toBe(yaml)

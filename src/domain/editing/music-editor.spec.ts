@@ -217,7 +217,10 @@ describe('MusicEditor', () => {
 
       const undo = editor.toggleBreathMark()
       expect(editor.get('row').breath).toBe(true)
-      expect(serializeMusic(music)).toContain('  breath: |\n')
+      expect(serializeMusic(music)).toContain(
+        '    〻:앞시김새니레표\n    - 林\n    숨표'
+      )
+      expect(serializeMusic(music)).not.toContain('  breath: |\n')
 
       undo()
       expect(editor.get('row').breath).toBeUndefined()
