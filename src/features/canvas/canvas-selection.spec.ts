@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import {
   moveCanvasCursor,
   selectCanvasRange,
@@ -77,7 +77,8 @@ describe('canvas selection helpers', () => {
 })
 
 function makeEditor(): MusicEditor {
-  const music = new Music('', [new Chapter(CONFIG)])
+  const music = new Music('')
+  music.data.push(music.score.chapter(CONFIG))
   const editor = music.getEditor()
   editor.add('cell')
   editor.add('cell')

@@ -1,4 +1,5 @@
 import type { RhythmTick } from '../constants'
+import type { EditableMusicBase, ScoreFactory } from '../score'
 import Cursor from '../navigation/cursor'
 import {
   addRhythmRow as addEditorRhythmRow,
@@ -31,10 +32,13 @@ import {
   PARENT_OF,
   SNAP,
   UndoOp,
-  _make,
 } from '../navigation/viewer'
 
-export class MusicEditor extends MusicSelector {
+export class MusicEditor extends MusicSelector<EditableMusicBase> {
+  get score(): ScoreFactory {
+    return this.music.score
+  }
+
   /* Button action */
   add<T extends keyof typeof PARENT_OF>(what: T, obj?: ElementOf[T]): UndoOp {
     return addElement(this, what, obj)

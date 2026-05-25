@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import {
   captureEditorHistoryState,
   createEditorHistory,
@@ -21,7 +21,7 @@ const CONFIG: Config = {
 
 describe('editor history helpers', () => {
   it('captures cursor and anchor by value', () => {
-    const editor = new Music('test', [new Chapter(CONFIG)]).getEditor()
+    const editor = makeEditor()
     editor.cursor.move(0, 2, 3, 4)
     editor.anchor = new Cursor(false, 0, 1, 0, 0)
 
@@ -34,7 +34,7 @@ describe('editor history helpers', () => {
   })
 
   it('restores cursor and anchor without sharing state objects', () => {
-    const editor = new Music('test', [new Chapter(CONFIG)]).getEditor()
+    const editor = makeEditor()
     const state = {
       cursor: new Cursor(false, 0, 2, 3, 4),
       anchor: new Cursor(false, 0, 1, 0, 0),
@@ -49,7 +49,7 @@ describe('editor history helpers', () => {
   })
 
   it('restores editor selection across undo and redo', () => {
-    const editor = new Music('test', [new Chapter(CONFIG)]).getEditor()
+    const editor = makeEditor()
     const afterChange = vi.fn()
     const history = createEditorHistory(editor, afterChange)
     editor.cursor.move(0, 0, 0, 0)
@@ -80,3 +80,9 @@ describe('editor history helpers', () => {
     expect(afterChange).toHaveBeenCalledTimes(3)
   })
 })
+
+function makeEditor() {
+  const music = new Music('test')
+  music.data.push(music.score.chapter(CONFIG))
+  return music.getEditor()
+}

@@ -3,7 +3,13 @@ import { YUL_OBJ } from '../constants'
 import Cursor from './cursor'
 import { deserializeMusic } from '../serialization'
 import { querySymbol } from '../symbols'
-import { MusicViewer, SNAP } from './viewer'
+import {
+  MusicViewer,
+  nextCursorForLeftRight,
+  nextCursorForMove,
+  SNAP,
+  toCursorState,
+} from './viewer'
 
 const SAMPLE_YAML = `- title: 양청도드리
   instrument: acoustic_grand_piano
@@ -233,6 +239,57 @@ describe('Music', () => {
 
 describe('MusicViewer', () => {
   const music = createSampleMusic()
+
+  describe('navigation state helpers', () => {
+    it('computes movement without mutating the cursor object', () => {
+      const cursor = new Cursor(false, 0, 0, 0, 0)
+
+      const next = nextCursorForMove(
+        { music, cursor },
+        'chapter',
+        -1,
+        SNAP.BACK
+      )
+
+      expect(cursor.isEqualTo(new Cursor(false, 0, 0, 0, 0))).toBe(true)
+      expect(next).toEqual({
+        rhythmMode: false,
+        chapter: 1,
+        cell: 23,
+        row: 1,
+        col: 0,
+      })
+    })
+
+    it('returns plain cursor state from live cursor instances', () => {
+      const cursor = new Cursor(false, 0, 0, 0, 0)
+      cursor.on('afterCellChange', () => {})
+
+      expect(toCursorState(cursor)).toEqual({
+        rhythmMode: false,
+        chapter: 0,
+        cell: 0,
+        row: 0,
+        col: 0,
+      })
+    })
+
+    it('computes complex movement as immutable state', () => {
+      const cursor = new Cursor(false, 0, 0, 0, 0)
+
+      const next = nextCursorForLeftRight({ music, cursor }, 'right')
+
+      expect(cursor.isEqualTo(new Cursor(false, 0, 0, 0, 0))).toBe(true)
+      expect(next).toEqual({
+        rhythmMode: true,
+        chapter: 0,
+        cell: 0,
+        row: 0,
+        col: 0,
+      })
+    })
+  })
+
   describe('move', () => {
     it('snap', () => {
       const viewer = new MusicViewer(music)

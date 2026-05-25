@@ -2,17 +2,19 @@ import { InstrumentName } from 'soundfont-player'
 
 import { MusicEditor } from './editing/music-editor'
 import { MusicPlayer } from './playback'
-import { Chapter, MusicBase } from './score'
+import { Chapter, EditableMusicBase, ScoreFactory } from './score'
 import { MusicViewer } from './navigation/viewer'
+import { getID } from './utils'
 
-export class Music implements MusicBase {
+export class Music implements EditableMusicBase {
   private _editor?: MusicEditor
   data: Chapter[]
 
   constructor(
     public title: string,
     chapters?: Chapter[],
-    public instrument: InstrumentName = 'acoustic_grand_piano'
+    public instrument: InstrumentName = 'acoustic_grand_piano',
+    public readonly score: ScoreFactory = new ScoreFactory(getID)
   ) {
     this.data = chapters || []
   }

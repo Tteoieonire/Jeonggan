@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import { PlaybackSession, type PlaybackPlayer } from './playback-session'
 
 const CONFIG: Config = {
@@ -97,6 +97,7 @@ class FakePlayer implements PlaybackPlayer {
 }
 
 function viewer() {
-  const music = new Music('', [new Chapter(CONFIG)])
+  const music = new Music('')
+  music.data.push(music.score.chapter(CONFIG))
   return music.getEditor()
 }

@@ -4,11 +4,14 @@ import { YUL_OBJ } from '../../domain/constants'
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
-import { Chapter, Config, UndoOp } from '../../domain/navigation/viewer'
+import { Config, UndoOp } from '../../domain/navigation/viewer'
 import type { ClipboardData } from '../../features/clipboard'
 import { IME } from '../../features/ime'
 import { executeEditorCommand, type EditorCommand } from './editor-command'
-import { createEditorHistory, type EditorHistory } from '../sessions/editor-history'
+import {
+  createEditorHistory,
+  type EditorHistory,
+} from '../sessions/editor-history'
 import {
   executeEditorKeyboardCommand,
   type EditorKeyboardExecutorHost,
@@ -100,7 +103,8 @@ type TestHost = EditorKeyboardExecutorHost & {
 }
 
 function makeHost(): TestHost {
-  const music = new Music('test', [new Chapter(CONFIG)])
+  const music = new Music('test')
+  music.data.push(music.score.chapter(CONFIG))
   const editor = music.getEditor()
   const ime = new IME()
   const history = createEditorHistory(editor, () => {})

@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { REST_OBJ, YUL_OBJ } from '../domain/constants'
 import type { EntryOf } from '../domain/symbols'
-import type { Col, Entry, UndoOp } from '../domain/navigation/viewer'
+import { ScoreFactory, type Col, type Entry } from '../domain/score'
+import type { UndoOp } from '../domain/navigation/viewer'
 import { getEntryWriteUndo, type EntryWriteEditor } from './entry-write'
 
 describe('entry write helpers', () => {
   it('does not create a write operation while selecting', () => {
     const editor = makeEditor({ isSelecting: true })
-    const op = getEntryWriteUndo(editor, 'main', REST_OBJ, editor.nextID)
+    const op = getEntryWriteUndo(editor, 'main', REST_OBJ)
 
     expect(op).toBeUndefined()
     expect(editor.events).toEqual([])
@@ -16,7 +17,7 @@ describe('entry write helpers', () => {
 
   it('writes a main entry to the current column', () => {
     const editor = makeEditor()
-    const op = getEntryWriteUndo(editor, 'main', REST_OBJ, editor.nextID)
+    const op = getEntryWriteUndo(editor, 'main', REST_OBJ)
 
     expect(op?.()).toBe(editor.undo)
 
@@ -24,7 +25,7 @@ describe('entry write helpers', () => {
       id: 101,
       data: { main: REST_OBJ },
     })
-    expect(editor.events).toEqual(['nextID', 'get:col', 'write:col'])
+    expect(editor.events).toEqual(['get:col', 'nextID', 'write:col'])
   })
 
   it('preserves the current main entry when writing a modifier', () => {
@@ -35,7 +36,7 @@ describe('entry write helpers', () => {
       label: 'modifier',
     }
 
-    const op = getEntryWriteUndo(editor, 'modifier', modifier, editor.nextID)
+    const op = getEntryWriteUndo(editor, 'modifier', modifier)
     op?.()
 
     expect(editor.written).toEqual({
@@ -47,7 +48,6 @@ describe('entry write helpers', () => {
 
 type FakeEditor = EntryWriteEditor & {
   events: string[]
-  nextID(): number
   undo: UndoOp
   written?: Col
 }
@@ -64,10 +64,10 @@ function makeEditor({
   return {
     events,
     isSelecting,
-    nextID() {
+    score: new ScoreFactory(() => {
       events.push('nextID')
       return 101
-    },
+    }),
     undo,
     get(what) {
       events.push(`get:${what}`)

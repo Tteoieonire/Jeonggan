@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import { EditorSession } from './editor-session'
 
 const CONFIG: Config = {
@@ -75,7 +75,9 @@ describe('EditorSession', () => {
     session.copy()
     const clipboard = session.clipboard
 
-    session.load(new Music('loaded', [new Chapter(CONFIG)]))
+    const music = new Music('loaded')
+    music.data.push(music.score.chapter(CONFIG))
+    session.load(music)
 
     expect(session.music.title).toBe('loaded')
     expect(session.octave).toBe(1)

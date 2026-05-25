@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createIDGenerator } from '../utils'
 import { deserializeMusic, serializeMusic } from './serializer'
 
 const SAMPLE_YAML = `- title: 양청도드리
@@ -121,6 +122,21 @@ const SAMPLE_YAML = `- title: 양청도드리
     △
 `
 
+const SINGLE_CELL_YAML = `- title: test
+  instrument: acoustic_guitar
+- name: test
+  hideRhythm: false
+  measure:
+    - 1
+  padding: 0
+  rhythm: |
+    -
+  scale: 黃太仲林無
+  tempo: 140
+  content: |
+    汰
+`
+
 describe('Round-trip', () => {
   it('yaml to yaml', () => {
     const reconstructed = serializeMusic(deserializeMusic(SAMPLE_YAML))
@@ -148,21 +164,21 @@ describe('Round-trip', () => {
     expect(reconstructed).toBe(yaml)
   })
   it('very short', () => {
-    const yaml = `- title: test
-  instrument: acoustic_guitar
-- name: test
-  hideRhythm: false
-  measure:
-    - 1
-  padding: 0
-  rhythm: |
-    -
-  scale: 黃太仲林無
-  tempo: 140
-  content: |
-    汰
-`
-    const reconstructed = serializeMusic(deserializeMusic(yaml))
-    expect(reconstructed).toBe(yaml)
+    const reconstructed = serializeMusic(deserializeMusic(SINGLE_CELL_YAML))
+    expect(reconstructed).toBe(SINGLE_CELL_YAML)
+  })
+
+  it('uses an injected id generator for deserialization and later edits', () => {
+    const music = deserializeMusic(SINGLE_CELL_YAML, {
+      nextID: createIDGenerator(100),
+    })
+
+    expect(music.data[0].data[0].id).toBe(101)
+    expect(music.data[0].data[0].data[0].id).toBe(102)
+    expect(music.data[0].data[0].data[0].data[0].id).toBe(103)
+    expect(music.data[0].id).toBe(104)
+
+    music.getEditor().add('cell')
+    expect(music.data[0].data[1].id).toBe(105)
   })
 })

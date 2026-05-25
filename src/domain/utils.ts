@@ -7,6 +7,7 @@ export function wrappedIdx<T extends Array<V>, V>(
   const total = typeof ref === 'number' ? ref : ref.length
   idx %= total
   if (idx < 0) idx += total
+  if (Object.is(idx, -0)) return 0
   return idx
 }
 export function clamp(idx: number, total: number): number
@@ -33,12 +34,19 @@ export function sleep(milliseconds: number): Promise<void> {
   return new Promise(r => setTimeout(r, milliseconds))
 }
 
-let count = 0
+export type NextID = () => number
+
+export function createIDGenerator(start = 0): NextID {
+  let count = start
+  return () => ++count
+}
+
+let nextDefaultID = createIDGenerator()
 export function getID(): number {
-  return ++count // always positive
+  return nextDefaultID()
 }
 export function resetID() {
-  count = 0
+  nextDefaultID = createIDGenerator()
 }
 
 export type WithID<T> = { id: number; data: T }

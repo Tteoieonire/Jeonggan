@@ -4,10 +4,13 @@ import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import type { ClipboardData } from '../../features/clipboard'
 import { IME } from '../../features/ime'
-import { createEditorHistory, type EditorHistory } from '../sessions/editor-history'
+import {
+  createEditorHistory,
+  type EditorHistory,
+} from '../sessions/editor-history'
 import { executeEditorCommand, type EditorCommandHost } from './editor-command'
 
 const CONFIG: Config = {
@@ -120,7 +123,8 @@ type TestHost = EditorCommandHost & {
 }
 
 function makeHost(): TestHost {
-  const music = new Music('test', [new Chapter(CONFIG)])
+  const music = new Music('test')
+  music.data.push(music.score.chapter(CONFIG))
   const editor = music.getEditor()
   const ime = new IME()
   const history = createEditorHistory(editor, () => {})

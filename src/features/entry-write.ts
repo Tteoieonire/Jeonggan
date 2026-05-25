@@ -1,29 +1,26 @@
 import type { EntryOf } from '../domain/symbols'
-import { getID } from '../domain/utils'
-import type { Col, Entry, UndoOp } from '../domain/navigation/viewer'
+import type { Entry, ScoreFactory } from '../domain/score'
+import type { UndoOp } from '../domain/navigation/viewer'
 import type { MusicEditor } from '../domain/editing/music-editor'
 
 export type EntryWriteEditor = Pick<
   MusicEditor,
-  'get' | 'isSelecting' | 'write'
+  'get' | 'isSelecting' | 'score' | 'write'
 >
 
 export function getEntryWriteUndo<K extends keyof EntryOf>(
   editor: EntryWriteEditor,
   where: K,
   entry: EntryOf[K] | undefined,
-  nextID: () => number = getID
+  score: ScoreFactory = editor.score
 ): (() => UndoOp) | undefined {
   if (editor.isSelecting) return undefined
 
   return () => {
-    const col: Col = {
-      id: nextID(),
-      data: {
-        main: editor.get('col').data?.main,
-        [where]: entry,
-      } as Entry,
-    }
+    const col = score.col({
+      main: editor.get('col').data?.main,
+      [where]: entry,
+    } as Entry)
     return editor.write('col', col)
   }
 }

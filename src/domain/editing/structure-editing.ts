@@ -1,6 +1,6 @@
 import type Cursor from '../navigation/cursor'
+import type { ScoreFactory } from '../score'
 import {
-  Chapter,
   CHILD_OF,
   type Config,
   type ElementOf,
@@ -8,11 +8,11 @@ import {
   PARENT_OF,
   SNAP,
   type UndoOp,
-  _make,
 } from '../navigation/viewer'
 
 export type StructureEditHost = {
   cursor: Cursor
+  score: ScoreFactory
   get<K extends 'music' | 'chapter' | 'cell' | 'row' | 'col'>(
     what: K
   ): ElementOf[K]
@@ -32,9 +32,9 @@ export function addElement<T extends keyof typeof PARENT_OF>(
   if (obj == null) {
     if (what === 'chapter') {
       const config = newConfigFrom(editor.get('chapter').config)
-      obj = new Chapter(config) as any
+      obj = editor.score.chapter(config) as any
     } else {
-      obj = _make(what) as any
+      obj = editor.score.make(what) as any
     }
   }
   editor.get(PARENT_OF[what]).data.splice(destPos, 0, obj as any)
@@ -84,10 +84,11 @@ export function eraseElement(
   editor: StructureEditHost,
   what: keyof typeof PARENT_OF = 'col'
 ): UndoOp {
-  if (what !== 'chapter') return writeElement(editor, what, _make(what))
+  if (what !== 'chapter')
+    return writeElement(editor, what, editor.score.make(what))
 
   const cells = editor.get('chapter').data
-  const old = cells.splice(0, cells.length, _make('cell'))
+  const old = cells.splice(0, cells.length, editor.score.cell())
   return () => {
     editor.get('chapter').data.splice(0, 1, ...old)
   }

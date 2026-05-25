@@ -1,10 +1,10 @@
 import Cursor from './cursor'
-import type { Music } from '../music'
 import { inRange } from '../utils'
 import {
   Cell,
   Entry,
   idOp,
+  type MusicBase,
   MusicViewer,
   PARENT_OF,
   SNAP,
@@ -15,15 +15,17 @@ export function debone(cells: Cell[]): Entry[][][] {
   return cells.map(cell => cell.data.map(row => row.data.map(col => col.data)))
 }
 
-export class MusicSelector extends MusicViewer {
+export class MusicSelector<
+  TMusic extends MusicBase = MusicBase
+> extends MusicViewer {
   anchor?: Cursor
 
-  constructor(public music: Music, cursor?: Cursor, anchor?: Cursor) {
+  constructor(public music: TMusic, cursor?: Cursor, anchor?: Cursor) {
     super(music, cursor)
     this.anchor = anchor
   }
 
-  clone(): MusicSelector {
+  clone(): MusicSelector<TMusic> {
     return new MusicSelector(
       this.music,
       this.cursor.clone(),

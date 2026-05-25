@@ -1,15 +1,14 @@
 import Cursor, { type Level } from '../navigation/cursor'
 import { debone } from '../navigation/selector'
-import { getID, inRange } from '../utils'
+import type { ScoreFactory } from '../score'
+import { inRange } from '../utils'
 import {
-  type Cell,
   type ElementOf,
   type Entry,
   type MusicBase,
   PARENT_OF,
   SNAP,
   type UndoOp,
-  _make,
 } from '../navigation/viewer'
 
 type SelectionRangeWalker = {
@@ -21,6 +20,7 @@ type SelectionRangeWalker = {
 
 export type SelectionEditHost = SelectionRangeWalker & {
   music: MusicBase
+  score: ScoreFactory
   isSelecting: boolean
   clone(): SelectionRangeWalker
   get<K extends Level>(what: K): ElementOf[K]
@@ -106,7 +106,7 @@ export function cutRange(editor: SelectionEditHost): [Entry[][][], UndoOp] {
 
     const old = cells.splice(start, end - start)
     entries.push(...debone(old))
-    cells.splice(start, 0, ...old.map(() => _make('cell')))
+    cells.splice(start, 0, ...old.map(() => editor.score.cell()))
     undos.push(() =>
       editor.get('chapter').data.splice(start, end - start, ...old)
     )
@@ -150,13 +150,7 @@ export function pasteRange(
   const undos: UndoOp[] = []
   undos.push(editor.move('row', 0, SNAP.FRONT))
   for (const [i, entries] of range.entries()) {
-    const cell: Cell = {
-      id: getID(),
-      data: entries.map(row => ({
-        id: getID(),
-        data: row.map(col => ({ id: getID(), data: col })),
-      })),
-    }
+    const cell = editor.score.cellFromEntries(entries)
     undos.push(editor.write('cell', cell))
     if (i === range.length - 1) break
 

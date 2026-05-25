@@ -5,6 +5,8 @@ import { MusicEditor } from './music-editor'
 import { MusicSelector } from '../navigation/selector'
 import { deserializeMusic, serializeMusic } from '../serialization'
 import { SNAP } from '../navigation/viewer'
+import { ScoreFactory } from '../score'
+import { createIDGenerator } from '../utils'
 
 const SAMPLE_YAML = `- title: 양청도드리
   instrument: acoustic_grand_piano
@@ -378,6 +380,39 @@ describe('MusicEditor', () => {
     })
   })
   describe('pasteRange', () => {
+    it('uses injected ids when building pasted cells', () => {
+      const music = deserializeMusic(
+        `- title: test
+  instrument: acoustic_guitar
+- name: test
+  hideRhythm: false
+  measure:
+    - 1
+  padding: 0
+  rhythm: |
+    -
+  scale: 黃太仲林無
+  tempo: 140
+  content: |
+    汰
+`,
+        { score: new ScoreFactory(createIDGenerator(200)) }
+      )
+      const editor = new MusicEditor(music)
+      const undo = editor.pasteRange([[[{ main: REST_OBJ }]]])
+
+      expect(music.data[0].data[0]).toMatchObject({
+        id: 205,
+        data: [
+          {
+            id: 206,
+            data: [{ id: 207, data: { main: REST_OBJ } }],
+          },
+        ],
+      })
+      undo()
+    })
+
     it('can copy and paste a cell', () => {
       const editor = new MusicEditor(music)
       editor.move('cell', 1)

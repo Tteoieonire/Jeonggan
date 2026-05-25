@@ -11,7 +11,7 @@ import Cursor, { CoordLevel } from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
 import type { EntryOf, TrillState } from '../../domain/symbols'
-import { Chapter, Config, UndoOp } from '../../domain/navigation/viewer'
+import { Config, UndoOp } from '../../domain/navigation/viewer'
 import {
   makeCanvasLabel,
   moveCanvasCursor,
@@ -60,7 +60,9 @@ export class EditorSession {
   }
 
   create(title = ''): void {
-    this.replaceMusic(new Music(title, [new Chapter(INIT_CONFIG)]))
+    const music = new Music(title)
+    music.data.push(music.score.chapter(INIT_CONFIG))
+    this.replaceMusic(music)
 
     this.editor.cursor.move(0, 0, 0, 0)
     this.write('main', YUL_OBJ[3][0])

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import Cursor from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
-import { Chapter, Config } from '../../domain/navigation/viewer'
+import { Config } from '../../domain/navigation/viewer'
 import {
   executeKeyboardNavigation,
   prepareKeyboardSelection,
@@ -108,9 +108,9 @@ function makeEditor({
   chapters = 1,
   cells = 8,
 }: { chapters?: number; cells?: number } = {}): MusicEditor {
-  const music = new Music(
-    '',
-    Array.from({ length: chapters }, () => new Chapter(CONFIG))
+  const music = new Music('')
+  music.data.push(
+    ...Array.from({ length: chapters }, () => music.score.chapter(CONFIG))
   )
   const editor = music.getEditor()
   for (let i = 1; i < cells; i += 1) editor.add('cell')

@@ -2,7 +2,7 @@ import { InstrumentName } from 'soundfont-player'
 
 import { RHYTHM_OBJ } from '../constants'
 import { MainEntry, ModifierEntry } from '../symbols'
-import { getID, WithID } from '../utils'
+import { type NextID, type WithID } from '../utils'
 
 export type Config = Readonly<{
   name: string
@@ -61,25 +61,8 @@ export type ElementOf = {
   music: MusicBase
 }
 
-export function _make<K extends 'col' | 'row' | 'cell'>(what: K): ElementOf[K] {
-  const col: Col = { id: getID(), data: {} }
-  if (what === 'col') return col as any
-  const row: Row = { id: getID(), data: [col] }
-  if (what === 'row') return row as any
-  const cell: Cell = { id: getID(), data: [row] }
-  return cell as any
-}
-
 export class Chapter {
-  id: number
-  config: Config
-  data: Cell[]
-
-  constructor(config: Config, cells?: Cell[]) {
-    this.id = getID()
-    this.config = config
-    this.data = cells || [_make('cell')]
-  }
+  constructor(public id: number, public config: Config, public data: Cell[]) {}
 
   setConfig(config: Config): void {
     this.config = config
@@ -121,4 +104,44 @@ export class Chapter {
   }
 }
 
-export type MusicBase = { data: Chapter[]; instrument: InstrumentName }
+export class ScoreFactory {
+  readonly col: (data?: Entry) => Col
+  readonly row: (cols?: Col[]) => Row
+  readonly cell: (rows?: Row[]) => Cell
+  readonly cellFromEntries: (entries: Entry[][]) => Cell
+  readonly chapter: (config: Config, cells?: Cell[]) => Chapter
+
+  constructor(nextID: NextID) {
+    this.col = (data: Entry = {}) => ({ id: nextID(), data })
+    this.row = (cols?: Col[]) => ({ id: nextID(), data: cols ?? [this.col()] })
+    this.cell = (rows?: Row[]) => ({
+      id: nextID(),
+      data: rows ?? [this.row()],
+    })
+    this.cellFromEntries = (entries: Entry[][]) => ({
+      id: nextID(),
+      data: entries.map(row => ({
+        id: nextID(),
+        data: row.map(entry => this.col(entry)),
+      })),
+    })
+    this.chapter = (config: Config, cells?: Cell[]) => {
+      return new Chapter(nextID(), config, cells ?? [this.cell()])
+    }
+  }
+
+  make<K extends 'col' | 'row' | 'cell'>(what: K): ElementOf[K] {
+    if (what === 'col') return this.col() as any
+    if (what === 'row') return this.row() as any
+    return this.cell() as any
+  }
+}
+
+export type MusicBase = {
+  data: Chapter[]
+  instrument: InstrumentName
+}
+
+export type EditableMusicBase = MusicBase & {
+  score: ScoreFactory
+}

@@ -6,8 +6,8 @@ import YAML from 'yaml'
 import { REST_OBJ, YUL_OBJ } from '../constants'
 import { Music } from '../music'
 import { MainEntry, querySymbol } from '../symbols'
-import { Cell, Chapter, Col, Config, Row } from '../score'
-import { getID, resetID } from '../utils'
+import { Cell, Chapter, Col, Config, Entry, Row, ScoreFactory } from '../score'
+import { createIDGenerator, type NextID } from '../utils'
 
 const TABLE = '黃大太夾姑仲㽔林夷南無應'
 
@@ -73,32 +73,25 @@ function lookupYul(query: string): MainEntry | null {
   return yulMap[query] ?? null
 }
 
-function deserializeCol(col: string): Col {
+function deserializeEntry(col: string): Entry {
   const [_main, _mod] = col.trim().split(':')
-  if (_main === '-') return { id: getID(), data: {} }
-  if (_main === '△') return { id: getID(), data: { main: REST_OBJ } }
+  if (_main === '-') return {}
+  if (_main === '△') return { main: REST_OBJ }
   const main = lookupYul(_main) || querySymbol('main', _main, 'text')
   const modifier = _mod ? querySymbol('modifier', _mod, 'text') : undefined
-  return { id: getID(), data: { main, modifier } }
+  return { main, modifier }
 }
 
-function deserializeCells(string: string): Cell[] {
+function deserializeCells(string: string, score: ScoreFactory): Cell[] {
   return string
     .trim()
     .split('\n\n')
     .map(function (cell) {
-      return {
-        id: getID(),
-        data: cell
-          .trim()
-          .split('\n')
-          .map(function (row) {
-            return {
-              id: getID(),
-              data: row.trim().split(' ').map(deserializeCol),
-            }
-          }),
-      }
+      const entries = cell
+        .trim()
+        .split('\n')
+        .map(row => row.trim().split(' ').map(deserializeEntry))
+      return score.cellFromEntries(entries)
     })
 }
 
@@ -116,8 +109,14 @@ function deserializeHeader(header: string | any): Header {
   }
 }
 
-function deserializeMusic(yaml: string) {
-  resetID()
+export type DeserializeMusicOptions = {
+  nextID?: NextID
+  score?: ScoreFactory
+}
+
+function deserializeMusic(yaml: string, options: DeserializeMusicOptions = {}) {
+  const score =
+    options.score ?? new ScoreFactory(options.nextID ?? createIDGenerator())
   let contents = YAML.parse(yaml)
   const { title, instrument } = deserializeHeader(contents.shift())
   const chapters: Chapter[] = contents.map(function (content: any) {
@@ -146,10 +145,10 @@ function deserializeMusic(yaml: string) {
       rhythm,
       padding: content.padding || 0,
     }
-    const cells = deserializeCells(content.content)
-    return new Chapter(config, cells)
+    const cells = deserializeCells(content.content, score)
+    return score.chapter(config, cells)
   })
-  return new Music(title, chapters, instrument)
+  return new Music(title, chapters, instrument, score)
 }
 
 export { serializeMusic, deserializeMusic }
