@@ -49,8 +49,11 @@ export function isEmptyCell(
 export function isEmptyRange(editor: SelectionEditHost): boolean {
   const selector = editor.clone()
   if (selector.anchor == null) return false
-  if (selector.cursor.isLessThan(selector.anchor))
-    Cursor.swap(selector.cursor, selector.anchor)
+  if (selector.cursor.isLessThan(selector.anchor)) {
+    const cursor = selector.cursor.clone()
+    selector.cursor.moveTo(selector.anchor)
+    selector.anchor = cursor
+  }
   while (selector.anchor.isLessThan(selector.cursor)) {
     if (!isEmptyCell(editor, selector.cursor)) return false
     selector.stepCol(-1) || selector.stepChapter(-1)
@@ -79,18 +82,18 @@ export function cutEntry(editor: SelectionEditHost): [Entry, UndoOp] {
   if (editor.isSelecting) throw Error('Selection found')
   const col = editor.get('col')
   const old = col.data
-  col.data = {}
-  return [
-    old,
-    () => {
-      editor.get('col').data = old
-    },
-  ]
+  return [old, editor.write('col', { id: col.id, data: {} })]
 }
 
 export function cutRange(editor: SelectionEditHost): [Entry[][][], UndoOp] {
   if (editor.anchor == null) throw Error('No selected found')
-  editor.anchor.move(editor.anchor.chapter, editor.anchor.cell, 0, 0)
+  editor.anchor = new Cursor(
+    false,
+    editor.anchor.chapter,
+    editor.anchor.cell,
+    0,
+    0
+  )
   editor.move('row', 0)
 
   const oldCursor = editor.cursor.clone()
@@ -134,11 +137,7 @@ export function pasteEntry(editor: SelectionEditHost, entry: Entry): UndoOp {
     throw Error('Multi-cell selection found')
   }
   const col = editor.get('col')
-  const old = col.data
-  col.data = entry
-  return () => {
-    editor.get('col').data = old
-  }
+  return editor.write('col', { id: col.id, data: entry })
 }
 
 export function pasteRange(
@@ -148,7 +147,7 @@ export function pasteRange(
   if (editor.anchor == null) editor.createSelection()
   else if (editor.anchor.isLessThan(editor.cursor))
     editor.cursor.moveTo(editor.anchor)
-  else editor.anchor.moveTo(editor.cursor)
+  else editor.anchor = editor.cursor.clone()
 
   const undos: UndoOp[] = []
   undos.push(editor.move('row', 0, SNAP.FRONT))

@@ -69,6 +69,20 @@ describe('EditorSession', () => {
     expect(session.canRedo(true)).toBe(false)
   })
 
+  it('refreshes config after immutable rhythm edits', () => {
+    const session = new EditorSession()
+    session.editor.moveRhythm('cell', 0)
+    const config = session.config
+
+    session.changeShape('row', +1)
+    expect(session.config).not.toBe(config)
+    expect(session.config.rhythm[0]).toEqual(['떵', ''])
+
+    session.undo()
+    expect(session.config).toBe(config)
+    expect(session.config.rhythm[0]).toEqual(['떵'])
+  })
+
   it('keeps octave and clipboard when loading different music', () => {
     const session = new EditorSession()
     session.changeOctave(1)

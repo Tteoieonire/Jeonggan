@@ -38,7 +38,7 @@ export function startCanvasDrag(
   coord: Cursor
 ): boolean {
   if (editor.anchor?.isEqualTo(coord, 'cell')) {
-    editor.anchor.moveTo(editor.cursor)
+    editor.anchor = editor.cursor.clone()
     editor.cursor.moveTo(coord)
     editor.normalizeSelection()
     return true

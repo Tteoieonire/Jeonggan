@@ -223,6 +223,24 @@ describe('MusicEditor', () => {
       expect(rhythmTickIndex(editor.currentRhythmTick())).toBe(2)
     })
 
+    it('replaces rhythm config when writing a tick', () => {
+      const editor = new MusicEditor(deserializeMusic(SAMPLE_YAML))
+      editor.moveRhythm('cell', 1)
+      const chapter = editor.get('chapter')
+      const config = chapter.config
+      const rhythm = config.rhythm
+      const rows = rhythm[1]
+
+      const undo = editor.writeRhythmTick('쿵')
+      expect(chapter.config).not.toBe(config)
+      expect(chapter.config.rhythm).not.toBe(rhythm)
+      expect(chapter.config.rhythm[1]).not.toBe(rows)
+      expect(rows[0]).toBe('덕')
+
+      undo()
+      expect(chapter.config).toBe(config)
+    })
+
     it('can erase and undo a rhythm tick', () => {
       const editor = new MusicEditor(music)
       editor.moveRhythm('cell', 2)
@@ -234,6 +252,34 @@ describe('MusicEditor', () => {
 
       undo()
       expect(editor.currentRhythmTick()).toBe('덕')
+    })
+
+    it('adds and deletes rhythm rows with config replacement', () => {
+      const editor = new MusicEditor(deserializeMusic(SAMPLE_YAML))
+      editor.moveRhythm('cell', 0)
+      const chapter = editor.get('chapter')
+      const config = chapter.config
+
+      const undoAdd = editor.addRhythmRow()
+      expect(chapter.config).not.toBe(config)
+      expect(chapter.config.rhythm[0]).toEqual(['떵', ''])
+      expect(editor.cursor.row).toBe(1)
+
+      undoAdd()
+      expect(chapter.config).toBe(config)
+      expect(editor.cursor.row).toBe(0)
+
+      editor.moveRhythm('cell', 2)
+      editor.moveRhythm('row', 1)
+      const nextConfig = chapter.config
+      const undoDelete = editor.delRhythmRow()
+      expect(chapter.config).not.toBe(nextConfig)
+      expect(chapter.config.rhythm[2]).toEqual(['덕'])
+      expect(editor.cursor.row).toBe(0)
+
+      undoDelete()
+      expect(chapter.config).toBe(nextConfig)
+      expect(editor.cursor.row).toBe(1)
     })
   })
 

@@ -291,6 +291,7 @@ export class EditorSession {
     this.music = music
     this.editor = this.music.getEditor()
     this.history = createEditorHistory(this.editor, () => {
+      this.updateChapter()
       this.updateSympad()
       this.updateRhythm()
       this.hooks.requestFocus?.()
