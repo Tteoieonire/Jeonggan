@@ -145,36 +145,36 @@ export class EditorSession {
   ): void {
     const op = getEntryWriteUndo(this.editor, where, obj)
     if (op == null) return
-    this.doWithBackup(op)
+    this.doWithHistory(op)
     if (resetIME) this.ime.reset()
   }
 
   erase(): void {
     if (this.editor.isSelecting) return
     if (this.editor.cursor.rhythmMode) {
-      this.doWithBackup(() => this.editor.eraseRhythmTick())
+      this.doWithHistory(() => this.editor.eraseRhythmTick())
     } else {
-      this.doWithBackup(() => this.editor.erase())
+      this.doWithHistory(() => this.editor.erase())
       this.ime.reset()
     }
   }
 
-  shapechange(what: CoordLevel, delta: -1 | 1): void {
+  changeShape(what: CoordLevel, delta: -1 | 1): void {
     if (this.editor.isSelecting) return
-    if (delta === +1) this.doWithBackup(() => this.editor.add(what))
-    else this.doWithBackup(() => this.editor.del(what))
+    if (delta === +1) this.doWithHistory(() => this.editor.add(what))
+    else this.doWithHistory(() => this.editor.del(what))
   }
 
-  octavechange(delta: -1 | 1): void {
+  changeOctave(delta: -1 | 1): void {
     if (this.octave + delta < -3 || this.octave + delta > 3) return
     this.octave += delta
   }
 
-  tickchange(tickIdx: number): void {
-    this.doWithBackup(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
+  changeTick(tickIdx: number): void {
+    this.doWithHistory(() => this.editor.writeRhythmTick(RHYTHM_OBJ[tickIdx]))
   }
 
-  trillchange(trill: TrillState): void {
+  changeTrill(trill: TrillState): void {
     const modifier = applyModifierTrill(
       this.editor.get('col').data?.modifier,
       trill
@@ -182,13 +182,13 @@ export class EditorSession {
     if (modifier != null) this.write('modifier', modifier)
   }
 
-  configchange(config: Config, isVisibleChange: boolean): void {
+  changeConfig(config: Config, isVisibleChange: boolean): void {
     if (!isVisibleChange) {
       this.editor.get('chapter').setConfig(config)
       this.config = config
       return
     }
-    this.doWithBackup(() => {
+    this.doWithHistory(() => {
       const old = this.config
       this.editor.get('chapter').setConfig(config)
       this.config = config
@@ -199,15 +199,15 @@ export class EditorSession {
     })
   }
 
-  addchapter(): void {
-    this.doWithBackup(() => {
+  addChapter(): void {
+    this.doWithHistory(() => {
       this.editor.discardSelection()
       return this.editor.add('chapter')
     })
   }
 
-  deletechapter(): void {
-    this.doWithBackup(() => {
+  deleteChapter(): void {
+    this.doWithHistory(() => {
       this.editor.discardSelection()
       const undo = this.editor.del('chapter')
       this.updateChapter()
@@ -219,7 +219,7 @@ export class EditorSession {
   }
 
   cut(): void {
-    this.doWithBackup(() => {
+    this.doWithHistory(() => {
       if (this.editor.isSelecting) {
         const [content, undo] = this.editor.cutRange()
         this.clipboard = ['Range', content]
@@ -239,7 +239,7 @@ export class EditorSession {
   paste(): void {
     if (this.clipboard == null) return
     const [mode, content] = this.clipboard
-    this.doWithBackup(() =>
+    this.doWithHistory(() =>
       mode === 'Entry'
         ? this.editor.pasteEntry(content)
         : this.editor.pasteRange(content)
@@ -256,7 +256,7 @@ export class EditorSession {
     this.history.redo()
   }
 
-  doWithBackup(op: () => UndoOp): void {
+  doWithHistory(op: () => UndoOp): void {
     this.history.do(op)
   }
 
@@ -291,20 +291,20 @@ export class EditorSession {
         executeKeyboardNavigation(command, this.editor, this.config)
         return
       case 'shapeChange':
-        this.shapechange(command.what, command.delta)
+        this.changeShape(command.what, command.delta)
         return
       case 'backspaceSelection':
       case 'backspace':
       case 'deleteSelection':
       case 'deleteForward':
       case 'cutSelection':
-        this.doWithBackup(getKeyboardEditUndo(command, this.editor))
+        this.doWithHistory(getKeyboardEditUndo(command, this.editor))
         return
       case 'eraseRhythmTick':
         this.erase()
         return
       case 'deleteRhythmRow':
-        this.shapechange('row', -1)
+        this.changeShape('row', -1)
         return
       case 'imeBackspace':
         this.write(command.where, this.ime.backspace(), false)
@@ -328,10 +328,10 @@ export class EditorSession {
         this.write('main', REST_OBJ)
         return
       case 'writeIme':
-        this.writeIME(command.key, command.shiftKey)
+        this.writeIme(command.key, command.shiftKey)
         return
       case 'writeRhythmTick':
-        this.tickchange(command.tickIdx)
+        this.changeTick(command.tickIdx)
         return
       case 'undo':
         this.undo()
@@ -351,7 +351,7 @@ export class EditorSession {
     }
   }
 
-  writeIME(key: string, shiftKey: boolean): void {
+  writeIme(key: string, shiftKey: boolean): void {
     const write = resolveImeWrite(this.ime, {
       key,
       shiftKey,

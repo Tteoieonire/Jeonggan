@@ -179,25 +179,25 @@ export default defineComponent({
       this.session.erase()
     },
     shapechange(what: CoordLevel, delta: -1 | 1) {
-      this.session.shapechange(what, delta)
+      this.session.changeShape(what, delta)
     },
     octavechange(delta: -1 | 1) {
-      this.session.octavechange(delta)
+      this.session.changeOctave(delta)
     },
     tickchange(tickIdx: number) {
-      this.session.tickchange(tickIdx)
+      this.session.changeTick(tickIdx)
     },
     trillchange(trill: TrillState) {
-      this.session.trillchange(trill)
+      this.session.changeTrill(trill)
     },
     configchange(config: Config, isVisibleChange: boolean) {
-      this.session.configchange(config, isVisibleChange)
+      this.session.changeConfig(config, isVisibleChange)
     },
     addchapter() {
-      this.session.addchapter()
+      this.session.addChapter()
     },
     deletechapter() {
-      this.session.deletechapter()
+      this.session.deleteChapter()
     },
     cut() {
       this.session.cut()

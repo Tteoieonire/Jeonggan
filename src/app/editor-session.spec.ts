@@ -55,7 +55,7 @@ describe('EditorSession', () => {
 
   it('keeps octave and clipboard when loading different music', () => {
     const session = new EditorSession()
-    session.octavechange(1)
+    session.changeOctave(1)
     session.copy()
     const clipboard = session.clipboard
 
