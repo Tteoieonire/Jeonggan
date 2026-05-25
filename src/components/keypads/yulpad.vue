@@ -6,7 +6,7 @@
 
     <b-button-group class="m-1" aria-label="율명 입력">
       <b-button
-        :disabled="octave <= -3"
+        :disabled="!canLower"
         @click="lower"
         variant="outline-primary"
         aria-label="옥타브 내림"
@@ -26,7 +26,7 @@
       >
 
       <b-button
-        :disabled="octave >= 3"
+        :disabled="!canRaise"
         @click="raise"
         variant="outline-primary"
         aria-label="옥타브 올림"
@@ -39,7 +39,13 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
 
-import { REST_OBJ, YUL_OBJ } from '../../domain/constants'
+import {
+  canLowerOctave,
+  canRaiseOctave,
+  getYulPadEntries,
+  getYulPadEntry,
+} from '@/features/yul-pad'
+import { REST_OBJ } from '../../domain/constants'
 import { MainEntry, ModifierEntry } from '../../domain/symbols'
 
 export default defineComponent({
@@ -58,20 +64,25 @@ export default defineComponent({
       this.$emit('write', 'main', REST_OBJ)
     },
     note(i: number) {
-      const obj = this.yuls[i]
+      const obj = getYulPadEntry(this.scale, this.octave, i)
       this.$emit('write', 'main', obj)
     },
     lower() {
-      if (this.octave > -3) this.$emit('octave-change', -1)
+      if (this.canLower) this.$emit('octave-change', -1)
     },
     raise() {
-      if (this.octave < 3) this.$emit('octave-change', +1)
+      if (this.canRaise) this.$emit('octave-change', +1)
     },
   },
   computed: {
     yuls() {
-      const obj = YUL_OBJ[this.octave + 3]
-      return this.scale.map(x => obj[x])
+      return getYulPadEntries(this.scale, this.octave)
+    },
+    canLower() {
+      return canLowerOctave(this.octave)
+    },
+    canRaise() {
+      return canRaiseOctave(this.octave)
     },
   },
 })
