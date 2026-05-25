@@ -1,5 +1,9 @@
 import Cursor from '../../domain/navigation/cursor'
-import type { Col, Config } from '../../domain/navigation/viewer'
+import {
+  getEntryModifiers,
+  type Col,
+  type Config,
+} from '../../domain/navigation/viewer'
 
 type PlayingCanvasLabelInput = {
   playing: true
@@ -30,8 +34,10 @@ export function makeCanvasLabel(input: CanvasLabelInput): string {
 
   const pos = getPositionInGak(cursor.cell, config)
   const main = input.col.data?.main?.label ?? '빈칸'
-  const modifier = input.col.data?.modifier?.label
-  const entry = modifier ? `${main} ${modifier}` : main
+  const modifiers = getEntryModifiers(input.col.data).map(
+    modifier => modifier.label
+  )
+  const entry = [main, ...modifiers].join(' ')
   const content = input.breathMarked ? `${entry}, 숨표` : entry
 
   return (

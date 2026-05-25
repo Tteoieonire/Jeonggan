@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createIDGenerator } from '../utils'
+import { getEntryModifiers } from '../score'
 import { deserializeMusic, serializeMusic } from './serializer'
 
 const SAMPLE_YAML = `- title: 양청도드리
@@ -210,6 +211,33 @@ describe('Round-trip', () => {
     expect(music.data[0].data[1].data).toHaveLength(2)
     expect(music.data[0].data[1].data[0].breath).toBeUndefined()
     expect(music.data[0].data[1].data[1].breath).toBe(true)
+    expect(serializeMusic(music)).toBe(yaml)
+  })
+
+  it('round-trips multiple modifiers in one column', () => {
+    const yaml = `- title: test
+  instrument: acoustic_guitar
+- name: test
+  hideRhythm: false
+  measure:
+    - 1
+  padding: 0
+  rhythm: |
+    -
+  scale: 黃太仲林無
+  tempo: 140
+  content: |
+    太:앞시김새니레표:덧길이표
+`
+    const music = deserializeMusic(yaml)
+    const modifiers = getEntryModifiers(
+      music.data[0].data[0].data[0].data[0].data
+    )
+
+    expect(modifiers.map(modifier => modifier.text)).toEqual([
+      '앞시김새니레표',
+      '덧길이표',
+    ])
     expect(serializeMusic(music)).toBe(yaml)
   })
 })

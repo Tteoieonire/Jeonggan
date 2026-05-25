@@ -1,5 +1,9 @@
 import type { EntryOf } from '../domain/symbols'
-import type { Entry, ScoreFactory } from '../domain/score'
+import {
+  entryWithModifiers,
+  type Entry,
+  type ScoreFactory,
+} from '../domain/score'
 import type { UndoOp } from '../domain/navigation/viewer'
 import type { MusicEditor } from '../domain/editing/music-editor'
 
@@ -17,10 +21,15 @@ export function getEntryWriteUndo<K extends keyof EntryOf>(
   if (editor.isSelecting) return undefined
 
   return () => {
-    const col = score.col({
-      main: editor.get('col').data?.main,
-      [where]: entry,
-    } as Entry)
+    const current = editor.get('col').data
+    const data =
+      where === 'modifier'
+        ? entryWithModifiers(
+            current?.main,
+            entry ? [entry as EntryOf['modifier']] : []
+          )
+        : ({ main: entry as EntryOf['main'] | undefined } as Entry)
+    const col = score.col(data)
     return editor.write('col', col)
   }
 }

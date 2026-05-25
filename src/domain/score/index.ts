@@ -24,13 +24,31 @@ export type Gak = {
   padding: number
 } & ({ rhythm: true; content: string[][] } | { rhythm: false; content: Cell[] })
 
-export type Entry = { main?: MainEntry; modifier?: ModifierEntry }
+export type Entry = {
+  main?: MainEntry
+  modifier?: ModifierEntry
+  modifiers?: ModifierEntry[]
+}
 export type Col = WithID<Entry>
 export type Row = WithID<Col[]> & { breath?: boolean }
 export type Cell = WithID<Row[]>
 export type EntryRow = Entry[] & { breath?: boolean }
 export type EntryCell = EntryRow[]
 export type EntryRange = EntryCell[]
+
+export function getEntryModifiers(entry: Entry | undefined): ModifierEntry[] {
+  if (entry?.modifiers != null) return entry.modifiers
+  return entry?.modifier ? [entry.modifier] : []
+}
+
+export function entryWithModifiers(
+  main: MainEntry | undefined,
+  modifiers: ModifierEntry[]
+): Entry {
+  if (modifiers.length === 0) return main ? { main } : {}
+  if (modifiers.length === 1) return { main, modifier: modifiers[0] }
+  return { main, modifier: modifiers[0], modifiers }
+}
 
 export const PARENT_OF: {
   col: 'row'

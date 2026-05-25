@@ -28,6 +28,8 @@ export {
   type Gak,
   type MusicBase,
   Chapter,
+  entryWithModifiers,
+  getEntryModifiers,
   PARENT_OF,
   type Row,
 } from '../score'

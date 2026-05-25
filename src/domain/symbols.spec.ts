@@ -104,6 +104,18 @@ describe('querySymbol', () => {
         label:
           '앞에 2, 3, 2, 4, 3, 4, 본음 3. 앞시김새로 제 음의 한 음 아래, 제 음, 제 음의 한 음 아래, 제 음의 한 음 위, 제 음, 제 음의 한 음 위. 본음으로 제 음.',
       })
+      expect(querySymbol('modifier', '덧길이표', 'text')).toMatchObject({
+        pitches: [[], [3], []],
+        text: '덧길이표',
+        label: '덧길이표',
+        durationRatio: 1.5,
+      })
+      expect(querySymbol('modifier', '반길이표', 'text')).toMatchObject({
+        pitches: [[], [3], []],
+        text: '반길이표',
+        label: '반길이표',
+        durationRatio: 0.5,
+      })
     })
 
     it('cannot query with unknown text', () => {

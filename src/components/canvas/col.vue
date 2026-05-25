@@ -1,9 +1,13 @@
 <template>
   <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col" ref="col">
     <span class="gugak">{{ main }}</span>
-    <span v-if="content.data.modifier" class="gugak">{{
-      content.data.modifier.text
-    }}</span>
+    <span
+      v-for="(modifier, index) in modifiers"
+      :key="`${modifier.text}_${index}`"
+      class="gugak"
+    >
+      {{ modifier.text }}
+    </span>
   </div>
 </template>
 
@@ -11,7 +15,7 @@
 import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/domain/navigation/cursor'
-import { Col } from '@/domain/navigation/viewer'
+import { Col, getEntryModifiers } from '@/domain/navigation/viewer'
 
 export default defineComponent({
   props: {
@@ -40,6 +44,9 @@ export default defineComponent({
   computed: {
     main() {
       return this.content.data.main?.text || '-'
+    },
+    modifiers() {
+      return getEntryModifiers(this.content.data)
     },
     isCur(): boolean {
       if (this.cursor == null) return false

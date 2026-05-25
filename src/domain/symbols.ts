@@ -19,6 +19,7 @@ type ModifierEntry = {
   text: string
   label: string
   trill?: TrillState
+  durationRatio?: number
 }
 
 const MAIN: Record<string, MainSymbolEntry> = labelMainTable({
@@ -50,6 +51,18 @@ const MAIN: Record<string, MainSymbolEntry> = labelMainTable({
 // TODO: 니다야표 등
 
 const MODIFIER: Record<string, ModifierEntry> = labelModifierTable({
+  long: {
+    pitches: [[], [3], []],
+    text: '덧길이표',
+    label: '덧길이표',
+    durationRatio: 1.5,
+  },
+  half: {
+    pitches: [[], [3], []],
+    text: '반길이표',
+    label: '반길이표',
+    durationRatio: 0.5,
+  },
   '====': {
     pitches: [[], [3, 1, 3], []],
     text: '나노나표',
@@ -313,11 +326,15 @@ function labelModifier(
   return result.trim()
 }
 function labelModifierTable(
-  table: Record<string, Omit<ModifierEntry, 'label'>>
+  table: Record<string, Omit<ModifierEntry, 'label'> & { label?: string }>
 ): Record<string, ModifierEntry> {
   const result: Record<string, ModifierEntry> = {}
   for (const [query, value] of Object.entries(table)) {
-    result[query] = { query, ...value, label: labelModifier(value.pitches) }
+    result[query] = {
+      query,
+      ...value,
+      label: value.label ?? labelModifier(value.pitches),
+    }
   }
   return result
 }

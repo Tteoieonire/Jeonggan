@@ -15,6 +15,8 @@ import {
   EntryCell,
   Row,
   ScoreFactory,
+  entryWithModifiers,
+  getEntryModifiers,
 } from '../score'
 import { createIDGenerator, type NextID } from '../utils'
 
@@ -23,10 +25,8 @@ const TABLE = '黃大太夾姑仲㽔林夷南無應'
 function serializeCol(col: Col): string {
   if (!col.data.main) return '-'
   const main = col.data.main.text
-  let _mod = col.data.modifier
-  if (!_mod) return main
-  const modifier = _mod.text
-  return main + ':' + modifier
+  const modifiers = getEntryModifiers(col.data).map(modifier => modifier.text)
+  return [main, ...modifiers].join(':')
 }
 
 function serializeRow(row: Row): string {
@@ -88,12 +88,12 @@ function lookupYul(query: string): MainEntry | null {
 }
 
 function deserializeEntry(col: string): Entry {
-  const [_main, _mod] = col.trim().split(':')
+  const [_main, ..._mods] = col.trim().split(':')
   if (_main === '-') return {}
   if (_main === '△') return { main: REST_OBJ }
   const main = lookupYul(_main) || querySymbol('main', _main, 'text')
-  const modifier = _mod ? querySymbol('modifier', _mod, 'text') : undefined
-  return { main, modifier }
+  const modifiers = _mods.map(mod => querySymbol('modifier', mod, 'text'))
+  return entryWithModifiers(main, modifiers)
 }
 
 function deserializeCells(string: string, score: ScoreFactory): Cell[] {

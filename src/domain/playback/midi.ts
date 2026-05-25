@@ -1,7 +1,7 @@
 import { MidiData, MidiEvent, MidiHeader } from 'midi-file'
 
 import { MusicPlayer, Note, render, Sori } from './player'
-import { Config } from '../score'
+import { Config, getEntryModifiers } from '../score'
 
 function chooseTimeSignatureDenominator(numerator: number) {
   if (numerator === 12) return 8
@@ -63,7 +63,9 @@ function convertChapter(
           time,
           duration,
           main: cur.data.main,
-          modifier: cur.data.modifier,
+          modifier: getEntryModifiers(cur.data).find(
+            modifier => modifier.durationRatio == null
+          ),
           headDuration: duration,
         }
         soris.push(sori)

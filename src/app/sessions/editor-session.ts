@@ -11,7 +11,11 @@ import Cursor, { CoordLevel } from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
 import type { EntryOf, TrillState } from '../../domain/symbols'
-import { Config, UndoOp } from '../../domain/navigation/viewer'
+import {
+  Config,
+  getEntryModifiers,
+  UndoOp,
+} from '../../domain/navigation/viewer'
 import {
   makeCanvasLabel,
   moveCanvasCursor,
@@ -198,7 +202,9 @@ export class EditorSession {
 
   changeTrill(trill: TrillState): void {
     const modifier = applyModifierTrill(
-      this.editor.get('col').data?.modifier,
+      getEntryModifiers(this.editor.get('col').data).find(
+        modifier => modifier.trill
+      ),
       trill
     )
     if (modifier != null) this.write('modifier', modifier)
@@ -320,8 +326,9 @@ export class EditorSession {
       !!el.data?.main &&
       ('pitch' in el.data.main || el.data.main.pitches.length === 1)
     this.trill = {}
-    if (el.data?.modifier && el.data.modifier.trill) {
-      this.trill = el.data.modifier.trill
+    const modifier = getEntryModifiers(el.data).find(modifier => modifier.trill)
+    if (modifier) {
+      this.trill = modifier.trill ?? {}
     }
   }
 

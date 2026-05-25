@@ -87,6 +87,32 @@ describe('makeCanvasLabel', () => {
         '초장 2각 2번째 정간, 2행 중 1행, 3열 중 2열'
     )
   })
+
+  it('describes multiple modifiers on a notation entry', () => {
+    const col: Col = {
+      id: 1,
+      data: {
+        main: YUL_OBJ[3][2],
+        modifier: querySymbol('modifier', '43', 'key'),
+        modifiers: [
+          querySymbol('modifier', '43', 'key'),
+          querySymbol('modifier', '덧길이표', 'text'),
+        ],
+      },
+    }
+
+    expect(
+      makeCanvasLabel({
+        cursor: new Cursor(false, 0, 0, 0, 0),
+        config: CONFIG,
+        numRows: 1,
+        numCols: 1,
+        col,
+      })
+    ).toContain(
+      '태주 앞에 4, 본음 3. 앞시김새로 제 음의 한 음 위. 본음으로 제 음. 덧길이표'
+    )
+  })
 })
 
 function emptyCol(): Col {
