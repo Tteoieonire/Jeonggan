@@ -44,6 +44,22 @@ describe('entry write helpers', () => {
       data: { main: YUL_OBJ[3][0], modifier },
     })
   })
+
+  it('preserves empty-column modifiers when writing a main entry later', () => {
+    const modifier: EntryOf['modifier'] = {
+      pitches: [[], [3], []],
+      text: 'modifier',
+      label: 'modifier',
+    }
+    const editor = makeEditor({ current: { modifier } })
+    const op = getEntryWriteUndo(editor, 'main', REST_OBJ)
+    op?.()
+
+    expect(editor.written).toEqual({
+      id: 101,
+      data: { main: REST_OBJ, modifier },
+    })
+  })
 })
 
 type FakeEditor = EntryWriteEditor & {

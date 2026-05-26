@@ -23,9 +23,9 @@ import { createIDGenerator, type NextID } from '../utils'
 const TABLE = '黃大太夾姑仲㽔林夷南無應'
 
 function serializeCol(col: Col): string {
-  if (!col.data.main) return '-'
-  const main = col.data.main.text
   const modifiers = getEntryModifiers(col.data).map(modifier => modifier.text)
+  if (!col.data.main && modifiers.length === 0) return '-'
+  const main = col.data.main?.text ?? '-'
   return [main, ...modifiers].join(':')
 }
 
@@ -89,10 +89,12 @@ function lookupYul(query: string): MainEntry | null {
 
 function deserializeEntry(col: string): Entry {
   const [_main, ..._mods] = col.trim().split(':')
-  if (_main === '-') return {}
-  if (_main === '△') return { main: REST_OBJ }
-  const main = lookupYul(_main) || querySymbol('main', _main, 'text')
   const modifiers = _mods.map(mod => querySymbol('modifier', mod, 'text'))
+  if (_main === '-') return entryWithModifiers(undefined, modifiers)
+  const main =
+    _main === '△'
+      ? REST_OBJ
+      : lookupYul(_main) || querySymbol('main', _main, 'text')
   return entryWithModifiers(main, modifiers)
 }
 

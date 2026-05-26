@@ -6,6 +6,13 @@ import {
   writeBreathMark as writeEditorBreathMark,
 } from './breath-mark-editing'
 import {
+  applyHalfLongDurationMark as applyEditorHalfLongDurationMark,
+  applyLongShortDurationMark as applyEditorLongShortDurationMark,
+  canApplyPairedDurationMark as canApplyEditorPairedDurationMark,
+  getActivePairedDurationMark as getActiveEditorPairedDurationMark,
+  type PairedDurationMark,
+} from './duration-mark-editing'
+import {
   addRhythmRow as addEditorRhythmRow,
   currentRhythmTick as getCurrentEditorRhythmTick,
   delRhythmRow as deleteEditorRhythmRow,
@@ -75,6 +82,22 @@ export class MusicEditor extends MusicSelector<EditableMusicBase> {
 
   toggleBreathMark(): UndoOp {
     return toggleEditorBreathMark(this)
+  }
+
+  canApplyPairedDurationMark(): boolean {
+    return canApplyEditorPairedDurationMark(this)
+  }
+
+  activePairedDurationMark(): PairedDurationMark | undefined {
+    return getActiveEditorPairedDurationMark(this)
+  }
+
+  applyLongShortDurationMark(): UndoOp {
+    return applyEditorLongShortDurationMark(this)
+  }
+
+  applyHalfLongDurationMark(): UndoOp {
+    return applyEditorHalfLongDurationMark(this)
   }
 
   eraseRhythmTick(): UndoOp {

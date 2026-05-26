@@ -4,6 +4,7 @@ import Cursor from '../../domain/navigation/cursor'
 import {
   coordInCanvasCell,
   getCanvasCellRowStyle,
+  getCanvasDurationModifierSide,
   isCanvasCellHandle,
   isCanvasCellSelected,
 } from './canvas-cell'
@@ -23,6 +24,12 @@ describe('canvas cell helpers', () => {
 
     expect(coord.isEqualTo(new Cursor(false, 0, 5, 3, 4))).toBe(true)
     expect(cellCoord.isEqualTo(new Cursor(false, 0, 5, 1, 2))).toBe(true)
+  })
+
+  it('places duration modifiers on the outer side of split rows', () => {
+    expect(getCanvasDurationModifierSide(0, 1)).toBe('left')
+    expect(getCanvasDurationModifierSide(0, 2)).toBe('left')
+    expect(getCanvasDurationModifierSide(1, 2)).toBe('right')
   })
 
   it('detects selected cells between an anchor and cursor', () => {

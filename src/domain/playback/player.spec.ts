@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MusicPlayer } from './player'
+import { convertMusic } from './midi'
 import { deserializeMusic } from '../serialization'
 
 const SAMPLE_YAML = `- title: 양청도드리
@@ -135,6 +136,98 @@ describe('MusicPlayer', () => {
       const player = new MusicPlayer(music)
       player.cursor.move(1, 2, 0, 0)
       expect(player.getLastPitch()).toBe(70)
+    })
+  })
+
+  describe('duration marks', () => {
+    it('plays 덧길이 as 1.5x and 반길이 as 0.5x', () => {
+      const player = new MusicPlayer(
+        deserializeMusic(`- title: duration marks
+  instrument: acoustic_grand_piano
+- name: test
+  hideRhythm: true
+  measure:
+    - 2
+  padding: 0
+  rhythm: |
+    -
+    -
+  scale: 黃太仲林南
+  tempo: 60
+  content: |
+    黃:덧길이표
+
+    太:반길이표
+`)
+      )
+
+      const notes = convertMusic(player)
+
+      expect(notes).toMatchObject([
+        { time: 0, duration: 1500 },
+        { time: 1500, duration: 500 },
+      ])
+    })
+
+    it('plays 반길이 before 덧길이 in reverse order', () => {
+      const player = new MusicPlayer(
+        deserializeMusic(`- title: duration marks
+  instrument: acoustic_grand_piano
+- name: test
+  hideRhythm: true
+  measure:
+    - 2
+  padding: 0
+  rhythm: |
+    -
+    -
+  scale: 黃太仲林南
+  tempo: 60
+  content: |
+    黃:반길이표
+
+    太:덧길이표
+`)
+      )
+
+      const notes = convertMusic(player)
+
+      expect(notes).toMatchObject([
+        { time: 0, duration: 500 },
+        { time: 500, duration: 1500 },
+      ])
+    })
+
+    it('stops ordinary sustain at an empty duration-marked column', () => {
+      const player = new MusicPlayer(
+        deserializeMusic(`- title: duration marks
+  instrument: acoustic_grand_piano
+- name: test
+  hideRhythm: true
+  measure:
+    - 3
+  padding: 0
+  rhythm: |
+    -
+    -
+    -
+  scale: 黃太仲林南
+  tempo: 60
+  content: |
+    黃:덧길이표
+
+    -:반길이표
+
+    太
+`)
+      )
+
+      const notes = convertMusic(player)
+
+      expect(notes).toMatchObject([
+        { time: 0, duration: 1500 },
+        { time: 2000, duration: 1000 },
+      ])
     })
   })
 })

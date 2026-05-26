@@ -28,6 +28,9 @@
       :octave="octave"
       :trill="trill"
       :breath-marked="breathMarked"
+      :is-selecting="isSelecting"
+      :can-apply-paired-duration-mark="canApplyPairedDurationMark"
+      :active-paired-duration-mark="activePairedDurationMark"
       @write="write"
       @erase="erase"
       @shape-change="shapechange"
@@ -35,6 +38,8 @@
       @tick-change="tickchange"
       @trill-change="trillchange"
       @breath-mark-toggle="toggleBreathMark"
+      @long-short-duration-mark="applyLongShortDurationMark"
+      @half-long-duration-mark="applyHalfLongDurationMark"
       id="keypanel"
     ></keypanel>
     <div
@@ -118,6 +123,7 @@ import { EditorSession, FileSession, PlaybackSession } from './app/sessions'
 import Cursor, { CoordLevel } from './domain/navigation/cursor'
 import { Music } from './domain/music'
 import { MusicEditor } from './domain/editing/music-editor'
+import type { PairedDurationMark } from './domain/editing/duration-mark-editing'
 import { EntryOf, TrillState } from './domain/symbols'
 import { Config } from './domain/navigation/viewer'
 import {
@@ -192,6 +198,12 @@ export default defineComponent({
     },
     toggleBreathMark() {
       this.session.toggleBreathMark()
+    },
+    applyLongShortDurationMark() {
+      this.session.applyLongShortDurationMark()
+    },
+    applyHalfLongDurationMark() {
+      this.session.applyHalfLongDurationMark()
     },
     configchange(config: Config, isVisibleChange: boolean) {
       this.session.changeConfig(config, isVisibleChange)
@@ -272,6 +284,15 @@ export default defineComponent({
     },
     breathMarked(): boolean {
       return this.session.breathMarked
+    },
+    isSelecting(): boolean {
+      return this.session.isSelecting
+    },
+    canApplyPairedDurationMark(): boolean {
+      return this.session.canApplyPairedDurationMark
+    },
+    activePairedDurationMark(): PairedDurationMark | undefined {
+      return this.session.activePairedDurationMark
     },
     tickIdx(): number {
       return this.session.tickIdx

@@ -2,7 +2,12 @@ import { instrument, InstrumentName, Player } from 'soundfont-player'
 import Cursor from '../navigation/cursor'
 import { MainEntry, ModifierEntry } from '../symbols'
 import { sleep } from '../utils'
-import { getEntryModifiers, MusicBase, MusicViewer } from '../navigation/viewer'
+import {
+  type Entry,
+  getEntryModifiers,
+  MusicBase,
+  MusicViewer,
+} from '../navigation/viewer'
 
 const REF_PITCH = 63 // Eb4, 황종
 
@@ -56,6 +61,22 @@ export type Note = {
   pitch: number
   time: number
   duration: number
+}
+
+export function getPlaybackDurationRatio(entry: Entry): number | undefined {
+  return getEntryModifiers(entry).find(
+    modifier => modifier.durationRatio != null
+  )?.durationRatio
+}
+
+export function playbackDuration(entry: Entry, baseDuration: number): number {
+  return baseDuration * (getPlaybackDurationRatio(entry) ?? 1)
+}
+
+export function playbackPitchModifier(entry: Entry): ModifierEntry | undefined {
+  return getEntryModifiers(entry).find(
+    modifier => modifier.durationRatio == null
+  )
 }
 
 function renderMain(sori: Sori, scale: number[], lastPitch?: number): Note[] {
@@ -312,7 +333,8 @@ export class MusicPlayer extends MusicViewer {
     do {
       this.lastPitch = lastPitch ?? this.lastPitch
       const cur = this.get('col')
-      const duration = this.colDuration()
+      const duration = playbackDuration(cur.data, this.colDuration())
+      const hasDurationMark = getPlaybackDurationRatio(cur.data) != null
 
       if (cur?.data?.main) {
         this.melodyPlayer?.stop()
@@ -321,9 +343,7 @@ export class MusicPlayer extends MusicViewer {
             time: 0,
             duration,
             main: cur.data.main,
-            modifier: getEntryModifiers(cur.data).find(
-              modifier => modifier.durationRatio == null
-            ),
+            modifier: playbackPitchModifier(cur.data),
             headDuration: duration,
           }
 
@@ -335,8 +355,11 @@ export class MusicPlayer extends MusicViewer {
             await this.sleepUntil(time)
             if (!this.playing) return
           }
+          if (hasDurationMark) this.melodyPlayer?.stop()
           continue
         }
+      } else if (hasDurationMark) {
+        this.melodyPlayer?.stop()
       }
       time += duration / 1000
       await this.sleepUntil(time)

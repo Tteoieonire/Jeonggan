@@ -16,6 +16,7 @@
         v-for="(x, c) in row.data"
         :key="x.id"
         :anchor="anchor"
+        :col-count="row.data.length"
         :content="x"
         :coord="coordWith(r, c)"
         :cursor="cursor"

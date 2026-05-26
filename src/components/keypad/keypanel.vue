@@ -8,6 +8,14 @@
       </b-button>
       <shapepad for="row" @shape-change="shapechange" />
     </div>
+    <div v-else-if="isSelecting" class="flex">
+      <selectionpad
+        :can-apply-paired-duration-mark="canApplyPairedDurationMark"
+        :active-paired-duration-mark="activePairedDurationMark"
+        @long-short-duration-mark="longshortdurationmark"
+        @half-long-duration-mark="halflongdurationmark"
+      />
+    </div>
     <div v-else class="flex">
       <yulpad
         style="order: 2"
@@ -64,6 +72,7 @@ import { defineComponent, PropType } from 'vue'
 import { MainEntry, ModifierEntry, TrillState } from '@/domain/symbols'
 import cellpad from './cellpad.vue'
 import rhythmpad from './rhythmpad.vue'
+import selectionpad from './selectionpad.vue'
 import shapepad from './shapepad.vue'
 import sympad from './sympad.vue'
 import yulpad from './yulpad.vue'
@@ -78,6 +87,11 @@ export default defineComponent({
     octave: { type: Number, required: true },
     trill: { type: Object as PropType<TrillState>, required: true },
     breathMarked: { type: Boolean, required: true },
+    isSelecting: { type: Boolean, required: true },
+    canApplyPairedDurationMark: { type: Boolean, required: true },
+    activePairedDurationMark: {
+      type: String as PropType<'long-short' | 'half-long'>,
+    },
   },
   emits: {
     write: (where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) =>
@@ -88,6 +102,8 @@ export default defineComponent({
     'tick-change': (tickIdx: number) => true,
     'trill-change': (trill: TrillState) => true,
     'breath-mark-toggle': () => true,
+    'long-short-duration-mark': () => true,
+    'half-long-duration-mark': () => true,
   },
   methods: {
     write(where: 'main' | 'modifier', obj?: MainEntry | ModifierEntry) {
@@ -111,6 +127,12 @@ export default defineComponent({
     breathmarktoggle() {
       this.$emit('breath-mark-toggle')
     },
+    longshortdurationmark() {
+      this.$emit('long-short-duration-mark')
+    },
+    halflongdurationmark() {
+      this.$emit('half-long-duration-mark')
+    },
   },
   components: {
     rhythmpad,
@@ -118,6 +140,7 @@ export default defineComponent({
     sympad,
     shapepad,
     cellpad,
+    selectionpad,
   },
 })
 </script>

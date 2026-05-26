@@ -1,7 +1,15 @@
 import { MidiData, MidiEvent, MidiHeader } from 'midi-file'
 
-import { MusicPlayer, Note, render, Sori } from './player'
-import { Config, getEntryModifiers } from '../score'
+import {
+  getPlaybackDurationRatio,
+  MusicPlayer,
+  Note,
+  playbackDuration,
+  playbackPitchModifier,
+  render,
+  Sori,
+} from './player'
+import { Config } from '../score'
 
 function chooseTimeSignatureDenominator(numerator: number) {
   if (numerator === 12) return 8
@@ -50,28 +58,31 @@ function convertChapter(
     ticksPerCell && (ticksPerCell * chapter.config.tempo) / 60
 
   let soris: Sori[] = []
-  let ongoing = false
+  let ongoing: Sori | undefined
   do {
     const cur = player.get('col')
-    const duration = player.colDuration(ticksPerCell)
+    const baseDuration = player.colDuration(ticksPerCell)
+    const duration = playbackDuration(cur.data, baseDuration)
+    const hasDurationMark = getPlaybackDurationRatio(cur.data) != null
 
     if (cur?.data?.main) {
       // not ongoing when encountered a rest
-      ongoing = !('pitches' in cur.data.main && !cur.data.main.pitches.length)
-      if (ongoing) {
+      ongoing = undefined
+      if (!('pitches' in cur.data.main && !cur.data.main.pitches.length)) {
         const sori: Sori = {
           time,
           duration,
           main: cur.data.main,
-          modifier: getEntryModifiers(cur.data).find(
-            modifier => modifier.durationRatio == null
-          ),
+          modifier: playbackPitchModifier(cur.data),
           headDuration: duration,
         }
         soris.push(sori)
+        if (!hasDurationMark) ongoing = sori
       }
-    } else if (ongoing) {
-      soris[soris.length - 1].duration += duration
+    } else if (ongoing && !hasDurationMark) {
+      ongoing.duration += baseDuration
+    } else if (hasDurationMark) {
+      ongoing = undefined
     }
     time += duration
   } while (player.stepCol())

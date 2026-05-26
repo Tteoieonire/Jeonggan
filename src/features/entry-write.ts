@@ -1,7 +1,7 @@
 import type { EntryOf } from '../domain/symbols'
 import {
   entryWithModifiers,
-  type Entry,
+  getEntryModifiers,
   type ScoreFactory,
 } from '../domain/score'
 import type { UndoOp } from '../domain/navigation/viewer'
@@ -28,7 +28,10 @@ export function getEntryWriteUndo<K extends keyof EntryOf>(
             current?.main,
             entry ? [entry as EntryOf['modifier']] : []
           )
-        : ({ main: entry as EntryOf['main'] | undefined } as Entry)
+        : entryWithModifiers(
+            entry as EntryOf['main'] | undefined,
+            current.main == null ? getEntryModifiers(current) : []
+          )
     const col = score.col(data)
     return editor.write('col', col)
   }

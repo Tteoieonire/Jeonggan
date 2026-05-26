@@ -5,6 +5,8 @@ export type CanvasCellRowStyle = {
   height: string
 }
 
+export type CanvasDurationModifierSide = 'left' | 'right'
+
 export function getCanvasCellRowStyle(
   rowCount: number,
   colCount: number
@@ -24,6 +26,13 @@ export function coordInCanvasCell(
   const coord = cellCoord.clone()
   coord.move(cellCoord.chapter, cellCoord.cell, row, col)
   return coord
+}
+
+export function getCanvasDurationModifierSide(
+  col: number,
+  colCount: number
+): CanvasDurationModifierSide {
+  return colCount > 1 && col === colCount - 1 ? 'right' : 'left'
 }
 
 export function isCanvasCellSelected(

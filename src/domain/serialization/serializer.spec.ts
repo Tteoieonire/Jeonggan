@@ -240,4 +240,29 @@ describe('Round-trip', () => {
     ])
     expect(serializeMusic(music)).toBe(yaml)
   })
+
+  it('round-trips duration modifiers on empty columns', () => {
+    const yaml = `- title: test
+  instrument: acoustic_guitar
+- name: test
+  hideRhythm: false
+  measure:
+    - 1
+  padding: 0
+  rhythm: |
+    -
+  scale: 黃太仲林無
+  tempo: 140
+  content: |
+    -:덧길이표
+`
+    const music = deserializeMusic(yaml)
+    const modifiers = getEntryModifiers(
+      music.data[0].data[0].data[0].data[0].data
+    )
+
+    expect(music.data[0].data[0].data[0].data[0].data.main).toBeUndefined()
+    expect(modifiers.map(modifier => modifier.text)).toEqual(['덧길이표'])
+    expect(serializeMusic(music)).toBe(yaml)
+  })
 })

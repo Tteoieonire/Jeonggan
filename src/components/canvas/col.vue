@@ -1,9 +1,23 @@
 <template>
   <div @click="moveOrSelectTo" :class="{ cur: isCur }" class="col" ref="col">
+    <span
+      v-for="(modifier, index) in durationModifiersBeforeMain"
+      :key="`duration_before_${modifier.text}_${index}`"
+      class="gugak"
+    >
+      {{ modifier.text }}
+    </span>
     <span class="gugak">{{ main }}</span>
     <span
-      v-for="(modifier, index) in modifiers"
-      :key="`${modifier.text}_${index}`"
+      v-for="(modifier, index) in pitchModifiers"
+      :key="`pitch_${modifier.text}_${index}`"
+      class="gugak"
+    >
+      {{ modifier.text }}
+    </span>
+    <span
+      v-for="(modifier, index) in durationModifiersAfterMain"
+      :key="`duration_after_${modifier.text}_${index}`"
       class="gugak"
     >
       {{ modifier.text }}
@@ -16,10 +30,12 @@ import { defineComponent, PropType } from 'vue'
 
 import Cursor from '@/domain/navigation/cursor'
 import { Col, getEntryModifiers } from '@/domain/navigation/viewer'
+import { getCanvasDurationModifierSide } from '@/features/canvas'
 
 export default defineComponent({
   props: {
     anchor: { type: Object as PropType<Cursor> },
+    colCount: { type: Number, required: true },
     content: { type: Object as PropType<Col>, required: true },
     coord: { type: Object as PropType<Cursor>, required: true },
     cursor: { type: Object as PropType<Cursor> },
@@ -47,6 +63,21 @@ export default defineComponent({
     },
     modifiers() {
       return getEntryModifiers(this.content.data)
+    },
+    durationModifiers() {
+      return this.modifiers.filter(modifier => modifier.durationRatio != null)
+    },
+    durationModifierSide() {
+      return getCanvasDurationModifierSide(this.coord.col, this.colCount)
+    },
+    durationModifiersBeforeMain() {
+      return this.durationModifierSide === 'left' ? this.durationModifiers : []
+    },
+    durationModifiersAfterMain() {
+      return this.durationModifierSide === 'right' ? this.durationModifiers : []
+    },
+    pitchModifiers() {
+      return this.modifiers.filter(modifier => modifier.durationRatio == null)
     },
     isCur(): boolean {
       if (this.cursor == null) return false

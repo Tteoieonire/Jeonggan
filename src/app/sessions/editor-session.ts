@@ -10,6 +10,7 @@ import { rhythmTickIndex, YUL_OBJ } from '../../domain/constants'
 import Cursor, { CoordLevel } from '../../domain/navigation/cursor'
 import { Music } from '../../domain/music'
 import { MusicEditor } from '../../domain/editing/music-editor'
+import type { PairedDurationMark } from '../../domain/editing/duration-mark-editing'
 import type { EntryOf, TrillState } from '../../domain/symbols'
 import {
   Config,
@@ -105,6 +106,18 @@ export class EditorSession {
       this.editor.anchor,
       this.editor.cursor
     )
+  }
+
+  get isSelecting(): boolean {
+    return this.editor.isSelecting
+  }
+
+  get canApplyPairedDurationMark(): boolean {
+    return this.editor.canApplyPairedDurationMark()
+  }
+
+  get activePairedDurationMark(): PairedDurationMark | undefined {
+    return this.editor.activePairedDurationMark()
   }
 
   get gaks() {
@@ -212,6 +225,16 @@ export class EditorSession {
 
   toggleBreathMark(): void {
     this.execute({ type: 'toggleBreathMark' })
+  }
+
+  applyLongShortDurationMark(): void {
+    if (!this.canApplyPairedDurationMark) return
+    this.doWithHistory(() => this.editor.applyLongShortDurationMark())
+  }
+
+  applyHalfLongDurationMark(): void {
+    if (!this.canApplyPairedDurationMark) return
+    this.doWithHistory(() => this.editor.applyHalfLongDurationMark())
   }
 
   changeConfig(config: Config, isVisibleChange: boolean): void {
